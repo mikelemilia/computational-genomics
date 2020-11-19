@@ -1,0 +1,87 @@
+individual	seq-sample 	disease	sample_type
+8	SRR3106778	serrated polyposis	colon sessile serrated adenoma/polyp
+11	SRR3106773	serrated polyposis	colon sessile serrated adenoma/polyp
+11	SRR3106774	serrated polyposis	colon sessile serrated adenoma/polyp
+11	SRR3106828	serrated polyposis	uninvolved mucosa
+12	SRR3106789	sporadic polyposis	colon sessile serrated adenoma/polyp
+13	SRR3106775	serrated polyposis	colon sessile serrated adenoma/polyp
+13	SRR3106776	serrated polyposis	colon sessile serrated adenoma/polyp
+13	SRR3106829	serrated polyposis	uninvolved mucosa
+14	SRR3106772	serrated polyposis	colon sessile serrated adenoma/polyp
+14	SRR3106827	serrated polyposis	uninvolved mucosa
+15	SRR3106777	serrated polyposis	colon sessile serrated adenoma/polyp
+15	SRR3106830	serrated polyposis	uninvolved mucosa
+17	SRR3106779	serrated polyposis	colon sessile serrated adenoma/polyp
+17	SRR3106831	serrated polyposis	uninvolved mucosa
+18	SRR3106780	serrated polyposis	colon sessile serrated adenoma/polyp
+18	SRR3106781	serrated polyposis	colon sessile serrated adenoma/polyp
+18	SRR3106832	serrated polyposis	uninvolved mucosa
+19	SRR3106782	serrated polyposis	colon sessile serrated adenoma/polyp
+19	SRR3106783	serrated polyposis	colon sessile serrated adenoma/polyp
+71	SRR3106838	control	normal
+71	SRR3106848	control	normal
+72	SRR3106839	control	normal
+72	SRR3106849	control	normal
+74	SRR3106840	control	normal
+74	SRR3106850	control	normal
+76	SRR3106793	sporadic polyposis	colon hyperplastic polyp
+76	SRR3106803	sporadic polyposis	adenomatous colon polyp
+76	SRR3106817	sporadic polyposis	uninvolved mucosa
+81	SRR3106841	control	normal
+81	SRR3106851	control	normal
+84	SRR3106842	control	normal
+84	SRR3106852	control	normal
+85	SRR3106843	control	normal
+85	SRR3106853	control	normal
+86	SRR3106844	control	normal
+86	SRR3106854	control	normal
+87	SRR3106845	control	normal
+87	SRR3106855	control	normal
+88	SRR3106846	control	normal
+88	SRR3106856	control	normal
+89	SRR3106847	control	normal
+89	SRR3106857	control	normal
+100	SRR3106785	sporadic polyposis	colon sessile serrated adenoma/polyp
+100	SRR3106833	sporadic polyposis	uninvolved mucosa
+101	SRR3106786	sporadic polyposis	colon sessile serrated adenoma/polyp
+101	SRR3106804	sporadic polyposis	adenomatous colon polyp
+101	SRR3106818	sporadic polyposis	uninvolved mucosa
+102	SRR3106805	sporadic polyposis	adenomatous colon polyp
+102	SRR3106819	sporadic polyposis	uninvolved mucosa
+103	SRR3106794	sporadic polyposis	colon hyperplastic polyp
+103	SRR3106806	sporadic polyposis	adenomatous colon polyp
+103	SRR3106807	sporadic polyposis	adenomatous colon polyp
+103	SRR3106820	sporadic polyposis	uninvolved mucosa
+104	SRR3106808	sporadic polyposis	adenomatous colon polyp
+104	SRR3106809	sporadic polyposis	adenomatous colon polyp
+104	SRR3106821	sporadic polyposis	uninvolved mucosa
+105	SRR3106796	sporadic polyposis	colon hyperplastic polyp
+105	SRR3106835	sporadic polyposis	uninvolved mucosa
+109	SRR3106810	sporadic polyposis	adenomatous colon polyp
+109	SRR3106822	sporadic polyposis	uninvolved mucosa
+110	SRR3106784	sporadic polyposis	colon sessile serrated adenoma/polyp
+111	SRR3106795	sporadic polyposis	colon hyperplastic polyp
+111	SRR3106797	sporadic polyposis	colon hyperplastic polyp
+111	SRR3106811	sporadic polyposis	adenomatous colon polyp
+111	SRR3106823	sporadic polyposis	uninvolved mucosa
+111	SRR3106834	sporadic polyposis	uninvolved mucosa
+118	SRR3106787	sporadic polyposis	colon sessile serrated adenoma/polyp
+118	SRR3106790	sporadic polyposis	colon sessile serrated adenoma/polyp
+127	SRR3106791	sporadic polyposis	colon sessile serrated adenoma/polyp
+131	SRR3106798	sporadic polyposis	colon hyperplastic polyp
+132	SRR3106799	sporadic polyposis	colon hyperplastic polyp
+132	SRR3106800	sporadic polyposis	colon hyperplastic polyp
+133	SRR3106792	sporadic polyposis	colon sessile serrated adenoma/polyp
+133	SRR3106801	sporadic polyposis	colon hyperplastic polyp
+133	SRR3106836	sporadic polyposis	uninvolved mucosa
+144	SRR3106802	sporadic polyposis	colon hyperplastic polyp
+144	SRR3106826	sporadic polyposis	uninvolved mucosa
+144	SRR3106837	sporadic polyposis	uninvolved mucosa
+200	SRR3106812	sporadic polyposis	adenomatous colon polyp
+200	SRR3106824	sporadic polyposis	uninvolved mucosa
+203	SRR3106788	sporadic polyposis	colon sessile serrated adenoma/polyp
+203	SRR3106825	sporadic polyposis	uninvolved mucosa
+CA040	SRR3106813	sporadic polyposis	colon adenocarcinoma
+CA087	SRR3106814	sporadic polyposis	colon adenocarcinoma
+CA365	SRR3106815	sporadic polyposis	colon adenocarcinoma
+CA764	SRR3106816	sporadic polyposis	colon adenocarcinoma
