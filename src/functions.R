@@ -94,4 +94,3 @@ estimateG0<-function(c_pvalue) {
   
   
 }
-
