@@ -118,7 +118,7 @@ for (i in 1:length(ind))
 }
 control_nodup<-control_nodup[,1:count]
 
-#TAKING CARE OF DUPLICATES FOR DISEASE
+#Taking care of duplicates for disease
 
 duplicates <- duplicated(disease$individual) # get the position of all the duplicated individual 
 #get only the duplicated
@@ -155,7 +155,7 @@ for (i in 1:length(ind))
 disease_nodup<-disease_nodup[,1:count]
 
 
-# --------------- TAKING CARE OF ZEROS in controls and diseased ---------------
+# 7 - Taking care of zeros in controls and diseased
 
 control_forcomparison<-apply(control_nodup, 1, sum)
 disease_forcomparison<-apply(disease_nodup, 1, sum)
@@ -167,7 +167,9 @@ YN<-as.data.frame(vec_for_comparison>q[1])
 index<-which(YN==FALSE) #indici di quelli da togliere
 control_nodup_nozero<-(control_nodup[-index,])
 disease_nodup_nozero<-disease_nodup[-index, ]
-# ------------- tests  ------------------------
+
+# 8 - t-test and Wilcoxon test
+
 Nc<-nrow(control_nodup_nozero)
 c_ttest_pvalue <- NULL
 c_wilcoxon_pvalue <- NULL
@@ -176,11 +178,9 @@ selected_ttest<-0
 selected_wilcox<-0
 for(i in (1:Nc)){ 
   c_ttest_pvalue <- c(c_ttest_pvalue,t.test(control_nodup_nozero[i,], disease_nodup_nozero[i,], var.equal = FALSE)[[3]])
-  
   c_wilcoxon_pvalue <- c(c_wilcoxon_pvalue,wilcox.test(control_nodup_nozero[i,],disease_nodup_nozero[i,], exact=FALSE)[[3]])
-  
-  #INSERIRE EDGER
 }
+
 minori<-(c_ttest_pvalue<0.05 )
 selected_ttest<-which(minori==TRUE)
 num_sel_ttest<-length(selected_ttest)
@@ -188,35 +188,9 @@ minori<-(c_wilcoxon_pvalue<0.05 )
 selected_wilcox<-which(minori==TRUE)
 num_sel_wilcox<-length(selected_wilcox)
 
-# --------- FP and FN with G0=G --------------------------------
-G<-nrow(control_nodup_nozero)
-G0<-G
-alpha<-0.05
-expected_FP_ttest<-min(G0*alpha, num_sel_ttest)
-expected_TP_ttest<-max(0, (num_sel_ttest - expected_FP_ttest))
-expected_TN_ttest<-G0 - expected_FP_ttest
-expected_FN_ttest<- max(0,G -num_sel_ttest- expected_TN_ttest)
+# 9 - Preprocessing and EdgeR
 
-
-
-
-expected_FP_wilcox<-min(G0*alpha, num_sel_wilcox)
-expected_TP_wilcox<-max(0, (num_sel_wilcox - expected_FP_wilcox))
-expected_TN_wilcox<-G0 - expected_FP_wilcox
-expected_FN_wilcox<-max(0,G-num_sel_wilcox - expected_TN_wilcox)
-
-
-# ---------------------Estimate G0 and re-estimate FP and FN-----------------------------
-
-res <- estimateG0(c_ttest_pvalue)
-G0_est <- res[[1]]
-lambda_est <- res[[2]]
-
-
-
-#EDGER
-
-#REBUILT CONTROL AND DISEASE
+#Rebuilt control matrix
 
 duplicates <- duplicated(control$individual) # get the position of all the duplicated individual 
 #get only the duplicated
@@ -255,7 +229,7 @@ control_nodup<-control_nodup[,1:count]
 
 colnames(control_nodup)<-rep("control",count)
 
-#TAKING CARE OF DUPLICATES FOR DISEASE
+#Rebuilt disease matrix
 
 duplicates <- duplicated(disease$individual) # get the position of all the duplicated individual 
 #get only the duplicated
@@ -292,3 +266,29 @@ for (i in 1:length(ind))
 disease_nodup<-disease_nodup[,1:count]
 
 colnames(disease_nodup)<-rep("disease",count)
+
+
+# 10 - E[FP] and E[FN] for t-test and Wilcoxon test with G0 = G
+
+G<-nrow(control_nodup_nozero)
+G0<-G
+alpha<-0.05
+expected_FP_ttest<-min(G0*alpha, num_sel_ttest)
+expected_TP_ttest<-max(0, (num_sel_ttest - expected_FP_ttest))
+expected_TN_ttest<-G0 - expected_FP_ttest
+expected_FN_ttest<- max(0,G -num_sel_ttest- expected_TN_ttest)
+
+expected_FP_wilcox<-min(G0*alpha, num_sel_wilcox)
+expected_TP_wilcox<-max(0, (num_sel_wilcox - expected_FP_wilcox))
+expected_TN_wilcox<-G0 - expected_FP_wilcox
+expected_FN_wilcox<-max(0,G-num_sel_wilcox - expected_TN_wilcox)
+
+
+# 11 - Estimate G0 and re-estimate FP and FN
+
+res <- estimateG0(c_ttest_pvalue)
+G0_est <- res[[1]]
+lambda_est <- res[[2]]
+
+
+
