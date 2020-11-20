@@ -19,57 +19,57 @@ rows <- length(sample) # get number of rows
 A <- matrix(0, nrow = rows, ncol = 0)
 M <- matrix(0, nrow = rows, ncol = 0)
 
-for(i in 3:cols){
-  png(file = paste(getPlotPath(i-2, "MvA"), ".png", sep = ""))
-  
-  # select the i-th element
-  selected <- DATA[,i] + 1
-  
-  result <- ma(sample, selected)
-  
-  M <- cbind(M, result[[1]])
-  A <- cbind(A, result[[2]])
-  
-  plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA Plot", i-2, sep =" "))
-  abline(0,0)
-  
-  dev.off()
-}
+# for(i in 3:cols){
+#   png(file = paste(getPlotPath(i-2, "MvA"), ".png", sep = ""))
+#   
+#   # select the i-th element
+#   selected <- DATA[,i] + 1
+#   
+#   result <- ma(sample, selected)
+#   
+#   M <- cbind(M, result[[1]])
+#   A <- cbind(A, result[[2]])
+#   
+#   plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA Plot", i-2, sep =" "))
+#   abline(0,0)
+#   
+#   dev.off()
+# }
 
 # 4 - Produce the normalization of data with TMM and print MvA plots
 
 normed <- tmm_normalization(DATA[-1],indsample)
 dataNorm <- normed[[3]]
 
-for(i in 3:cols) {
-  png(file = paste(getPlotPath(i-2, "MvA - TMM Normalized"), ".png", sep = ""))
-  
-  plot(normed[[2]],normed[[1]],ylab="M",xlab="A",main=paste("MvA Plot", i-2, sep =" "))
-  abline(0,0)
-  
-  dev.off()
-}
+# for(i in 3:cols) {
+#   png(file = paste(getPlotPath(i-2, "MvA - TMM Normalized"), ".png", sep = ""))
+#   
+#   plot(normed[[2]],normed[[1]],ylab="M",xlab="A",main=paste("MvA Plot", i-2, sep =" "))
+#   abline(0,0)
+#   
+#   dev.off()
+# }
 
 # 5 - Produce the normalization of data with Quantiles, calculate new M and A and print MvA plots 
 
 dataNorm <- quantile_normalization(DATA[-1])
 
-for(i in 3:cols){
-  png(file = paste(getPlotPath(i-2, "MvA - Quantile Normalized"), ".png", sep = ""))
-  
-  # select the i-th element
-  selected <- dataNorm[,i] + 1
-  
-  result <- ma(sample, selected)
-  
-  M <- cbind(M, result[[1]])
-  A <- cbind(A, result[[2]])
-  
-  plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA Plot", i-2, sep =" "))
-  abline(0,0)
-  
-  dev.off()
-}
+# for(i in 3:cols){
+#   png(file = paste(getPlotPath(i-2, "MvA - Quantile Normalized"), ".png", sep = ""))
+#   
+#   # select the i-th element
+#   selected <- dataNorm[,i] + 1
+#   
+#   result <- ma(sample, selected)
+#   
+#   M <- cbind(M, result[[1]])
+#   A <- cbind(A, result[[2]])
+#   
+#   plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA Plot", i-2, sep =" "))
+#   abline(0,0)
+#   
+#   dev.off()
+# }
 
 # 6 - Remove the duplicated individuals
 
@@ -203,22 +203,15 @@ expected_FN_ttest<- max(0,G -num_sel_ttest- expected_TN_ttest)
 
 expected_FP_wilcox<-min(G0*alpha, num_sel_wilcox)
 expected_TP_wilcox<-max(0, (num_sel_wilcox - expected_FP_wilcox))
-expected_FN_wilcox<-max(0,G-num_sel_wilcox - expected_FN_wilcox)
 expected_TN_wilcox<-G0 - expected_FP_wilcox
+expected_FN_wilcox<-max(0,G-num_sel_wilcox - expected_TN_wilcox)
+
 
 
 
 
 # ---------------------estimate G0 and re-estimate FP and FN-----------------------------
 
-G0_est <- estimateG0(c_ttest_pvalue)
-
-
-
-
-
-
-
-
-
-
+res <- estimateG0(c_ttest_pvalue)
+G0_est <- res[[1]]
+lambda_est <- res[[2]]

@@ -87,6 +87,10 @@ estimateG0<-function(c_pvalue) {
     i<-i+1
   }
   
-  G0_estimate<-G0_ttest[which.min(r)]
+  G0_estimate<-G0[which.min(r)]
+  
+  return(list(G0_estimate,lambda[which.min(r)]))
+  
+  
 }
 
