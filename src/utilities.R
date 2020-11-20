@@ -76,3 +76,5 @@ getPlotPath <- function(filename, folder = ""){
   return(path)
   
 }
+
+ciao <- function(){}
