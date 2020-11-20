@@ -1,6 +1,7 @@
-ma <- function(x,y){
-  m <- log2(x)-log2(y)
-  a <- (log2(x)+log2(y))/2
+ma <- function(x, y){
+  
+  m <- log2(x) - log2(y)
+  a <- (log2(x) + log2(y))/2
   
   return(list(m,a))
 }

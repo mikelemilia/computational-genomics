@@ -1,10 +1,51 @@
-# FUNCTIONS
-
 getRawPath <- function(filename){
   
-  path <- c(getwd(), "/data/raw/", filename)
-  return(paste(path, collapse = ""))
+  path <- paste(getwd(), "/data/raw/", filename, sep = "")
+  
+  # cat(path, "\n")
+  
+  if(!file.exists(path)){
+    
+    stop(paste("The file", filename, "you're looking for in data/raw doesn't exist.", sep = " "))
+  
+  } else {
+    
+    return(path)
 
+  }
+
+}
+
+getTempPath <- function(filename){
+  
+  path <- paste(getwd(), "/data/temp/", filename, sep = "")
+  
+  if(!file.exists(path)){
+    
+    stop(paste("The file", filename, "you're looking for in data/temp doesn't exist.", sep = " "))
+    
+  } else {
+    
+    return(path)
+    
+  }
+  
+}
+
+getProcessedPath <- function(filename){
+  
+  path <- paste(getwd(), "/data/processed/", filename, sep = "")
+  
+  if(!file.exists(path)){
+    
+    stop(paste("The file", filename, "you're looking for in data/processed doesn't exist.", sep = " "))
+    
+  } else {
+    
+    return(path)
+    
+  }
+  
 }
 
 getPlotPath <- function(filename, folder = ""){
