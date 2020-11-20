@@ -3,7 +3,6 @@
 DATA<-read.table(getRawPath("E-GEOD-76987-raw-counts.tsv"), sep = "\t", row.names = 1, header = TRUE)
 LABELS <- read.delim(getRawPath("labels.txt"), sep = "\t", header = TRUE)
 
-
 # 2 - Calculate the sequencing depth of each sample 
 
 depth <- apply(DATA[-1], 2, sum)
@@ -212,3 +211,84 @@ expected_FN_wilcox<-max(0,G-num_sel_wilcox - expected_TN_wilcox)
 res <- estimateG0(c_ttest_pvalue)
 G0_est <- res[[1]]
 lambda_est <- res[[2]]
+
+
+
+#EDGER
+
+#REBUILT CONTROL AND DISEASE
+
+duplicates <- duplicated(control$individual) # get the position of all the duplicated individual 
+#get only the duplicated
+duplicate_control <- control$individual[duplicates == TRUE]
+#find indexes in control of duplicated subjects
+d <- as.numeric(control$individual)
+
+dim <- dim(control)
+control_nodup <- matrix(0,nrow(DATA),dim[1])
+#initialize a count because matrix at the end WON'T have same columns as dim[1]=41, the control SRR
+count<-0
+for (i in 1:length(duplicate_control))
+{
+  indexes <- which(d %in% duplicate_control[i])
+  #find samples of duplicated subjects, get the SRR code
+  seq_sample <- control[indexes,]$seq.sample
+  #mean of duplicated samples
+  control_nodup[,i] <- apply(DATA[, seq_sample], 1, mean)
+  count <- count+1;
+}
+
+#finding subjects NOT DUPLICATED
+'%notin%' <- Negate(`%in%`)
+ind<-which(d %notin% duplicate_control)
+
+for (i in 1:length(ind))
+{
+  
+  #find samples of duplicated subjects, get the SRR code
+  seq_sample<-control[ind[i],]$seq.sample
+  #mean of duplicated samples
+  control_nodup[,length(duplicate_control)+i]<-DATA[,seq_sample]
+  count<-count+1;
+}
+control_nodup<-control_nodup[,1:count]
+
+colnames(control_nodup)<-rep("control",count)
+
+#TAKING CARE OF DUPLICATES FOR DISEASE
+
+duplicates <- duplicated(disease$individual) # get the position of all the duplicated individual 
+#get only the duplicated
+duplicate_disease <- disease$individual[duplicates == TRUE]
+#find indexes in disease of duplicated subjects
+d<-as.numeric(disease$individual)
+
+dim<-dim(disease)
+disease_nodup<-matrix(0,nrow(DATA),dim[1])
+#initialize a count because matrix at the end WON'T have same columns as dim[1]=41, the control SRR
+count<-0
+for (i in 1:length(duplicate_disease))
+{
+  indexes<-which(d %in% duplicate_disease[i])
+  #find samples of duplicated subjects, get the SRR code
+  seq_sample<-disease[indexes,]$seq.sample
+  #mean of duplicated samples
+  disease_nodup[,i]<-apply(DATA[, seq_sample], 1, mean)
+  count<-count+1;
+}
+
+#finding subjects NOT DUPLICATED
+'%notin%' <- Negate(`%in%`)
+ind<-which(d %notin% duplicate_disease)
+for (i in 1:length(ind))
+{
+  #find samples of duplicated subjects, get the SRR code
+  seq_sample<-disease[ind[i],]$seq.sample
+  #mean of duplicated samples
+  disease_nodup[,length(duplicate_disease)+i]<-DATA[,seq_sample]
+  count<-count+1
+  
+}
+disease_nodup<-disease_nodup[,1:count]
+
+colnames(disease_nodup)<-rep("disease",count)
