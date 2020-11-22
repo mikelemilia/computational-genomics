@@ -245,7 +245,7 @@ duplicate_disease <- disease$individual[duplicates == TRUE]
 d<-as.numeric(disease$individual)
 
 dim<-dim(disease)
-disease_nodup<-matrix(0,nrow(DATA2),dim[1])
+disease_nodup<-matrix(0,nrow(DATA),dim[1])
 #initialize a count because matrix at the end WON'T have same columns as dim[1]=41, the control SRR
 count<-0
 for (i in 1:length(duplicate_disease))
@@ -254,7 +254,7 @@ for (i in 1:length(duplicate_disease))
   #find samples of duplicated subjects, get the SRR code
   seq_sample<-disease[indexes,]$seq.sample
   #mean of duplicated samples
-  disease_nodup[,i]<-apply(DATA2[, seq_sample], 1, mean)
+  disease_nodup[,i]<-apply(DATA[, seq_sample], 1, mean)
   count<-count+1;
 }
 
@@ -266,7 +266,7 @@ for (i in 1:length(ind))
   #find samples of duplicated subjects, get the SRR code
   seq_sample<-disease[ind[i],]$seq.sample
   #mean of duplicated samples
-  disease_nodup[,length(duplicate_disease)+i]<-DATA2[,seq_sample]
+  disease_nodup[,length(duplicate_disease)+i]<-DATA[,seq_sample]
   count<-count+1
   
 }
@@ -311,14 +311,14 @@ print(designprova)
 
 
 # fit values of phi (we need this step to fit our GLM model)
-yprova <- DGEList(counts=prova)    # y is an object of type DGE
+yprova <- DGEList(counts=prova, remove.zeros = TRUE)    # y is an object of type DGE
 yprova <- calcNormFactors(yprova)   # This calculates the SF using the TMM normalization !!!
 SF<-yprova$samples
 
-y <- estimateGLMCommonDisp(y,design, verbose=TRUE) #phi common to the entire dataset
-y <- estimateGLMTrendedDisp(y,design) #phi depends on mu
-y <- estimateGLMTagwiseDisp(y,design) #phi is gene specific
-fit <- glmFit(y,design) #finally the model fit (that accounts for raw NB data and scaling factors and seq. depth) 
+y <- estimateGLMCommonDisp(yprova,designprova, verbose=TRUE) #phi common to the entire dataset
+y <- estimateGLMTrendedDisp(y,designprova) #phi depends on mu
+y <- estimateGLMTagwiseDisp(y,designprova) #phi is gene specific
+fit <- glmFit(y,designprova) #finally the model fit (that accounts for raw NB data and scaling factors and seq. depth) 
 summary(fit)
 
 #il test
