@@ -227,7 +227,14 @@ for (i in 1:length(ind))
 }
 control_nodup<-control_nodup[,1:count]
 
-colnames(control_nodup)<-rep("control",count)
+nomi<-rep("", count)
+for (i in (1:count))
+{
+  x<-paste("control",as.character(i) , sep='_')
+  nomi[i]<-x
+}
+colnames(control_nodup)<-nomi
+
 
 #Rebuilt disease matrix
 
@@ -238,7 +245,7 @@ duplicate_disease <- disease$individual[duplicates == TRUE]
 d<-as.numeric(disease$individual)
 
 dim<-dim(disease)
-disease_nodup<-matrix(0,nrow(DATA),dim[1])
+disease_nodup<-matrix(0,nrow(DATA2),dim[1])
 #initialize a count because matrix at the end WON'T have same columns as dim[1]=41, the control SRR
 count<-0
 for (i in 1:length(duplicate_disease))
@@ -247,7 +254,7 @@ for (i in 1:length(duplicate_disease))
   #find samples of duplicated subjects, get the SRR code
   seq_sample<-disease[indexes,]$seq.sample
   #mean of duplicated samples
-  disease_nodup[,i]<-apply(DATA[, seq_sample], 1, mean)
+  disease_nodup[,i]<-apply(DATA2[, seq_sample], 1, mean)
   count<-count+1;
 }
 
@@ -259,15 +266,83 @@ for (i in 1:length(ind))
   #find samples of duplicated subjects, get the SRR code
   seq_sample<-disease[ind[i],]$seq.sample
   #mean of duplicated samples
-  disease_nodup[,length(duplicate_disease)+i]<-DATA[,seq_sample]
+  disease_nodup[,length(duplicate_disease)+i]<-DATA2[,seq_sample]
   count<-count+1
   
 }
 disease_nodup<-disease_nodup[,1:count]
+nomi<-rep("", count)
+for (i in (1:count))
+{
+  x<-paste("disease",as.character(i) , sep='_')
+  nomi[i]<-x
+}
+colnames(disease_nodup)<-nomi
 
-colnames(disease_nodup)<-rep("disease",count)
+#------------------------- edgeR-----------------------------------
+#PROVA DI MARTI: ho provato a implementare edgeR; i gruppi sono due, quindi ho usato il primo
+#esempio di implemetazione di edgeR della professoressa (L11-EdgeR.Rmd, righe 96-158)
+
+#tutte le vairabili hanno nomi di prova, poi se va bene possiamo cambiarle
+
+#unisco le due tabelle
+#sono diverse rispetto a quelle create prima perchè mi serve che abbiano tutti nomi diversi nelle colonne
+#del tipo "control_1", "control_2" ecc ecc
+
+prova<- cbind(disease_nodup, control_nodup)
+library(edgeR)
+
+# creo i gruppi che poi mi serviranno per definire "group"; di base mi serve solo che mi separino
+#ciò che c'è in tabella in control e disease
+#sono due vettori
+gruppo_controllo<-rep("control",dim(control_nodup)[2])
+gruppo_malato<-rep("disease",dim(disease_nodup)[2])
+
+#li unisco, mi serve vettore unico per usare factor
+gruppo<-cbind(t(as.data.frame(gruppo_malato)),t(as.data.frame(gruppo_controllo)))
+
+#uso factor(), ottengo un oggetto diviso in due livelli (contorl e disease), come ci serve
+groupProva<- factor(gruppo)
+
+#matrice di design
+designprova <- model.matrix(~0+groupProva) 
+rownames(designprova)<-colnames(prova)  
+print(designprova)
 
 
+# fit values of phi (we need this step to fit our GLM model)
+yprova <- DGEList(counts=prova)    # y is an object of type DGE
+yprova <- calcNormFactors(yprova)   # This calculates the SF using the TMM normalization !!!
+SF<-yprova$samples
+
+y <- estimateGLMCommonDisp(y,design, verbose=TRUE) #phi common to the entire dataset
+y <- estimateGLMTrendedDisp(y,design) #phi depends on mu
+y <- estimateGLMTagwiseDisp(y,design) #phi is gene specific
+fit <- glmFit(y,design) #finally the model fit (that accounts for raw NB data and scaling factors and seq. depth) 
+summary(fit)
+
+#il test
+Confronti<-makeContrasts(Treatment=groupProvadisease-groupProvacontrol,levels=designprova)
+RES<-glmLRT(fit,contrast=Confronti[,"Treatment"])
+
+#alcuni output
+
+# The first column of RES reports the log_Fold_Change, i.e.: 
+# log2(Normalized_data_average_groupProvadisease / Normalized_data_average_groupProvacontrol)
+RES$table[1:5,]
+
+out <- topTags(RES, n = "Inf")$table
+out[1:5,]
+
+#selected usando edgeR e il suo FDR... credo non possiamo, ma giusto per capire
+indSELedgeR<-which(out$FDR<0.05) #i selected
+print(length(indSELedgeR))
+
+#------- AGGIUNGERE A PARTIRE DAL TEST (da out) LA PARTE DI STIMA DEI FP,FN,TP,TN
+#-------- AGGIUNGERE G0 ESTIMATION
+
+
+#-----------------------------------------------------
 # 10 - E[FP] and E[FN] for t-test and Wilcoxon test with G0 = G
 
 G<-nrow(control_nodup_nozero)
@@ -289,6 +364,3 @@ expected_FN_wilcox<-max(0,G-num_sel_wilcox - expected_TN_wilcox)
 res <- estimateG0(c_ttest_pvalue)
 G0_est <- res[[1]]
 lambda_est <- res[[2]]
-
-
-
