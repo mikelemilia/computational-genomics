@@ -1,5 +1,4 @@
 ma <- function(x, y){
-  
   m <- log2(x) - log2(y)
   a <- (log2(x) + log2(y))/2
   
@@ -73,12 +72,10 @@ estimateG0<-function(c_pvalue) {
     
     l<-lambda[i]
     
-    
     minori<-(c_pvalue<l )
     selected<-which(minori==TRUE)
     num_sel<-length(selected)
-    
-    
+
     G0[i]<-(G-num_sel)/(1-l)
     
     r[i]<-(G0[i]-G0_prev)^2
@@ -89,8 +86,16 @@ estimateG0<-function(c_pvalue) {
   }
   
   G0_estimate<-G0[which.min(r)]
-  
   return(list(G0_estimate,lambda[which.min(r)]))
-  
-  
 }
+
+expected_values <- function(G,G0,alpha,selected_genes){
+  expected_FP <- min(G0*alpha, selected_genes)
+  expected_TP <- max(0, (selected_genes - expected_FP))
+  expected_TN <- G0 - expected_FP
+  expected_FN <- max(0,G-selected_genes-expected_TN)
+  
+  #return(expected_FN)
+  return (c(as.numeric(expected_FP),expected_TP,expected_TN,expected_FN))
+}
+

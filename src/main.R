@@ -283,7 +283,7 @@ colnames(disease_nodup)<-nomi
 #PROVA DI MARTI: ho provato a implementare edgeR; i gruppi sono due, quindi ho usato il primo
 #esempio di implemetazione di edgeR della professoressa (L11-EdgeR.Rmd, righe 96-158)
 
-#tutte le vairabili hanno nomi di prova, poi se va bene possiamo cambiarle
+#tutte le variabili hanno nomi di prova, poi se va bene possiamo cambiarle
 
 #unisco le due tabelle
 #sono diverse rispetto a quelle create prima perchè mi serve che abbiano tutti nomi diversi nelle colonne
