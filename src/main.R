@@ -70,90 +70,21 @@ for(i in 3:cols){
   dev.off()
 }
 
+#give names to dataNorm
+colnames(dataNorm)<-names((DATA[-1])[1,])
+
 # 6 - Remove the duplicated individuals
 
 normal <- LABELS[LABELS$sample_type == c("normal"),] # get all the normal samples
 unimuc <- LABELS[LABELS$sample_type == c("uninvolved mucosa"),] # get all the uninvolved mucosa samples
 control <- rbind(normal, unimuc) # concatenate them 
-
-# TODO sort 
+control<-control[order(as.numeric(control$individual)),] #sort in function of 'individual' value
 
 disease <- LABELS[LABELS$sample_type == c("colon sessile serrated adenoma/polyp"),] # get all the disease samples
 
-#TAKING CARE OF DUPLICATES FOR CONTROL
-duplicates <- duplicated(control$individual) # get the position of all the duplicated individual 
-#get only the duplicated
-duplicate_control <- control$individual[duplicates == TRUE]
-#find indexes in control of duplicated subjects
-d <- as.numeric(control$individual)
-#give names to dataNorm
-colnames(dataNorm)<-names((DATA[-1])[1,])
+control_nodup<-remove_duplicates(dataNorm,control) #Remove duplicates in control
 
-dim <- dim(control)
-control_nodup <- matrix(0,nrow(DATA),dim[1])
-#initialize a count because matrix at the end WON'T have same columns as dim[1]=41, the control SRR
-count<-0
-for (i in 1:length(duplicate_control))
-{
-  indexes <- which(d %in% duplicate_control[i])
-  #find samples of duplicated subjects, get the SRR code
-  seq_sample <- control[indexes,]$seq.sample
-  #mean of duplicated samples
-  control_nodup[,i] <- apply(dataNorm[, seq_sample], 1, mean)
-  count <- count+1;
-}
-
-#finding subjects NOT DUPLICATED
-'%notin%' <- Negate(`%in%`)
-ind<-which(d %notin% duplicate_control)
-
-for (i in 1:length(ind))
-{
-  
-  #find samples of duplicated subjects, get the SRR code
-  seq_sample<-control[ind[i],]$seq.sample
-  #mean of duplicated samples
-  control_nodup[,length(duplicate_control)+i]<-dataNorm[,seq_sample]
-  count<-count+1;
-}
-control_nodup<-control_nodup[,1:count]
-
-#Taking care of duplicates for disease
-
-duplicates <- duplicated(disease$individual) # get the position of all the duplicated individual 
-#get only the duplicated
-duplicate_disease <- disease$individual[duplicates == TRUE]
-#find indexes in disease of duplicated subjects
-d<-as.numeric(disease$individual)
-
-dim<-dim(disease)
-disease_nodup<-matrix(0,nrow(DATA),dim[1])
-#initialize a count beacuse matrix at the end WON'T have same columns as dim[1]=41, the control SRR
-count<-0
-for (i in 1:length(duplicate_disease))
-{
-  indexes<-which(d %in% duplicate_disease[i])
-  #find samples of duplicated subjects, get the SRR code
-  seq_sample<-disease[indexes,]$seq.sample
-  #mean of duplicated samples
-  disease_nodup[,i]<-apply(dataNorm[, seq_sample], 1, mean)
-  count<-count+1;
-}
-
-#finding subjects NOT DUPLICATED
-'%notin%' <- Negate(`%in%`)
-ind<-which(d %notin% duplicate_disease)
-for (i in 1:length(ind))
-{
-  #find samples of duplicated subjects, get the SRR code
-  seq_sample<-disease[ind[i],]$seq.sample
-  #mean of duplicated samples
-  disease_nodup[,length(duplicate_disease)+i]<-dataNorm[,seq_sample]
-  count<-count+1
-  
-}
-disease_nodup<-disease_nodup[,1:count]
-
+disease_nodup<-remove_duplicates(dataNorm,disease) #Remove duplicates in disease
 
 # 7 - Taking care of zeros in controls and diseased
 
@@ -173,7 +104,7 @@ disease_nodup_nozero<-disease_nodup[-index, ]
 Nc<-nrow(control_nodup_nozero)
 c_ttest_pvalue <- NULL
 c_wilcoxon_pvalue <- NULL
-alpha<-0.05
+
 selected_ttest<-0
 selected_wilcox<-0
 for(i in (1:Nc)){ 
@@ -181,50 +112,10 @@ for(i in (1:Nc)){
   c_wilcoxon_pvalue <- c(c_wilcoxon_pvalue,wilcox.test(control_nodup_nozero[i,],disease_nodup_nozero[i,], exact=FALSE)[[3]])
 }
 
-minori<-(c_ttest_pvalue<0.05)
-selected_ttest<-which(minori==TRUE)
-num_sel_ttest<-length(selected_ttest)
-minori<-(c_wilcoxon_pvalue<0.05 )
-selected_wilcox<-which(minori==TRUE)
-num_sel_wilcox<-length(selected_wilcox)
-
-# 9 - Preprocessing and EdgeR
+# 9 - Pre-processing and EdgeR
 
 #Rebuilt control matrix
-
-duplicates <- duplicated(control$individual) # get the position of all the duplicated individual 
-#get only the duplicated
-duplicate_control <- control$individual[duplicates == TRUE]
-#find indexes in control of duplicated subjects
-d <- as.numeric(control$individual)
-
-dim <- dim(control)
-control_nodup <- matrix(0,nrow(DATA),dim[1])
-#initialize a count because matrix at the end WON'T have same columns as dim[1]=41, the control SRR
-count<-0
-for (i in 1:length(duplicate_control))
-{
-  indexes <- which(d %in% duplicate_control[i])
-  #find samples of duplicated subjects, get the SRR code
-  seq_sample <- control[indexes,]$seq.sample
-  #mean of duplicated samples
-  control_nodup[,i] <- apply(DATA[, seq_sample], 1, mean)
-  count <- count+1;
-}
-
-#finding subjects NOT DUPLICATED
-'%notin%' <- Negate(`%in%`)
-ind<-which(d %notin% duplicate_control)
-
-for (i in 1:length(ind))
-{
-  #find samples of duplicated subjects, get the SRR code
-  seq_sample<-control[ind[i],]$seq.sample
-  #mean of duplicated samples
-  control_nodup[,length(duplicate_control)+i]<-DATA[,seq_sample]
-  count<-count+1;
-}
-control_nodup<-control_nodup[,1:count]
+control_nodup<-remove_duplicates(DATA,control)
 
 nomi<-rep("", count)
 for (i in (1:count))
@@ -234,42 +125,10 @@ for (i in (1:count))
 }
 colnames(control_nodup)<-nomi
 
-
 #Rebuilt disease matrix
 
-duplicates <- duplicated(disease$individual) # get the position of all the duplicated individual 
-#get only the duplicated
-duplicate_disease <- disease$individual[duplicates == TRUE]
-#find indexes in disease of duplicated subjects
-d<-as.numeric(disease$individual)
+disease_nodup<-remove_duplicates(DATA,disease)
 
-dim<-dim(disease)
-disease_nodup<-matrix(0,nrow(DATA),dim[1])
-#initialize a count because matrix at the end WON'T have same columns as dim[1]=41, the control SRR
-count<-0
-for (i in 1:length(duplicate_disease))
-{
-  indexes<-which(d %in% duplicate_disease[i])
-  #find samples of duplicated subjects, get the SRR code
-  seq_sample<-disease[indexes,]$seq.sample
-  #mean of duplicated samples
-  disease_nodup[,i]<-apply(DATA[, seq_sample], 1, mean)
-  count<-count+1;
-}
-
-#finding subjects NOT DUPLICATED
-'%notin%' <- Negate(`%in%`)
-ind<-which(d %notin% duplicate_disease)
-for (i in 1:length(ind))
-{
-  #find samples of duplicated subjects, get the SRR code
-  seq_sample<-disease[ind[i],]$seq.sample
-  #mean of duplicated samples
-  disease_nodup[,length(duplicate_disease)+i]<-DATA[,seq_sample]
-  count<-count+1
-  
-}
-disease_nodup<-disease_nodup[,1:count]
 nomi<-rep("", count)
 for (i in (1:count))
 {
@@ -288,24 +147,24 @@ colnames(disease_nodup)<-nomi
 #sono diverse rispetto a quelle create prima perchè mi serve che abbiano tutti nomi diversi nelle colonne
 #del tipo "control_1", "control_2" ecc ecc
 
-prova<- cbind(disease_nodup, control_nodup)
+prova <- cbind(disease_nodup, control_nodup)
 library(edgeR)
 
 # creo i gruppi che poi mi serviranno per definire "group"; di base mi serve solo che mi separino
 #ciò che c'è in tabella in control e disease
 #sono due vettori
-gruppo_controllo<-rep("control",dim(control_nodup)[2])
-gruppo_malato<-rep("disease",dim(disease_nodup)[2])
+gruppo_controllo <- rep("control",dim(control_nodup)[2])
+gruppo_malato <- rep("disease",dim(disease_nodup)[2])
 
 #li unisco, mi serve vettore unico per usare factor
-gruppo<-cbind(t(as.data.frame(gruppo_malato)),t(as.data.frame(gruppo_controllo)))
+gruppo <- cbind(t(as.data.frame(gruppo_malato)),t(as.data.frame(gruppo_controllo)))
 
 #uso factor(), ottengo un oggetto diviso in due livelli (contorl e disease), come ci serve
-groupProva<- factor(gruppo)
+groupProva <- factor(gruppo)
 
 #matrice di design
 designprova <- model.matrix(~0+groupProva) 
-rownames(designprova)<-colnames(prova)  
+rownames(designprova) <- colnames(prova)  
 print(designprova)
 
 
@@ -333,31 +192,48 @@ RES$table[1:5,]
 out <- topTags(RES, n = "Inf")$table
 out[1:5,]
 
+# 10 - Selection of the genes for alpha = 0.05
+
+alpha<-0.05
+
+minori<-(c_ttest_pvalue<alpha)
+selected_ttest<-which(minori==TRUE)
+num_sel_ttest<-length(selected_ttest)
+
+minori<-(c_wilcoxon_pvalue<alpha)
+selected_wilcox<-which(minori==TRUE)
+num_sel_wilcox<-length(selected_wilcox)
+
 #selected usando edgeR e il suo FDR... credo non possiamo, ma giusto per capire
 indSELedgeR<-which(out$FDR<0.05) #i selected
 print(length(indSELedgeR))
 
-#------- AGGIUNGERE A PARTIRE DAL TEST (da out) LA PARTE DI STIMA DEI FP,FN,TP,TN
-#-------- AGGIUNGERE G0 ESTIMATION
-
-
-#-----------------------------------------------------
-
-# 10 - E[FP] and E[FN] for t-test and Wilcoxon test with G0 = G
+# 11 - E[FP] and E[FN] for t-test and Wilcoxon test with G0 = G
 
 G<-nrow(control_nodup_nozero)
 G0<-G
-alpha<-0.05
 
 #function that returns a vector with, in order, TP FP TN FN
 expected_ttest <- expected_values(G, G0, alpha, num_sel_ttest)
 expected_wilcoxontest <- expected_values(G, G0, alpha, num_sel_wilcox)
+expected_edger <- expected_values(G, G0, alpha, indSELedgeR)
 
-# 11 - Estimate G0 and re-estimate FP and FN
+# 12 - Estimate G0 and re-estimate FP and FN
 
 res <- estimateG0(c_ttest_pvalue)
-G0_est <- res[[1]]
+G0_est_ttest <- res[[1]]
 lambda_est <- res[[2]]
 
-expected_ttest_est <- expected_values(G, G0_est, alpha, num_sel_ttest)
-expected_wilcoxontest_est <- expected_values(G, G0_est, alpha, num_sel_wilcox)
+expected_ttest_est <- expected_values(G, G0_est_ttest, alpha, num_sel_ttest)
+
+res <- estimateG0(c_wilcoxon_pvalue)
+G0_est_wilcoxontest <- res[[1]]
+lambda_est <- res[[2]]
+
+expected_wilcoxontest_est <- expected_values(G, G0_est_wilcoxontest, alpha, num_sel_wilcox)
+
+res <- estimateG0(out[,5])
+G0_est_edger <- res[[1]]
+lambda_est <- res[[2]]
+
+expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, num_sel_wilcox)

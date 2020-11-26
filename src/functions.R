@@ -61,6 +61,47 @@ quantile_normalization <- function(DATA){
   return(dataNorm)
 }
 
+#function that removes duplicated in the 'individual' column
+remove_duplicates <- function (data, group){
+  #TAKING CARE OF DUPLICATES FOR GROUP
+  duplicates <- duplicated(group$individual) # get the position of all the duplicated individual 
+  #get only the duplicated
+  duplicate_group <- group$individual[duplicates == TRUE]
+  #find indexes in group of duplicated subjects
+  d <- as.numeric(group$individual)
+  
+  dim <- dim(group)
+  group_nodup <- matrix(0,nrow(data),dim[1])
+  #initialize a count because matrix at the end WON'T have same columns as dim[1]=41, the group SRR
+  count<-0
+  for (i in 1:length(duplicate_group))
+  {
+    indexes <- which(d %in% duplicate_group[i])
+    #find samples of duplicated subjects, get the SRR code
+    seq_sample <- group[indexes,]$seq.sample
+    #mean of duplicated samples
+    group_nodup[,i] <- apply(data[, seq_sample], 1, mean)
+    count <- count+1;
+  }
+  
+  #finding subjects NOT DUPLICATED
+  '%notin%' <- Negate(`%in%`)
+  ind<-which(d %notin% duplicate_group)
+  
+  for (i in 1:length(ind))
+  {
+    
+    #find samples of duplicated subjects, get the SRR code
+    seq_sample<-group[ind[i],]$seq.sample
+    #mean of duplicated samples
+    group_nodup[,length(duplicate_group)+i]<-data[,seq_sample]
+    count<-count+1;
+  }
+  
+  group_nodup<-group_nodup[,1:count]
+  return(group_nodup)
+}
+
 estimateG0<-function(c_pvalue) {
   lambda<-seq(0, 1, 0.01)
   i<-1
@@ -72,7 +113,7 @@ estimateG0<-function(c_pvalue) {
     
     l<-lambda[i]
     
-    minori<-(c_pvalue<l )
+    minori<-(c_pvalue<l)
     selected<-which(minori==TRUE)
     num_sel<-length(selected)
 
