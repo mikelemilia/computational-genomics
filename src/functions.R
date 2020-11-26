@@ -108,8 +108,8 @@ estimateG0<-function(c_pvalue) {
   G0_prev<-0
   G0<-vector("integer",length(length(lambda)))
   r<-vector("integer",length(length(lambda)))
-  convergenza<-0
-  while (convergenza==0 & i<length(lambda)) {
+  
+  while (i<length(lambda)) {
     
     l<-lambda[i]
     
@@ -124,6 +124,7 @@ estimateG0<-function(c_pvalue) {
     G0_prev<-G0[i]
     
     i<-i+1
+    
   }
   
   G0_estimate<-G0[which.min(r)]
