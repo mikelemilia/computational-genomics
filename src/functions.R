@@ -94,8 +94,7 @@ expected_values <- function(G,G0,alpha,selected_genes){
   expected_TP <- max(0, (selected_genes - expected_FP))
   expected_TN <- G0 - expected_FP
   expected_FN <- max(0,G-selected_genes-expected_TN)
-  
-  #return(expected_FN)
-  return (c(as.numeric(expected_FP),expected_TP,expected_TN,expected_FN))
+
+  return (c(expected_TP,expected_FP,expected_TN,expected_FN))
 }
 

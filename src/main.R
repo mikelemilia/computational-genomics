@@ -181,7 +181,7 @@ for(i in (1:Nc)){
   c_wilcoxon_pvalue <- c(c_wilcoxon_pvalue,wilcox.test(control_nodup_nozero[i,],disease_nodup_nozero[i,], exact=FALSE)[[3]])
 }
 
-minori<-(c_ttest_pvalue<0.05 )
+minori<-(c_ttest_pvalue<0.05)
 selected_ttest<-which(minori==TRUE)
 num_sel_ttest<-length(selected_ttest)
 minori<-(c_wilcoxon_pvalue<0.05 )
@@ -218,7 +218,6 @@ ind<-which(d %notin% duplicate_control)
 
 for (i in 1:length(ind))
 {
-  
   #find samples of duplicated subjects, get the SRR code
   seq_sample<-control[ind[i],]$seq.sample
   #mean of duplicated samples
@@ -230,7 +229,7 @@ control_nodup<-control_nodup[,1:count]
 nomi<-rep("", count)
 for (i in (1:count))
 {
-  x<-paste("control",as.character(i) , sep='_')
+  x<-paste("control",as.character(i),sep='_')
   nomi[i]<-x
 }
 colnames(control_nodup)<-nomi
@@ -274,7 +273,7 @@ disease_nodup<-disease_nodup[,1:count]
 nomi<-rep("", count)
 for (i in (1:count))
 {
-  x<-paste("disease",as.character(i) , sep='_')
+  x<-paste("disease",as.character(i),sep='_')
   nomi[i]<-x
 }
 colnames(disease_nodup)<-nomi
@@ -343,24 +342,22 @@ print(length(indSELedgeR))
 
 
 #-----------------------------------------------------
+
 # 10 - E[FP] and E[FN] for t-test and Wilcoxon test with G0 = G
 
 G<-nrow(control_nodup_nozero)
 G0<-G
 alpha<-0.05
-expected_FP_ttest<-min(G0*alpha, num_sel_ttest)
-expected_TP_ttest<-max(0, (num_sel_ttest - expected_FP_ttest))
-expected_TN_ttest<-G0 - expected_FP_ttest
-expected_FN_ttest<- max(0,G -num_sel_ttest- expected_TN_ttest)
 
-expected_FP_wilcox<-min(G0*alpha, num_sel_wilcox)
-expected_TP_wilcox<-max(0, (num_sel_wilcox - expected_FP_wilcox))
-expected_TN_wilcox<-G0 - expected_FP_wilcox
-expected_FN_wilcox<-max(0,G-num_sel_wilcox - expected_TN_wilcox)
-
+#function that returns a vector with, in order, TP FP TN FN
+expected_ttest <- expected_values(G, G0, alpha, num_sel_ttest)
+expected_wilcoxontest <- expected_values(G, G0, alpha, num_sel_wilcox)
 
 # 11 - Estimate G0 and re-estimate FP and FN
 
 res <- estimateG0(c_ttest_pvalue)
 G0_est <- res[[1]]
 lambda_est <- res[[2]]
+
+expected_ttest_est <- expected_values(G, G0_est, alpha, num_sel_ttest)
+expected_wilcoxontest_est <- expected_values(G, G0_est, alpha, num_sel_wilcox)
