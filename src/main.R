@@ -83,21 +83,13 @@ control<-control[order(as.numeric(control$individual)),] #sort in function of 'i
 disease <- LABELS[LABELS$sample_type == c("colon sessile serrated adenoma/polyp"),] # get all the disease samples
 
 control_nodup<-remove_duplicates(dataNorm,control) #Remove duplicates in control
-
 disease_nodup<-remove_duplicates(dataNorm,disease) #Remove duplicates in disease
 
 # 7 - Taking care of zeros in controls and diseased
 
-control_forcomparison<-apply(control_nodup, 1, sum)
-disease_forcomparison<-apply(disease_nodup, 1, sum)
-vec_for_comparison<-as.data.frame(control_forcomparison+disease_forcomparison)
-#usare i quantili PER TROVARE SOGLIA 
-q<-quantile(unlist(vec_for_comparison))
-#median<-median(unlist(vec_for_comparison)) USANDO MEDIANA? TROPPO POCHI NE RESTANO
-YN<-as.data.frame(vec_for_comparison>q[1])
-index<-which(YN==FALSE) #indici di quelli da togliere
-control_nodup_nozero<-(control_nodup[-index,])
-disease_nodup_nozero<-disease_nodup[-index, ]
+groups_nozero <- remove_zeros(control_nodup,disease_nodup)
+control_nodup_nozero<-groups_nozero[[1]]
+disease_nodup_nozero<-groups_nozero[[2]]
 
 # 8 - t-test and Wilcoxon test
 
@@ -117,6 +109,7 @@ for(i in (1:Nc)){
 #Rebuilt control matrix
 control_nodup<-remove_duplicates(DATA,control)
 
+count<-ncol(control_nodup)
 nomi<-rep("", count)
 for (i in (1:count))
 {
@@ -129,6 +122,7 @@ colnames(control_nodup)<-nomi
 
 disease_nodup<-remove_duplicates(DATA,disease)
 
+count<-ncol(disease_nodup)
 nomi<-rep("", count)
 for (i in (1:count))
 {
@@ -205,7 +199,7 @@ selected_wilcox<-which(minori==TRUE)
 num_sel_wilcox<-length(selected_wilcox)
 
 #selected usando edgeR e il suo FDR... credo non possiamo, ma giusto per capire
-indSELedgeR<-which(out$FDR<0.05) #i selected
+indSELedgeR<-which(out$PValue<alpha) #i selected
 print(length(indSELedgeR))
 
 # 11 - E[FP] and E[FN] for t-test and Wilcoxon test with G0 = G
@@ -236,4 +230,34 @@ res <- estimateG0(out[,5])
 G0_est_edger <- res[[1]]
 lambda_est <- res[[2]]
 
-expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, num_sel_wilcox)
+expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, indSELedgeR)
+
+# 13 - Select the final list of DE genes and FDR = 5%
+
+FDR <- 0.05
+#values observed as p-value in edgeR (test scelto)
+lambda<-seq(min(out[,4]), max(out[,4]), (max(out[,4])-min(out[,4]))/nrow(out))
+FDR_values<-NULL
+
+for (i in (1:length(lambda))) {
+  #compute FDR for every lambda
+  minori<-(out[,4]<lambda[i])
+  num_sel<-length(which(minori==TRUE))
+  
+  expected_val <- expected_values(G, G0_est_edger, lambda[i], num_sel)
+  
+  if (num_sel==0){
+    FDR_values<-c(FDR_values,0)} 
+  else {
+    FDR_values<-c(FDR_values,(expected_val[2]/num_sel))}
+}
+
+plot(lambda,FDR_values)
+
+#choose the values that are in [0.05-epsilon;0.05+espilon]
+#non possiamo usare = 0.05 perchè nessuno lo ritorna esattamente
+epsilon <- 0.0001
+alpha_index <- which(FDR_values>=0.05-epsilon)
+alpha_index2 <- which(FDR_values<=0.05+epsilon)
+alpha_est <- mean(lambda[intersect(alpha_index,alpha_index2)])
+
