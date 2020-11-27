@@ -102,6 +102,7 @@ remove_duplicates <- function (data, group){
   return(group_nodup)
 }
 
+#functions to remove rows where there are only 0 in the two groups (matrixes)
 remove_zeros <- function(group1,group2){
   group1_forcomparison<-apply(group1, 1, sum)
   group2_forcomparison<-apply(group2, 1, sum)

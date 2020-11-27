@@ -261,3 +261,8 @@ alpha_index <- which(FDR_values>=0.05-epsilon)
 alpha_index2 <- which(FDR_values<=0.05+epsilon)
 alpha_est <- mean(lambda[intersect(alpha_index,alpha_index2)])
 
+indexes<-which(out$PValue<alpha_est) #i selected
+index_genes_selected<-sort(as.numeric(rownames(out[indexes,])))
+names_genes_selected<-DATA[index_genes_selected,1]
+number_genes_selected<-length(names_genes_selected)
+
