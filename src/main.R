@@ -226,7 +226,7 @@ lambda_est <- res[[2]]
 
 expected_wilcoxontest_est <- expected_values(G, G0_est_wilcoxontest, alpha, num_sel_wilcox)
 
-res <- estimateG0(out[,5])
+res <- estimateG0(out[,4])
 G0_est_edger <- res[[1]]
 lambda_est <- res[[2]]
 
