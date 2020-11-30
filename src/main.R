@@ -141,7 +141,7 @@ colnames(disease_nodup)<-nomi
 #sono diverse rispetto a quelle create prima perchè mi serve che abbiano tutti nomi diversi nelle colonne
 #del tipo "control_1", "control_2" ecc ecc
 
-prova <- cbind(disease_nodup, control_nodup)
+mat <- cbind(disease_nodup, control_nodup)
 library(edgeR)
 
 # creo i gruppi che poi mi serviranno per definire "group"; di base mi serve solo che mi separino
@@ -154,27 +154,27 @@ gruppo_malato <- rep("disease",dim(disease_nodup)[2])
 gruppo <- cbind(t(as.data.frame(gruppo_malato)),t(as.data.frame(gruppo_controllo)))
 
 #uso factor(), ottengo un oggetto diviso in due livelli (contorl e disease), come ci serve
-groupProva <- factor(gruppo)
+group <- factor(gruppo)
 
 #matrice di design
-designprova <- model.matrix(~0+groupProva) 
-rownames(designprova) <- colnames(prova)  
-print(designprova)
+design <- model.matrix(~0+group) 
+rownames(design) <- colnames(mat)  
+print(design)
 
 
 # fit values of phi (we need this step to fit our GLM model)
-yprova <- DGEList(counts=prova, remove.zeros = TRUE)    # y is an object of type DGE
-yprova <- calcNormFactors(yprova)   # This calculates the SF using the TMM normalization !!!
-SF<-yprova$samples
+y <- DGEList(counts=mat, remove.zeros = TRUE)    # y is an object of type DGE
+y <- calcNormFactors(y)   # This calculates the SF using the TMM normalization !!!
+SF<-y$samples
 
-y <- estimateGLMCommonDisp(yprova,designprova, verbose=TRUE) #phi common to the entire dataset
-y <- estimateGLMTrendedDisp(y,designprova) #phi depends on mu
-y <- estimateGLMTagwiseDisp(y,designprova) #phi is gene specific
-fit <- glmFit(y,designprova) #finally the model fit (that accounts for raw NB data and scaling factors and seq. depth) 
+y <- estimateGLMCommonDisp(y,design, verbose=TRUE) #phi common to the entire dataset
+y <- estimateGLMTrendedDisp(y,design) #phi depends on mu
+y <- estimateGLMTagwiseDisp(y,design) #phi is gene specific
+fit <- glmFit(y,design) #finally the model fit (that accounts for raw NB data and scaling factors and seq. depth) 
 summary(fit)
 
 #il test
-Confronti<-makeContrasts(Treatment=groupProvadisease-groupProvacontrol,levels=designprova)
+Confronti<-makeContrasts(Treatment=groupdisease-groupcontrol,levels=design)
 RES<-glmLRT(fit,contrast=Confronti[,"Treatment"])
 
 #alcuni output
@@ -198,7 +198,7 @@ minori<-(c_wilcoxon_pvalue<alpha)
 selected_wilcox<-which(minori==TRUE)
 num_sel_wilcox<-length(selected_wilcox)
 
-#selected usando edgeR e il suo FDR... credo non possiamo, ma giusto per capire
+#selected usando edgeR 
 indSELedgeR<-which(out$PValue<alpha) #i selected
 print(length(indSELedgeR))
 
