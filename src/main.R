@@ -275,7 +275,8 @@ library(org.Hs.eg.db)
 
 alldata <- select(org.Hs.eg.db, names_genes_selected, columns = c("SYMBOL","ENTREZID","GOALL"), keytype="SYMBOL")
 terms <- unique(alldata[,3])
-matrixes<-NULL
+terms <- terms[!is.na(terms)]
+matrixes <- NULL
 
 for (i in (1:length(terms))){
   GOterm <- terms[i]
@@ -284,14 +285,11 @@ for (i in (1:length(terms))){
   b <- number_genes_selected - a
   c <- length(GOterm_indexes) - a
   d <- length(names_genes_notselected)- c
-  #matrice che ha nelle righe i GOterms associati e nelle colonne i valori di a,b,c,d per il fisher test 
-  matrixes <- rbind(matrixes,as.vector(c(a,b,c,d)))
+  type<-alldata[(which(alldata[,3]==GOterm))[1],5]
+  #matrice che ha nelle righe i GOterms associati e nelle colonne il tipo di GOterm e i valori di a,b,c,d per il fisher test 
+  matrixes <- rbind(matrixes,c(type,a,b,c,d))
 }
 
 row.names(matrixes)<-terms
-#aggiunta del CC, BP e MF a ciascuna riga
-matrixes<-cbind(alldata[,5],matrixes)
-colnames(matrixes)<-c("type","a","b","c","d")
 matrixes<-matrixes[order(rownames(matrixes)),]
 
-#unico dubbio:alla fine di Matrixes c'è un NA, ma non capisco da cosa sia dovuto
