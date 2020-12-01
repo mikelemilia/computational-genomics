@@ -106,7 +106,7 @@ for(i in (1:Nc)){
 
 # 9 - Pre-processing and EdgeR
 
-#Rebuilt control matrix
+#Rebuilt control matrix with initial data (not normalized)
 control_nodup<-remove_duplicates(DATA,control)
 
 count<-ncol(control_nodup)
@@ -118,7 +118,7 @@ for (i in (1:count))
 }
 colnames(control_nodup)<-nomi
 
-#Rebuilt disease matrix
+#Rebuilt disease matrix with initial data (not normalized)
 
 disease_nodup<-remove_duplicates(DATA,disease)
 
@@ -132,15 +132,8 @@ for (i in (1:count))
 colnames(disease_nodup)<-nomi
 
 #------------------------- edgeR-----------------------------------
-#PROVA DI MARTI: ho provato a implementare edgeR; i gruppi sono due, quindi ho usato il primo
-#esempio di implemetazione di edgeR della professoressa (L11-EdgeR.Rmd, righe 96-158)
-
-#tutte le variabili hanno nomi di prova, poi se va bene possiamo cambiarle
 
 #unisco le due tabelle
-#sono diverse rispetto a quelle create prima perchè mi serve che abbiano tutti nomi diversi nelle colonne
-#del tipo "control_1", "control_2" ecc ecc
-
 mat <- cbind(disease_nodup, control_nodup)
 library(edgeR)
 
@@ -160,7 +153,6 @@ group <- factor(gruppo)
 design <- model.matrix(~0+group) 
 rownames(design) <- colnames(mat)  
 print(design)
-
 
 # fit values of phi (we need this step to fit our GLM model)
 y <- DGEList(counts=mat, remove.zeros = TRUE)    # y is an object of type DGE
@@ -199,8 +191,7 @@ selected_wilcox<-which(minori==TRUE)
 num_sel_wilcox<-length(selected_wilcox)
 
 #selected usando edgeR 
-indSELedgeR<-which(out$PValue<alpha) #i selected
-print(length(indSELedgeR))
+indSELedgeR<-length(which(out$PValue<alpha)) #i selected
 
 # 11 - E[FP] and E[FN] for t-test and Wilcoxon test with G0 = G
 
@@ -293,3 +284,11 @@ for (i in (1:length(terms))){
 row.names(matrixes)<-terms
 matrixes<-matrixes[order(rownames(matrixes)),]
 
+matrixesCC <- matrixes[which(matrixes[,1]=="CC"),]
+matrixesBP <- matrixes[which(matrixes[,1]=="BP"),]
+matrixesMF <- matrixes[which(matrixes[,1]=="MF"),]
+
+#da capire se si può usare e perchè non funziona
+mat<-matrix(c(matrixesCC[1,2],matrixesCC[1,4],matrixesCC[1,3],matrixesCC[1,5]),2,2)
+res<-fisher.test(mat, alternative="greater")
+pval<-res$p.value
