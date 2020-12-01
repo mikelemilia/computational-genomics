@@ -291,5 +291,4 @@ matrixesMF <- matrixes[which(matrixes[,1]=="MF"),]
 #da capire se si può usare e perchè non funziona
 mat<-matrix(c(matrixesCC[1,2],matrixesCC[1,4],matrixesCC[1,3],matrixesCC[1,5]),2,2)
 res<-fisher.test(mat, alternative="greater")
-
 pval<-res$p.value
