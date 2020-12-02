@@ -12,7 +12,7 @@ tmm_normalization <- function(DATA, refsample){
   M <- matrix(0, nrow = length(ref), ncol = 1)
   norm <- matrix(ref, nrow = dim(DATA)[1], ncol = 1)
   
-  for (i in (3:ncol(DATA[-1])))
+  for (i in 3:ncol(DATA))
   {
     temp <- DATA[i]+1
     temp <- unlist(temp,use.names=FALSE)
@@ -118,7 +118,7 @@ remove_zeros <- function(group1,group2){
   return(list(group1_nozero,group2_nozero))
 }
 
-estimateG0<-function(c_pvalue) {
+estimateG0<-function(c_pvalue, G, filename) {
   lambda<-seq(0, 1, 0.01)
   i<-1
   G0_prev<-0
@@ -144,7 +144,16 @@ estimateG0<-function(c_pvalue) {
   }
   
   G0_estimate<-G0[which.min(r)]
-  return(list(G0_estimate,lambda[which.min(r)]))
+  lambda_estimate <- lambda[which.min(r)]
+  
+  # plot the estimates
+  png(file = paste(getPlotPath(filename, "G0 estimate"), ".png", sep = ""))
+  plot(lambda, G0/G, xlab="lambda", ylab="G0", main=filename)
+  points(lambda_estimate, G0_estimate/G, col= "red")
+  dev.off()
+  
+  
+  return(list(G0_estimate,lambda_estimate))
 }
 
 expected_values <- function(G,G0,alpha,selected_genes){
