@@ -257,7 +257,7 @@ index_genes_selected<-sort(as.numeric(rownames(out[indexes,])))
 names_genes_selected<-DATA[index_genes_selected,1]
 number_genes_selected<-length(names_genes_selected)
 names_genes_notselected <- DATA[-index_genes_selected,1]
-
+number_genes_notselected<-length(names_genes_notselected)
 # 14 - estrazione di tutti i GOterm associati ai geni selezionati e creazione delle tabelle associate  
 
 library(AnnotationDbi)
