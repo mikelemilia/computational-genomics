@@ -156,3 +156,18 @@ expected_values <- function(G,G0,alpha,selected_genes){
   return (c(expected_TP,expected_FP,expected_TN,expected_FN))
 }
 
+fisher_test_matrixes <- function(matrixes){
+  pval<-NULL
+  for (i in (1:dim(matrixes)[1]))
+  {
+    a<-as.integer(matrixes[i,2])
+    b<-as.integer(matrixes[i,3])
+    c<-as.integer(matrixes[i,4])
+    d<-as.integer(matrixes[i,5])
+    m<-matrix(c(a,c,b,d), 2, 2)
+    res<-fisher.test(m, alternative="greater")
+    pval<-rbind(pval,res$p.value)
+  } 
+  return (pval)
+}
+  

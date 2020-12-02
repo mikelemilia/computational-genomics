@@ -269,6 +269,8 @@ terms <- unique(alldata[,3])
 terms <- terms[!is.na(terms)]
 matrixes <- NULL
 
+#TODO: eliminare da tutte le liste i geni non annotati
+
 for (i in (1:length(terms))){
   GOterm <- terms[i]
   GOterm_indexes <- which(alldata$GOALL==GOterm)
@@ -281,52 +283,19 @@ for (i in (1:length(terms))){
   matrixes <- rbind(matrixes,c(type,a,b,c,d))
 }
 
-row.names(matrixes)<-terms
+colnames(matrixes)<-c("type","a","b","c","d")
+rownames(matrixes)<-terms
 matrixes<-matrixes[order(rownames(matrixes)),]
 
+# 15 - divisione delle tabelle per type e computazione del fisher test
+
 matrixesCC <- matrixes[which(matrixes[,1]=="CC"),]
+colnames(matrixesCC)<-c("type","a","b","c","d")
 matrixesBP <- matrixes[which(matrixes[,1]=="BP"),]
+colnames(matrixesBP)<-c("type","a","b","c","d")
 matrixesMF <- matrixes[which(matrixes[,1]=="MF"),]
+colnames(matrixesMF)<-c("type","a","b","c","d")
 
-#------------ da capire se si può usare ------------------------
-pval_fisherCC<-NULL
-
-for (i in (1:dim(matrixesCC)[1]))
-{
-  a<-as.integer(matrixesCC[i,2])
-  b<-as.integer(matrixesCC[i,3])
-  c<-as.integer(matrixesCC[i,4])
-  d<-as.integer(matrixesCC[i,5])
-  m<-matrix(c(a,c,b,d), 2, 2)
-  res<-fisher.test(m, alternative="greater")
-  pval_fisherCC<-rbind(pval_fisherCC,res$p.value)
-  
-}
-
-pval_fisherBP<-NULL
-
-for (i in (1:dim(matrixesBP)[1]))
-{
-  a<-as.integer(matrixesBP[i,2])
-  b<-as.integer(matrixesBP[i,3])
-  c<-as.integer(matrixesBP[i,4])
-  d<-as.integer(matrixesBP[i,5])
-  m<-matrix(c(a,c,b,d), 2, 2)
-  res<-fisher.test(m, alternative="greater")
-  pval_fisherBP<-rbind(pval_fisherBP,res$p.value)
-  
-}
-
-pval_fisherMF<-NULL
-
-for (i in (1:dim(matrixesCC)[1]))
-{
-  a<-as.integer(matrixesMF[i,2])
-  b<-as.integer(matrixesMF[i,3])
-  c<-as.integer(matrixesMF[i,4])
-  d<-as.integer(matrixesMF[i,5])
-  m<-matrix(c(a,c,b,d), 2, 2)
-  res<-fisher.test(m, alternative="greater")
-  pval_fisherMF<-rbind(pval_fisherMF,res$p.value)
-  
-} 
+pval_fisherCC<-fisher_test_matrixes(matrixesCC)
+pval_fisherBP<-fisher_test_matrixes(matrixesBP)
+pval_fisherMF<-fisher_test_matrixes(matrixesMF)
