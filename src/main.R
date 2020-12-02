@@ -41,9 +41,9 @@ normed <- tmm_normalization(DATA[-1],indsample)
 dataNorm <- normed[[3]]
 
 for(i in 3:cols) {
-  png(file = paste(getPlotPath(i-2, "MvA - TMM Normalized"), ".png", sep = ""))
+  png(file = paste(getPlotPath(i-2, "MvA - TMM Normalization"), ".png", sep = ""))
   
-  plot(normed[[2]][,i], normed[[1]][,i], ylab="M",xlab="A",main=paste("MvA Plot", i-2, sep =" "))
+  plot(normed[[2]][,i], normed[[1]][,i], ylab="M",xlab="A",main=paste("MvA - TMM Plot", i-2, sep =" "))
   abline(0,0)
   
   dev.off()
@@ -54,7 +54,7 @@ for(i in 3:cols) {
 dataNorm <- quantile_normalization(DATA[-1])
 
 for(i in 3:cols){
-  png(file = paste(getPlotPath(i-2, "MvA - Quantile Normalized"), ".png", sep = ""))
+  png(file = paste(getPlotPath(i-2, "MvA - Quantile Normalization"), ".png", sep = ""))
   
   # select the i-th element
   selected <- dataNorm[,i] + 1
@@ -64,7 +64,7 @@ for(i in 3:cols){
   M <- cbind(M, result[[1]])
   A <- cbind(A, result[[2]])
   
-  plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA Plot", i-2, sep =" "))
+  plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA - Quantile Plot", i-2, sep =" "))
   abline(0,0)
   
   dev.off()
@@ -288,45 +288,7 @@ matrixesCC <- matrixes[which(matrixes[,1]=="CC"),]
 matrixesBP <- matrixes[which(matrixes[,1]=="BP"),]
 matrixesMF <- matrixes[which(matrixes[,1]=="MF"),]
 
-#------------ da capire se si può usare ------------------------
-pval_fisherCC<-NULL
-
-for (i in (1:dim(matrixesCC)[1]))
-{
-  a<-as.integer(matrixesCC[i,2])
-  b<-as.integer(matrixesCC[i,3])
-  c<-as.integer(matrixesCC[i,4])
-  d<-as.integer(matrixesCC[i,5])
-  m<-matrix(c(a,c,b,d), 2, 2)
-  res<-fisher.test(m, alternative="greater")
-  pval_fisherCC<-rbind(pval_fisherCC,res$p.value)
-  
-}
-
-pval_fisherBP<-NULL
-
-for (i in (1:dim(matrixesBP)[1]))
-{
-  a<-as.integer(matrixesBP[i,2])
-  b<-as.integer(matrixesBP[i,3])
-  c<-as.integer(matrixesBP[i,4])
-  d<-as.integer(matrixesBP[i,5])
-  m<-matrix(c(a,c,b,d), 2, 2)
-  res<-fisher.test(m, alternative="greater")
-  pval_fisherBP<-rbind(pval_fisherBP,res$p.value)
-  
-}
-
-pval_fisherMF<-NULL
-
-for (i in (1:dim(matrixesCC)[1]))
-{
-  a<-as.integer(matrixesMF[i,2])
-  b<-as.integer(matrixesMF[i,3])
-  c<-as.integer(matrixesMF[i,4])
-  d<-as.integer(matrixesMF[i,5])
-  m<-matrix(c(a,c,b,d), 2, 2)
-  res<-fisher.test(m, alternative="greater")
-  pval_fisherMF<-rbind(pval_fisherMF,res$p.value)
-  
-}
+#da capire se si può usare e perchè non funziona
+mat<-matrix(c(matrixesCC[1,2],matrixesCC[1,4],matrixesCC[1,3],matrixesCC[1,5]),2,2)
+res<-fisher.test(mat, alternative="greater")
+pval<-res$p.value
