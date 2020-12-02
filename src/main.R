@@ -288,7 +288,45 @@ matrixesCC <- matrixes[which(matrixes[,1]=="CC"),]
 matrixesBP <- matrixes[which(matrixes[,1]=="BP"),]
 matrixesMF <- matrixes[which(matrixes[,1]=="MF"),]
 
-#da capire se si può usare e perchè non funziona
-mat<-matrix(c(matrixesCC[1,2],matrixesCC[1,4],matrixesCC[1,3],matrixesCC[1,5]),2,2)
-res<-fisher.test(mat, alternative="greater")
-pval<-res$p.value
+#------------ da capire se si può usare ------------------------
+pval_fisherCC<-NULL
+
+for (i in (1:dim(matrixesCC)[1]))
+{
+  a<-as.integer(matrixesCC[i,2])
+  b<-as.integer(matrixesCC[i,3])
+  c<-as.integer(matrixesCC[i,4])
+  d<-as.integer(matrixesCC[i,5])
+  m<-matrix(c(a,c,b,d), 2, 2)
+  res<-fisher.test(m, alternative="greater")
+  pval_fisherCC<-rbind(pval_fisherCC,res$p.value)
+  
+}
+
+pval_fisherBP<-NULL
+
+for (i in (1:dim(matrixesBP)[1]))
+{
+  a<-as.integer(matrixesBP[i,2])
+  b<-as.integer(matrixesBP[i,3])
+  c<-as.integer(matrixesBP[i,4])
+  d<-as.integer(matrixesBP[i,5])
+  m<-matrix(c(a,c,b,d), 2, 2)
+  res<-fisher.test(m, alternative="greater")
+  pval_fisherBP<-rbind(pval_fisherBP,res$p.value)
+  
+}
+
+pval_fisherMF<-NULL
+
+for (i in (1:dim(matrixesCC)[1]))
+{
+  a<-as.integer(matrixesMF[i,2])
+  b<-as.integer(matrixesMF[i,3])
+  c<-as.integer(matrixesMF[i,4])
+  d<-as.integer(matrixesMF[i,5])
+  m<-matrix(c(a,c,b,d), 2, 2)
+  res<-fisher.test(m, alternative="greater")
+  pval_fisherMF<-rbind(pval_fisherMF,res$p.value)
+  
+} 
