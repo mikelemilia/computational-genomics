@@ -125,7 +125,7 @@ estimateG0<-function(c_pvalue, G, filename) {
   G0<-vector("integer",length(length(lambda)))
   r<-vector("integer",length(length(lambda)))
   
-  while (i<length(lambda)) {
+  while (i<=length(lambda)) {
     
     l<-lambda[i]
     

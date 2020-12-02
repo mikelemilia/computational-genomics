@@ -264,12 +264,63 @@ library(AnnotationDbi)
 library(GO.db)
 library(org.Hs.eg.db)
 
+#TODO: eliminare da tutte le liste i geni non annotati
+
 alldata <- select(org.Hs.eg.db, names_genes_selected, columns = c("SYMBOL","ENTREZID","GOALL"), keytype="SYMBOL")
+GOALL_NA<-which(is.na(alldata$GOALL))
+names_goall_na<-alldata$SYMBOL[GOALL_NA]
+alldata<-alldata[-GOALL_NA]
+GOALL_NA<-unique(GOALL_NA)
 terms <- unique(alldata[,3])
 terms <- terms[!is.na(terms)]
+
+
+for(i in (1:length(GOALL_NA)))
+{
+  term<-names_goall_na[i]
+  j<-0
+  l<-length(names_genes_selected)
+  while(l>0 && j<length(names_genes_selected))
+  {
+    j<-j+1
+    name_sel<-names_genes_selected[j]
+    
+    if (term==name_sel)
+    {
+      names_genes_selected<-names_genes_selected[-j]
+      number_genes_selected<-number_genes_selected-1
+      
+    }
+    l<-l-1
+    
+  }
+  
+}
+
+for(i in (1:length(GOALL_NA)))
+{
+  term<-names_goall_na[i]
+  j<-0
+  l<-length(names_genes_notselected)
+  while(l>0 && j<length(names_genes_notselected))
+  {
+    j<-j+1
+    name_sel<-names_genes_notselected[j]
+    
+    if (term==name_sel)
+    {
+      names_genes_notselected<-names_genes_notselected[-j]
+      number_genes_notselected<-number_genes_notselected-1
+      
+    }
+    l<-l-1
+    
+  }
+  
+}
+
 matrixes <- NULL
 
-#TODO: eliminare da tutte le liste i geni non annotati
 
 for (i in (1:length(terms))){
   GOterm <- terms[i]
