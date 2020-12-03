@@ -268,8 +268,8 @@ library(org.Hs.eg.db)
 
 alldata <- select(org.Hs.eg.db, names_genes_selected, columns = c("SYMBOL","ENTREZID","GOALL"), keytype="SYMBOL")
 GOALL_NA<-which(is.na(alldata$GOALL))
+#which(!(GOALL_NA==alldata$ONTOLOGYALL)) --> si nota che se NA su GOALL allora NA anche su ONTOLOGYALL 
 names_goall_na<-alldata$SYMBOL[GOALL_NA]
-alldata<-alldata[-GOALL_NA]
 GOALL_NA<-unique(GOALL_NA)
 terms <- unique(alldata[,3])
 terms <- terms[!is.na(terms)]
