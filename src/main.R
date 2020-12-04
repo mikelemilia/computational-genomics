@@ -285,37 +285,37 @@ names_genes_notselected_notna <- setdiff(names_genes_notselected,names_goall_na)
 number_genes_notselected_notna <- length(names_genes_notselected_notna)
 
 #for(i in (1:length(GOALL_NA))){
-  term<-names_goall_na[i]
-  j<-0
-  l<-length(names_genes_selected)
-  while(l>0 && j<length(names_genes_selected))
-  {
-    j<-j+1
-    name_sel<-names_genes_selected[j]
-    if (term==name_sel)
-    {
-      names_genes_selected<-names_genes_selected[-j]
-      number_genes_selected<-number_genes_selected-1
-    }
-    l<-l-1
-  }
-}
+#  term<-names_goall_na[i]
+#  j<-0
+#  l<-length(names_genes_selected)
+#  while(l>0 && j<length(names_genes_selected))
+#  {
+#    j<-j+1
+#    name_sel<-names_genes_selected[j]
+#    if (term==name_sel)
+#    {
+#      names_genes_selected<-names_genes_selected[-j]
+#      number_genes_selected<-number_genes_selected-1
+#    }
+#    l<-l-1
+#  }
+#}
 #for(i in (1:length(GOALL_NA))){
-  term<-names_goall_na[i]
-  j<-0
-  l<-length(names_genes_notselected)
-  while(l>0 && j<length(names_genes_notselected))
-  {
-    j<-j+1
-    name_sel<-names_genes_notselected[j]
-    if (term==name_sel)
-    {
-      names_genes_notselected<-names_genes_notselected[-j]
-      number_genes_notselected<-number_genes_notselected-1
-    }
-    l<-l-1
-  }
-}
+#  term<-names_goall_na[i]
+#  j<-0
+#  l<-length(names_genes_notselected)
+#  while(l>0 && j<length(names_genes_notselected))
+#  {
+#    j<-j+1
+#    name_sel<-names_genes_notselected[j]
+#    if (term==name_sel)
+#    {
+#      names_genes_notselected<-names_genes_notselected[-j]
+#      number_genes_notselected<-number_genes_notselected-1
+#    }
+#    l<-l-1
+#  }
+#}
 
 matrixes <- NULL
 
