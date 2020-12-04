@@ -254,11 +254,11 @@ alpha_est <- mean(lambda[intersect(alpha_index,alpha_index2)])
 
 indexes<-which(out$PValue<alpha_est) #i selected
 index_genes_selected<-sort(as.numeric(rownames(out[indexes,])))
-names_genes_selected<-DATA[index_genes_selected,1]
-names_genes_selected<-unique(names_genes_selected)
+names_genes_selected<-unique(DATA[index_genes_selected,1])
 number_genes_selected<-length(names_genes_selected)
-names_genes_notselected <- DATA[-index_genes_selected,1]
+names_genes_notselected <- unique(setdiff(DATA[,1],names_genes_selected))
 number_genes_notselected<-length(names_genes_notselected)
+
 # 14 - estrazione di tutti i GOterm associati ai geni selezionati e creazione delle tabelle associate  
 
 library(AnnotationDbi)
@@ -273,13 +273,14 @@ GOALL_NA<-which(is.na(alldata$GOALL))
 names_goall_na<-alldata$SYMBOL[GOALL_NA]
 GOALL_NA<-unique(GOALL_NA)
 
-names_genes_selected_notna <- setdiff(names_genes_selected,names_goall_na)
+terms <- unique(alldata[,3])
+terms <- terms[!is.na(terms)]
+
+#QUESTO SOSTITUIREBBE DA RIGA 295 A RIGA 337 PERCHE' SETDIFF(X,Y) DA IN OUTPUT I VALORI IN X E NON IN Y
+#names_genes_selected_notna <- setdiff(names_genes_selected,names_goall_na)
 #number_genes_selected_notna <- length(names_genes_selected_notna)
 #names_genes_notselected_notna <- setdiff(names_genes_notselected,names_goall_na)
 #number_genes_notselected_notna <- length(names_genes_notselected_notna)
-
-terms <- unique(alldata[,3])
-terms <- terms[!is.na(terms)]
 
 for(i in (1:length(GOALL_NA)))
 {
