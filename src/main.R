@@ -254,9 +254,13 @@ alpha_est <- mean(lambda[intersect(alpha_index,alpha_index2)])
 
 indexes<-which(out$PValue<alpha_est) #i selected
 index_genes_selected<-sort(as.numeric(rownames(out[indexes,])))
-names_genes_selected<-unique(DATA[index_genes_selected,1])
+
+#TODO: ho tolto le istruzioni 'unique' nella selezione dei nomi dei geni 
+#ma bisogna capire come gestire i nomi doppi con geneID differenti!!!!!
+
+names_genes_selected<-DATA[index_genes_selected,1]
 number_genes_selected<-length(names_genes_selected)
-names_genes_notselected <- unique(setdiff(DATA[,1],names_genes_selected))
+names_genes_notselected <- setdiff(DATA[,1],names_genes_selected)
 number_genes_notselected<-length(names_genes_notselected)
 
 # 14 - estrazione di tutti i GOterm associati ai geni selezionati e creazione delle tabelle associate  
@@ -264,8 +268,6 @@ number_genes_notselected<-length(names_genes_notselected)
 library(AnnotationDbi)
 library(GO.db)
 library(org.Hs.eg.db)
-
-#TODO: eliminare da tutte le liste i geni non annotati
 
 alldata <- select(org.Hs.eg.db, names_genes_selected, columns = c("SYMBOL","ENTREZID","GOALL"), keytype="SYMBOL")
 GOALL_NA<-which(is.na(alldata$GOALL))
@@ -276,14 +278,13 @@ GOALL_NA<-unique(GOALL_NA)
 terms <- unique(alldata[,3])
 terms <- terms[!is.na(terms)]
 
-#QUESTO SOSTITUIREBBE DA RIGA 295 A RIGA 337 PERCHE' SETDIFF(X,Y) DA IN OUTPUT I VALORI IN X E NON IN Y
-#names_genes_selected_notna <- setdiff(names_genes_selected,names_goall_na)
-#number_genes_selected_notna <- length(names_genes_selected_notna)
-#names_genes_notselected_notna <- setdiff(names_genes_notselected,names_goall_na)
-#number_genes_notselected_notna <- length(names_genes_notselected_notna)
+#QUESTO SOSTITUISCE I DUE CICLI FOR SUCCESSIVI, DA CAPIRE COSA TOGLIERE
+names_genes_selected_notna <- setdiff(names_genes_selected,names_goall_na)
+number_genes_selected_notna <- length(names_genes_selected_notna)
+names_genes_notselected_notna <- setdiff(names_genes_notselected,names_goall_na)
+number_genes_notselected_notna <- length(names_genes_notselected_notna)
 
-for(i in (1:length(GOALL_NA)))
-{
+#for(i in (1:length(GOALL_NA))){
   term<-names_goall_na[i]
   j<-0
   l<-length(names_genes_selected)
@@ -291,21 +292,15 @@ for(i in (1:length(GOALL_NA)))
   {
     j<-j+1
     name_sel<-names_genes_selected[j]
-    
     if (term==name_sel)
     {
       names_genes_selected<-names_genes_selected[-j]
       number_genes_selected<-number_genes_selected-1
-      
     }
     l<-l-1
-    
   }
-  
 }
-
-for(i in (1:length(GOALL_NA)))
-{
+#for(i in (1:length(GOALL_NA))){
   term<-names_goall_na[i]
   j<-0
   l<-length(names_genes_notselected)
@@ -313,21 +308,16 @@ for(i in (1:length(GOALL_NA)))
   {
     j<-j+1
     name_sel<-names_genes_notselected[j]
-    
     if (term==name_sel)
     {
       names_genes_notselected<-names_genes_notselected[-j]
       number_genes_notselected<-number_genes_notselected-1
-      
     }
     l<-l-1
-    
   }
-  
 }
 
 matrixes <- NULL
-
 
 for (i in (1:length(terms))){
   GOterm <- terms[i]
