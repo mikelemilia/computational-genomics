@@ -206,20 +206,24 @@ expected_edger <- expected_values(G, G0, alpha, indSELedgeR)
 # 12 - Estimate G0 and re-estimate FP and FN
 
 res <- estimateG0(c_ttest_pvalue, G0, "T test")
-G0_est_ttest <- res[[1]]
-lambda_est <- res[[2]]
+lambda_est_ttest <- 0.6
+index_lambda<-which(res[[2]]==lambda_est_ttest)
+G0_est_ttest <- res[[1]][index_lambda]
+
 
 expected_ttest_est <- expected_values(G, G0_est_ttest, alpha, num_sel_ttest)
 
 res <- estimateG0(c_wilcoxon_pvalue, G0, "Wilcoxon test")
-G0_est_wilcoxontest <- res[[1]]
-lambda_est <- res[[2]]
+lambda_est_wilcoxon <- 0.71
+index_lambda<-which(res[[2]]==lambda_est_wilcoxon)
+G0_est_wilcoxontest <- round(res[[1]][index_lambda])
 
 expected_wilcoxontest_est <- expected_values(G, G0_est_wilcoxontest, alpha, num_sel_wilcox)
 
 res <- estimateG0(out[,4], G0, "edgeR test")
-G0_est_edger <- res[[1]]
-lambda_est <- res[[2]]
+lambda_est_edger <- 0.75
+index_lambda<-which(res[[2]]==lambda_est_edger)
+G0_est_edger <- res[[1]][index_lambda]
 
 expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, indSELedgeR)
 

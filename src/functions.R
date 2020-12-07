@@ -124,6 +124,8 @@ estimateG0<-function(c_pvalue, G, filename) {
   G0_prev<-0
   G0<-vector("integer",length(length(lambda)))
   r<-vector("integer",length(length(lambda)))
+  G0_estimate<-NULL
+  lambda_estimate <- NULL
   
   while (i<=length(lambda)) {
     
@@ -132,19 +134,21 @@ estimateG0<-function(c_pvalue, G, filename) {
     minori<-(c_pvalue<l)
     selected<-which(minori==TRUE)
     num_sel<-length(selected)
-
+    
     G0[i]<-(G-num_sel)/(1-l)
     
     r[i]<-(G0[i]-G0_prev)^2
     
     G0_prev<-G0[i]
-    
     i<-i+1
+    
     
   }
   
   G0_estimate<-G0[which.min(r)]
   lambda_estimate <- lambda[which.min(r)]
+  
+  
   
   # plot the estimates
   png(file = paste(getPlotPath(filename, "G0 estimate"), ".png", sep = ""))
@@ -153,7 +157,7 @@ estimateG0<-function(c_pvalue, G, filename) {
   dev.off()
   
   
-  return(list(G0_estimate,lambda_estimate))
+  return(list(G0,lambda))
 }
 
 expected_values <- function(G,G0,alpha,selected_genes){
@@ -161,7 +165,7 @@ expected_values <- function(G,G0,alpha,selected_genes){
   expected_TP <- max(0, (selected_genes - expected_FP))
   expected_TN <- G0 - expected_FP
   expected_FN <- max(0,G-selected_genes-expected_TN)
-
+  
   return (c(expected_TP,expected_FP,expected_TN,expected_FN))
 }
 
@@ -179,4 +183,4 @@ fisher_test_matrixes <- function(matrixes){
   } 
   return (pval)
 }
-  
+
