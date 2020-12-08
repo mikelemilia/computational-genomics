@@ -351,3 +351,95 @@ colnames(matrixesMF)<-c("type","a","b","c","d")
 pval_fisherCC<-fisher_test_matrixes(matrixesCC)
 pval_fisherBP<-fisher_test_matrixes(matrixesBP)
 pval_fisherMF<-fisher_test_matrixes(matrixesMF)
+
+
+
+
+## ----- GESTIONE DEI NOMI DOPPI CON GENEID DIFFERENTI  --------------
+#può andare bene?? NB: I NOMI SONO ANCHE DOPPI, MA GLI ENSEMBL (ENSG...) NON LO SONO
+# 14 - estrazione di tutti i GOterm associati ai geni selezionati e creazione delle tabelle associate  
+
+library(AnnotationDbi)
+library(GO.db)
+library(org.Hs.eg.db)
+
+alldata <- select(org.Hs.eg.db, names_genes_selected, columns = c("SYMBOL","ENTREZID", "ENSEMBL","GOALL"), keytype="SYMBOL")
+GOALL_NA<-which(is.na(alldata$GOALL))
+#which(!(GOALL_NA==alldata$ONTOLOGYALL)) --> si nota che se NA su GOALL allora NA anche su ONTOLOGYALL 
+ID_goall_na<-alldata$ENSEMBL[GOALL_NA]
+GOALL_NA<-unique(GOALL_NA)
+
+terms <- unique(alldata[,4])
+terms <- terms[!is.na(terms)]
+
+#QUESTO SOSTITUISCE I DUE CICLI FOR SUCCESSIVI, DA CAPIRE COSA TOGLIERE
+ID_genes_selected_notna <- setdiff(ID_genes_selected,ID_goall_na)
+number_genes_selected_notna <- length(ID_genes_selected_notna)
+ID_genes_notselected_notna <- setdiff(ID_genes_notselected,ID_goall_na)
+number_genes_notselected_notna <- length(ID_genes_notselected_notna)
+
+#for(i in (1:length(GOALL_NA))){
+#  term<-names_goall_na[i]
+#  j<-0
+#  l<-length(names_genes_selected)
+#  while(l>0 && j<length(names_genes_selected))
+#  {
+#    j<-j+1
+#    name_sel<-names_genes_selected[j]
+#    if (term==name_sel)
+#    {
+#      names_genes_selected<-names_genes_selected[-j]
+#      number_genes_selected<-number_genes_selected-1
+#    }
+#    l<-l-1
+#  }
+#}
+#for(i in (1:length(GOALL_NA))){
+#  term<-names_goall_na[i]
+#  j<-0
+#  l<-length(names_genes_notselected)
+#  while(l>0 && j<length(names_genes_notselected))
+#  {
+#    j<-j+1
+#    name_sel<-names_genes_notselected[j]
+#    if (term==name_sel)
+#    {
+#      names_genes_notselected<-names_genes_notselected[-j]
+#      number_genes_notselected<-number_genes_notselected-1
+#    }
+#    l<-l-1
+#  }
+#}
+
+matrixes <- NULL
+
+for (i in (1:length(terms))){
+  GOterm <- terms[i]
+  GOterm_indexes <- which(alldata$GOALL==GOterm)
+  a <- length(intersect(alldata[GOterm_indexes,3],ID_genes_selected_notna))
+  b <- number_genes_selected - a
+  c <- length(GOterm_indexes) - a
+  d <- length(ID_genes_notselected_notna)- c
+  type<-alldata[(which(alldata[,4]==GOterm))[1],6]
+  #matrice che ha nelle righe i GOterms associati e nelle colonne il tipo di GOterm e i valori di a,b,c,d per il fisher test 
+  matrixes <- rbind(matrixes,c(type,a,b,c,d))
+}
+
+colnames(matrixes)<-c("type","a","b","c","d")
+rownames(matrixes)<-terms
+matrixes<-matrixes[order(rownames(matrixes)),]
+
+# 15 - divisione delle tabelle per type e computazione del fisher test
+
+matrixesCC <- matrixes[which(matrixes[,1]=="CC"),]
+colnames(matrixesCC)<-c("type","a","b","c","d")
+matrixesBP <- matrixes[which(matrixes[,1]=="BP"),]
+colnames(matrixesBP)<-c("type","a","b","c","d")
+matrixesMF <- matrixes[which(matrixes[,1]=="MF"),]
+colnames(matrixesMF)<-c("type","a","b","c","d")
+
+pval_fisherCC<-fisher_test_matrixes(matrixesCC)
+pval_fisherBP<-fisher_test_matrixes(matrixesBP)
+pval_fisherMF<-fisher_test_matrixes(matrixesMF)
+
+
