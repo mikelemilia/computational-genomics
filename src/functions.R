@@ -160,6 +160,20 @@ estimateG0<-function(c_pvalue, G, filename) {
   return(list(G0,lambda))
 }
 
+G0_value_estimation<-function(lambda_est, eps, res) {
+  
+  lambda_min<-lambda_est-eps
+  lambda_max<-lambda_est+eps
+  index_min<-which(res[[2]]==lambda_min)
+  index_max<-which(res[[2]]==lambda_max)
+  G0_min <- res[[1]][index_min]
+  G0_max <- res[[1]][index_max]
+  G0_est<-round(mean(G0_min, G0_max)) 
+  
+  return(G0_est)
+}
+
+
 expected_values <- function(G,G0,alpha,selected_genes){
   expected_FP <- min(G0*alpha, selected_genes)
   expected_TP <- max(0, (selected_genes - expected_FP))
