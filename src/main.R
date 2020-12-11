@@ -355,24 +355,25 @@ pval_fisherBP<-fisher_test_matrixes(matrixesBP)
 pval_fisherMF<-fisher_test_matrixes(matrixesMF)
 
 # 16 - lunghezza geni e clustering
-library(goseq)
-lengths_genes_selected<-getlength(ID_genes_selected, 'hg19', 'ensGene')
+#library(goseq)
+#lengths_genes_selected<-getlength(ID_genes_selected, 'hg19', 'ensGene')
+#l<-as.matrix(lengths_genes_selected)
 
 
-data_normalized<-NULL
+library (EDASeq)
+ensembl_list <- ID_genes_selected
+d<-getGeneLengthAndGCContent(ensembl_list, "hsa")
+#d[[1]] contiene le lunghezz dei geni
 
-DATA2<-DATA[,-1]
-for(i in (1:length(index_genes_selected))){
-  
-  
-  data_normalized<- rbind(data_normalized, as.numeric(DATA2[index_genes_selected[i],])/rep(lengths_genes_selected[i],ncol(DATA)))
- 
-}
+data_normalized<-DATA[,-1]
+data_normalized<-data_normalized[index_genes_selected,]
+data_normalized<-t(t(data_normalized)/d[[1]])
+
+# da qui in avanti non ci sono gli oggetti nel dataset salvato
 
 D<-dist(data_normalized) #D is an object of class "dist". To get a matrix one needs to use "as.matrix(D)"
-cl_hclust_complete<-hclust(d=D, method="single")
+cl_hclust_complete<-hclust(d=D)
 plot(cl_hclust_complete)  
 
-x <- matrix(rnorm(100), nrow = 5)
-dist(t(x))
-
+cl_hclust_ward<-hclust(d=D, "ward.D2")
+plot(cl_hclust_ward)  
