@@ -261,97 +261,10 @@ index_genes_selected<-sort(as.numeric(rownames(out[indexes,])))
 #TODO: ho tolto le istruzioni 'unique' nella selezione dei nomi dei geni 
 #ma bisogna capire come gestire i nomi doppi con geneID differenti!!!!!
 
-names_genes_selected<-DATA[index_genes_selected,1]
-number_genes_selected<-length(names_genes_selected)
-names_genes_notselected <- setdiff(DATA[,1],names_genes_selected)
-number_genes_notselected<-length(names_genes_notselected)
-
-# 14 - estrazione di tutti i GOterm associati ai geni selezionati e creazione delle tabelle associate  
-
-library(AnnotationDbi)
-library(GO.db)
-library(org.Hs.eg.db)
-
-alldata <- select(org.Hs.eg.db, names_genes_selected, columns = c("SYMBOL","ENTREZID","GOALL"), keytype="SYMBOL")
-GOALL_NA<-which(is.na(alldata$GOALL))
-#which(!(GOALL_NA==alldata$ONTOLOGYALL)) --> si nota che se NA su GOALL allora NA anche su ONTOLOGYALL 
-names_goall_na<-alldata$SYMBOL[GOALL_NA]
-GOALL_NA<-unique(GOALL_NA)
-
-terms <- unique(alldata[,3])
-terms <- terms[!is.na(terms)]
-
-#QUESTO SOSTITUISCE I DUE CICLI FOR SUCCESSIVI, DA CAPIRE COSA TOGLIERE
-names_genes_selected_notna <- setdiff(names_genes_selected,names_goall_na)
-number_genes_selected_notna <- length(names_genes_selected_notna)
-names_genes_notselected_notna <- setdiff(names_genes_notselected,names_goall_na)
-number_genes_notselected_notna <- length(names_genes_notselected_notna)
-
-#for(i in (1:length(GOALL_NA))){
-#  term<-names_goall_na[i]
-#  j<-0
-#  l<-length(names_genes_selected)
-#  while(l>0 && j<length(names_genes_selected))
-#  {
-#    j<-j+1
-#    name_sel<-names_genes_selected[j]
-#    if (term==name_sel)
-#    {
-#      names_genes_selected<-names_genes_selected[-j]
-#      number_genes_selected<-number_genes_selected-1
-#    }
-#    l<-l-1
-#  }
-#}
-#for(i in (1:length(GOALL_NA))){
-#  term<-names_goall_na[i]
-#  j<-0
-#  l<-length(names_genes_notselected)
-#  while(l>0 && j<length(names_genes_notselected))
-#  {
-#    j<-j+1
-#    name_sel<-names_genes_notselected[j]
-#    if (term==name_sel)
-#    {
-#      names_genes_notselected<-names_genes_notselected[-j]
-#      number_genes_notselected<-number_genes_notselected-1
-#    }
-#    l<-l-1
-#  }
-#}
-
-matrixes <- NULL
-
-for (i in (1:length(terms))){
-  GOterm <- terms[i]
-  GOterm_indexes <- which(alldata$GOALL==GOterm)
-  a <- length(intersect(alldata[GOterm_indexes,1],names_genes_selected))
-  b <- number_genes_selected - a
-  c <- length(GOterm_indexes) - a
-  d <- length(names_genes_notselected)- c
-  type<-alldata[(which(alldata[,3]==GOterm))[1],5]
-  #matrice che ha nelle righe i GOterms associati e nelle colonne il tipo di GOterm e i valori di a,b,c,d per il fisher test 
-  matrixes <- rbind(matrixes,c(type,a,b,c,d))
-}
-
-colnames(matrixes)<-c("type","a","b","c","d")
-rownames(matrixes)<-terms
-matrixes<-matrixes[order(rownames(matrixes)),]
-
-# 15 - divisione delle tabelle per type e computazione del fisher test
-
-matrixesCC <- matrixes[which(matrixes[,1]=="CC"),]
-colnames(matrixesCC)<-c("type","a","b","c","d")
-matrixesBP <- matrixes[which(matrixes[,1]=="BP"),]
-colnames(matrixesBP)<-c("type","a","b","c","d")
-matrixesMF <- matrixes[which(matrixes[,1]=="MF"),]
-colnames(matrixesMF)<-c("type","a","b","c","d")
-
-pval_fisherCC<-fisher_test_matrixes(matrixesCC)
-pval_fisherBP<-fisher_test_matrixes(matrixesBP)
-pval_fisherMF<-fisher_test_matrixes(matrixesMF)
-
-
+ID_genes_selected<-rownames(DATA[index_genes_selected,])
+number_genes_selected<-length(ID_genes_selected)
+ID_genes_notselected <- setdiff(rownames(DATA),ID_genes_selected)
+number_genes_notselected<-length(ID_genes_notselected)
 
 
 ## ----- GESTIONE DEI NOMI DOPPI CON GENEID DIFFERENTI  --------------
@@ -362,7 +275,7 @@ library(AnnotationDbi)
 library(GO.db)
 library(org.Hs.eg.db)
 
-alldata <- select(org.Hs.eg.db, names_genes_selected, columns = c("SYMBOL","ENTREZID", "ENSEMBL","GOALL"), keytype="SYMBOL")
+alldata <- select(org.Hs.eg.db, ID_genes_selected, columns = c("SYMBOL","ENTREZID", "ENSEMBL","GOALL"), keytype="ENSEMBL")
 GOALL_NA<-which(is.na(alldata$GOALL))
 #which(!(GOALL_NA==alldata$ONTOLOGYALL)) --> si nota che se NA su GOALL allora NA anche su ONTOLOGYALL 
 ID_goall_na<-alldata$ENSEMBL[GOALL_NA]
@@ -415,7 +328,7 @@ matrixes <- NULL
 for (i in (1:length(terms))){
   GOterm <- terms[i]
   GOterm_indexes <- which(alldata$GOALL==GOterm)
-  a <- length(intersect(alldata[GOterm_indexes,3],ID_genes_selected_notna))
+  a <- length(intersect(alldata[GOterm_indexes,1],ID_genes_selected_notna))
   b <- number_genes_selected - a
   c <- length(GOterm_indexes) - a
   d <- length(ID_genes_notselected_notna)- c
@@ -441,4 +354,25 @@ pval_fisherCC<-fisher_test_matrixes(matrixesCC)
 pval_fisherBP<-fisher_test_matrixes(matrixesBP)
 pval_fisherMF<-fisher_test_matrixes(matrixesMF)
 
+# 16 - lunghezza geni e clustering
+library(goseq)
+lengths_genes_selected<-getlength(ID_genes_selected, 'hg19', 'ensGene')
+
+
+data_normalized<-NULL
+
+DATA2<-DATA[,-1]
+for(i in (1:length(index_genes_selected))){
+  
+  
+  data_normalized<- rbind(data_normalized, as.numeric(DATA2[index_genes_selected[i],])/rep(lengths_genes_selected[i],ncol(DATA)))
+ 
+}
+
+D<-dist(data_normalized) #D is an object of class "dist". To get a matrix one needs to use "as.matrix(D)"
+cl_hclust_complete<-hclust(d=D, method="single")
+plot(cl_hclust_complete)  
+
+x <- matrix(rnorm(100), nrow = 5)
+dist(t(x))
 
