@@ -402,7 +402,7 @@ D<-dist(t(dataNorm_clustering))  #D is an object of class "dist". To get a matri
 
 
 cl_hclust_ward_S<-hclust(d=D,method="ward.D2")
-plot(cl_hclust_ward, hang=-1) 
+plot(cl_hclust_ward_S, hang=-1) 
 
 #------------------- k MEANS ----------------------
 #CLUSTERING GENES 
@@ -425,13 +425,54 @@ plot(K, WITHIN_SS)
 K<-seq(1,10,by=1)
 WITHIN_SS_sample<-NULL
 clus_km_sample<-NULL
-for(i in (1:length(K)))
-{
+for(i in (1:length(K))) {
   k_i<-K[i]
   cl_kmeans_samples<-kmeans(x=t(dataNorm_clustering),centers=k_i,iter.max=100,nstart=100)
-  WITHIN_SS_sample<-rbind(WITHIN_SS_sample, cl_kmeans_samples$tot.withinss)
   clus_km_sample<-c(clus_km_sample,cl_kmeans_samples)
-  
+  WITHIN_SS_sample<-rbind(WITHIN_SS_sample, cl_kmeans_samples$tot.withinss)
+  shilouette <- cbind(shilouette, shilouette(cl_kmeans_samples, dataNorm_clustering, k_i))
   
 }
 plot(K, WITHIN_SS_sample)
+
+
+shilouette <- function(data, points, k){
+  
+  s <- NULL
+  clusters <- list(NULL)
+  i <- 1
+  while(i <= k) {
+    elements <- which(data$cluster == i)
+    clusters[[i]] <- elements
+    i <- i + 1
+  }
+  
+  for (c in k) {
+    
+    for (point in points){
+      d <- myEuclid(point, points[clusters[[c]],])
+      a <- sum(d)/(nrow(points[clusters[[c]],]) - 1)
+      cat(a)
+      for(c1 in k){
+        if (c1 == c) break
+        d <- myEuclid(point, points[clusters[[c1]],])
+        b <- c(b,sum(d)/nrow(points[clusters[[c1]],]))
+      }
+      
+      s <- c(s, min(b)-a/max(min(b),a))
+    }
+    
+  }
+  
+  return(sum(s))
+  
+}
+
+myEuclid <- function(points1, points2) {
+  distanceMatrix <- NULL
+  for(i in 1:nrow(points2)) {
+    distanceMatrix <- c(distanceMatrix, sqrt(rowSums(t(t(points1)-points2[i,])^2)))
+  }
+  distanceMatrix
+}
+
