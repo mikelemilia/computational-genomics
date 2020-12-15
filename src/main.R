@@ -371,9 +371,67 @@ data_normalized<-t(t(data_normalized)/d[[1]])
 
 # da qui in avanti non ci sono gli oggetti nel dataset salvato
 
-D<-dist(data_normalized) #D is an object of class "dist". To get a matrix one needs to use "as.matrix(D)"
-cl_hclust_complete<-hclust(d=D)
-plot(cl_hclust_complete)  
+# 17 - clustering
 
-cl_hclust_ward<-hclust(d=D, "ward.D2")
-plot(cl_hclust_ward)  
+## IDEA
+# FACENDO CLUSTERING DEI GENES MI ASPETTO CHE IL CLUSTER SIA 1 O COMUNQUE POCHI CLUSTERS.... SE SONO TUTTI 
+# I SELEZIONATI NON DOVREI VEDERE DIFFERENZE TRA LORO, SONO TUTTI ASSOCIATI ALLA MALATTIA
+
+# FACENDO CLUSTERING DEI SAMPLES, DOVREI VEDERE CHE SI DIVIDONO IN DUE CLASSI, MALATI E SANI
+# BISOGNA RICONSIDERARE I SAMPLES CAMPIONATI DUE VOLTE?
+
+
+dataNorm_nodup_control<-remove_duplicates(data_normalized,control) 
+dataNorm_nodup_disease<-remove_duplicates(data_normalized,disease) 
+
+dataNorm_clustering<-cbind(dataNorm_nodup_control,dataNorm_nodup_disease)
+
+
+#------------------- HIERARCHICAL CLUSTERING ----------------------
+#CLUSTERING GENES 
+D<-dist(dataNorm_clustering) #D is an object of class "dist". To get a matrix one needs to use "as.matrix(D)"
+
+
+# USIAMO WARD PERCHè SFRUTTA DISTANZA EUCLIDEA E CPSì LO COMPARIAMO BENE CON KMEANS CHE USA SEMPRE LA EUCLIDEA
+cl_hclust_ward<-hclust(d=D,method="ward.D2")
+plot(cl_hclust_ward, hang=-1)  
+
+
+#CLUSTERING SAMPLES
+D<-dist(t(dataNorm_clustering))  #D is an object of class "dist". To get a matrix one needs to use "as.matrix(D)"
+
+
+cl_hclust_ward_S<-hclust(d=D,method="ward.D2")
+plot(cl_hclust_ward, hang=-1) 
+
+#------------------- k MEANS ----------------------
+#CLUSTERING GENES 
+K<-seq(1,10,by=1)
+WITHIN_SS<-NULL
+clus_km<-NULL
+for(i in (1:length(K)))
+{
+  k_i<-K[i]
+  cl_kmeans_genes<-kmeans(x=dataNorm_clustering,centers=k_i,iter.max=100,nstart=100)
+  clus_km<-c(clus_km,cl_kmeans_genes)
+  WITHIN_SS<-rbind(WITHIN_SS, cl_kmeans_genes$tot.withinss)
+  
+  
+  
+}
+plot(K, WITHIN_SS)
+
+#CLUSTERING SAMPLES
+K<-seq(1,10,by=1)
+WITHIN_SS_sample<-NULL
+clus_km_sample<-NULL
+for(i in (1:length(K)))
+{
+  k_i<-K[i]
+  cl_kmeans_samples<-kmeans(x=t(dataNorm_clustering),centers=k_i,iter.max=100,nstart=100)
+  WITHIN_SS_sample<-rbind(WITHIN_SS_sample, cl_kmeans_samples$tot.withinss)
+  clus_km_sample<-c(clus_km_sample,cl_kmeans_samples)
+  
+  
+}
+plot(K, WITHIN_SS_sample)
