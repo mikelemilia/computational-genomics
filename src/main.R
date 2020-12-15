@@ -422,41 +422,61 @@ for(i in (1:length(K)))
 plot(K, WITHIN_SS)
 
 #CLUSTERING SAMPLES
-K<-seq(1,10,by=1)
+K<-seq(1,2,by=1)
 WITHIN_SS_sample<-NULL
 clus_km_sample<-NULL
+sk <- NULL
 for(i in (1:length(K))) {
   k_i<-K[i]
-  cl_kmeans_samples<-kmeans(x=t(dataNorm_clustering),centers=k_i,iter.max=100,nstart=100)
+  cl_kmeans_samples<-kmeans(x=t(dataNorm_clustering),centers=k_i,iter.max=1,nstart=1)
   clus_km_sample<-c(clus_km_sample,cl_kmeans_samples)
   WITHIN_SS_sample<-rbind(WITHIN_SS_sample, cl_kmeans_samples$tot.withinss)
-  shilouette <- cbind(shilouette, shilouette(cl_kmeans_samples, dataNorm_clustering, k_i))
+  sk <- cbind(sk, shilouette(cl_kmeans_samples, dataNorm_clustering, k_i))
   
 }
+cat(max(sk), " - optimal number of cluster is :", K[which(sk == max(sk))])
 plot(K, WITHIN_SS_sample)
+
+
+# SHILOUETTE STATISTIC
+
+library(rlist)
+
 
 
 shilouette <- function(data, points, k){
   
+  
   s <- NULL
-  clusters <- list(NULL)
+  clusters <- vector(mode = "list", length = k)
+
   i <- 1
   while(i <= k) {
+    cat(i, "\n")
     elements <- which(data$cluster == i)
-    clusters[[i]] <- elements
+    clusters[[i]] <- elements 
+    #(clusters, elements)
+    print(elements)
+    #clusters[i] <- elements
+    cat("cluster ", i, " has length ", length(clusters[i]), "\n")
+    cat("cluster " , clusters[[i]], "\n")
     i <- i + 1
   }
   
-  for (c in k) {
+  for (c in (1:k)) {
     
-    for (point in points){
+    print(points[clusters[[c]],])
+    for (i in (1: NROW(points[clusters[[c]],]))){
+      point <- (points[clusters[[c]],])[i,]
       d <- myEuclid(point, points[clusters[[c]],])
-      a <- sum(d)/(nrow(points[clusters[[c]],]) - 1)
-      cat(a)
+      a <- sum(d)/(NROW(points[clusters[[c]],]) - 1)
+      cat(c, " - ", i, "\n")
       for(c1 in k){
-        if (c1 == c) break
-        d <- myEuclid(point, points[clusters[[c1]],])
-        b <- c(b,sum(d)/nrow(points[clusters[[c1]],]))
+        cat(c, " - ", i, " -- ", c1, "\n")
+        if (c1 != c) {
+          d <- myEuclid(point, points[clusters[[c1]],])
+          b <- c(b,sum(d)/NROW(points[clusters[[c1]],]))
+        }
       }
       
       s <- c(s, min(b)-a/max(min(b),a))
@@ -475,4 +495,13 @@ myEuclid <- function(points1, points2) {
   }
   distanceMatrix
 }
+
+#GAP STATISTIC 
+prova<-clusGap(as.matrix(D), kmeans, length(K), B=2)
+
+for (i in (2:(nrow(prova[[1]])-1))){
+  if (prova[[1]][i,3]>prova[[1]][i+1,3]+prova[[1]][i+1,4])
+    break;
+}
+cat("Numero ottimo secondo Gap Statistics: ",i)
 
