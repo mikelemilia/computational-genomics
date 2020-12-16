@@ -394,15 +394,33 @@ D<-dist(dataNorm_clustering) #D is an object of class "dist". To get a matrix on
 
 # USIAMO WARD PERCHè SFRUTTA DISTANZA EUCLIDEA E CPSì LO COMPARIAMO BENE CON KMEANS CHE USA SEMPRE LA EUCLIDEA
 cl_hclust_ward<-hclust(d=D,method="ward.D2")
-plot(cl_hclust_ward, hang=-1)  
+plot(cl_hclust_ward, hang=-1) 
 
+K<-seq(1,10,by=1)
+for (i in (1:length(K))){
+  k <- K[i]
+  clusters_hclust_ward<-cutree(cl_hclust_ward, k=k)
+  sk <- c(sk,silhouette(data_normalized,clusters_hclust_ward,k))
+}
+cat("Hierarchial clusters over genes!\n")
+print(sk)
+cat(max(sk), " - optimal number of clusters is :", K[which(sk == max(sk))])
 
 #CLUSTERING SAMPLES
 D<-dist(t(dataNorm_clustering))  #D is an object of class "dist". To get a matrix one needs to use "as.matrix(D)"
 
-
 cl_hclust_ward_S<-hclust(d=D,method="ward.D2")
 plot(cl_hclust_ward_S, hang=-1) 
+
+K<-seq(1,10,by=1)
+for (i in (1:length(K))){
+  k <- K[i]
+  clusters_hclust_ward<-cutree(cl_hclust_ward, k=k)
+  sk <- c(sk,silhouette(data_normalized,clusters_hclust_ward,k))
+}
+cat("Hierarchial clusters over samples!\n")
+print(sk)
+cat(max(sk), " - optimal number of clusters is :", K[which(sk == max(sk))])
 
 #------------------- k MEANS ----------------------
 #CLUSTERING GENES 
@@ -417,13 +435,16 @@ for(i in (1:length(K)))
   cl_kmeans_genes<-kmeans(x=dataNorm_clustering,centers=k_i,iter.max=100,nstart=1)
   clus_km<-c(clus_km,cl_kmeans_genes)
   WITHIN_SS<-rbind(WITHIN_SS, cl_kmeans_genes$tot.withinss)
-  sk <- rbind(sk, silhouette(cl_kmeans_genes, dataNorm_clustering, k_i))
+  sk <- rbind(sk, silhouette(dataNorm_clustering,cl_kmeans_samples[[1]], k_i))
 }
 print(sk)
+cat("K-Means over samples!\n")
+print(sk)
+cat(max(sk), " - optimal number of clusters is :", K[which(sk == max(sk))])
 plot(K, WITHIN_SS)
 
 #CLUSTERING SAMPLES
-K<-seq(1,3,by=1)
+K<-seq(1,10,by=1)
 WITHIN_SS_sample<-NULL
 clus_km_sample<-NULL
 sk <- NULL
@@ -432,8 +453,9 @@ for(i in (1:length(K))) {
   cl_kmeans_samples<-kmeans(x=t(dataNorm_clustering),centers=k_i,iter.max=100,nstart=1)
   clus_km_sample<-c(clus_km_sample,cl_kmeans_samples)
   WITHIN_SS_sample<-rbind(WITHIN_SS_sample, cl_kmeans_samples$tot.withinss)
-  sk <- rbind(sk, silhouette(cl_kmeans_samples, t(dataNorm_clustering), k_i))
+  sk <- rbind(sk, silhouette(t(dataNorm_clustering),cl_kmeans_samples[[1]], k_i))
 }
+cat("K-Means over samples!\n")
 print(sk)
 cat(max(sk), " - optimal number of cluster is :", K[which(sk == max(sk))])
 plot(K, WITHIN_SS_sample)

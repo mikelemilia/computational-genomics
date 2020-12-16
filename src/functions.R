@@ -209,7 +209,7 @@ myEuclid <- function(center, points) {
 }
 
 #Silhouette Statistic
-silhouette <- function(data, points, k){
+silhouette <- function(points, cluster, k){
   #caso particolare, un cluster
   if(k == 1){
     s <- -1
@@ -226,7 +226,7 @@ silhouette <- function(data, points, k){
   #divisione degli indici degli elementi in liste, raggruppati per il cluster a cui appartengono
   i <- 1
   while(i <= k) {
-    elements <- which(data$cluster == i)
+    elements <- which(cluster == i)
     clusters[[i]] <- elements 
     cat("Cluster ", i, " has length ", length(clusters[[i]]), "\n")
     cat("Cluster ", i, ": ", clusters[[i]], "\n")
@@ -237,7 +237,7 @@ silhouette <- function(data, points, k){
   for (i in (1:nrow(points))){
     point <- points[i]
     distances <- d[i,]
-    cl <- data[[1]][i]
+    cl <- cluster[i]
     indmin <- 0
     minb <- Inf
     #scandisco ogni possibile cluster
