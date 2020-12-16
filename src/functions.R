@@ -198,3 +198,81 @@ fisher_test_matrixes <- function(matrixes){
   return (pval)
 }
 
+#Function to calculate the distances between a point and points in a matrix
+myEuclid <- function(center, points) {
+  distanceVector <- NULL
+  center<-as.vector(center)
+  for(i in 1:nrow(points)) {
+    distanceVector <- c(distanceVector, dist(rbind(center, points[i])))
+  }
+  return(distanceVector)
+}
+
+#Silhouette Statistic
+silhouette <- function(data, points, k){
+  #caso particolare, un cluster
+  if(k == 1){
+    s <- -1
+    return(s)
+  }
+  
+  s <- NULL
+  clusters <- vector(mode = "list", length = k)
+  
+  #divisione degli indici degli elementi in liste, raggruppati per il cluster a cui appartengono
+  i <- 1
+  while(i <= k) {
+    elements <- which(data$cluster == i)
+    clusters[[i]] <- elements 
+    cat("Cluster ", i, " has length ", length(clusters[[i]]), "\n")
+    cat("Cluster ", i, ": ", clusters[[i]], "\n")
+    i <- i + 1
+  }
+  
+  #scandisco ogni singolo punto
+  for (i in (1:nrow(points))){
+    point <- points[i]
+    cl <- data[[1]][i]
+    indmin <- 0
+    minb <- Inf
+    #scandisco ogni possibile cluster
+    for (c in (1:k)){
+      cat("Analizzo punto ", i, " in cluster ",cl, " -- Confronto con cluster ", c, "\n")
+      #se ho scelto il cluster a cui il punto appartiene, calcolo a
+      if (c == cl){
+        if (is.null(nrow(points[clusters[[c]],]))){
+          l <- clusters[[c]]
+          points_cluster_c <- matrix(points[l,], nrow=1)
+        } else {
+          points_cluster_c <- points[clusters[[c]],]
+        }
+        d <- myEuclid(point, points_cluster_c)
+        cat("d: ",d, "\n")
+        a <- (sum(d))/(length(d))
+        cat("a: ",a,"\n")
+      }
+      #se ho scelto un cluster a cui il punto non appartiene, calcolo b
+      else{
+        if (is.null(nrow(points[clusters[[c]],]))){
+          l <- clusters[[c]]
+          points_cluster_c <- matrix(points[l,], nrow=1)
+        }
+        else {
+          points_cluster_c <- points[clusters[[c]],]
+        }
+        d <- myEuclid(point,points_cluster_c)
+        cat("d: ",d, "\n")
+        if (minb > sum(d)){
+          minb<-sum(d)
+          indmin<-c
+        }
+        cat("b: ",minb,"\n")
+      }
+    }
+    minb <- minb/indmin
+    s <- c(s,(minb-a)/max(minb,a))
+    cat("s: ",s,"\n")
+  }
+  return(sum(s))
+}
+
