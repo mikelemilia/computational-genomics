@@ -355,10 +355,10 @@ pval_fisherBP<-fisher_test_matrixes(matrixesBP)
 pval_fisherMF<-fisher_test_matrixes(matrixesMF)
 
 # 16 - lunghezza geni e clustering
+
 #library(goseq)
 #lengths_genes_selected<-getlength(ID_genes_selected, 'hg19', 'ensGene')
 #l<-as.matrix(lengths_genes_selected)
-
 
 library (EDASeq)
 ensembl_list <- ID_genes_selected
