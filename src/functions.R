@@ -238,47 +238,55 @@ silhouette <- function(points, cluster, k){
     point <- points[i]
     distances <- d[i,]
     cl <- cluster[i]
-    indmin <- 0
-    minb <- Inf
-    #scandisco ogni possibile cluster
-    for (c in (1:k)){
-      cat("Analizzo punto ", i, " in cluster ",cl, " -- Confronto con cluster ", c, "\n")
-      #se ho scelto il cluster a cui il punto appartiene, calcolo a
-      if (c == cl){
-        #if (is.null(nrow(points[clusters[[c]],]))){
-        #  l <- clusters[[c]]
-        #  distances_cluster_c <- matrix(points[l,], nrow=1)
-        #} else {
-        #  points_cluster_c <- points[clusters[[c]],]
-        #}
-        distances_topoint <- distances[clusters[[c]]]
-        #d <- myEuclid(point, points_cluster_c)
-        #cat("d: ",distances_topoint, "\n")
-        a <- (sum(distances_topoint))/(length(distances_topoint))
-        #cat("a: ",a,"\n")
-      }
-      #se ho scelto un cluster a cui il punto non appartiene, calcolo b
-      else{
-        #if (is.null(nrow(points[clusters[[c]],]))){
-        #  l <- clusters[[c]]
-        #  points_cluster_c <- matrix(points[l,], nrow=1)
-        #}
-        #else {
-        #  points_cluster_c <- points[clusters[[c]],]
-        #}
-        distances_topoint <- distances[clusters[[c]]]
-        #d <- myEuclid(point,points_cluster_c)
-        #cat("d: ",distances_topoint, "\n")
-        if (minb > sum(distances_topoint)){
-          minb<-sum(distances_topoint)
-          indmin<-c
+    
+    if(length(distances[clusters[[cl]]]) == 1) { # ho un singleton
+      
+      s <- c(s,1)
+      
+    } else { #non ho un singleton
+      
+      indmin <- 0
+      minb <- Inf
+      #scandisco ogni possibile cluster
+      for (c in (1:k)){
+        cat("Analizzo punto ", i, " in cluster ",cl, " -- Confronto con cluster ", c, "\n")
+        #se ho scelto il cluster a cui il punto appartiene, calcolo a
+        if (c == cl){
+          #if (is.null(nrow(points[clusters[[c]],]))){
+          #  l <- clusters[[c]]
+          #  distances_cluster_c <- matrix(points[l,], nrow=1)
+          #} else {
+          #  points_cluster_c <- points[clusters[[c]],]
+          #}
+          distances_topoint <- distances[clusters[[c]]]
+          #d <- myEuclid(point, points_cluster_c)
+          #cat("d: ",distances_topoint, "\n")
+          a <- (sum(distances_topoint))/(length(distances_topoint) - 1)
+          #cat("a: ",a,"\n")
         }
-        #cat("b: ",minb,"\n")
+        #se ho scelto un cluster a cui il punto non appartiene, calcolo b
+        else{
+          #if (is.null(nrow(points[clusters[[c]],]))){
+          #  l <- clusters[[c]]
+          #  points_cluster_c <- matrix(points[l,], nrow=1)
+          #}
+          #else {
+          #  points_cluster_c <- points[clusters[[c]],]
+          #}
+          distances_topoint <- distances[clusters[[c]]]
+          #d <- myEuclid(point,points_cluster_c)
+          #cat("d: ",distances_topoint, "\n")
+          if (minb > sum(distances_topoint)){
+            minb<-sum(distances_topoint)
+            indmin<-c
+          }
+          #cat("b: ",minb,"\n")
+        }
       }
+      minb <- minb/length(clusters[[indmin]])
+      s <- c(s,(minb-a)/max(minb,a))
+      #cat("s: ",s,"\n")
     }
-    minb <- minb/indmin
-    s <- c(s,(minb-a)/max(minb,a))
-    #cat("s: ",s,"\n")
   }
   return(sum(s))
 }
