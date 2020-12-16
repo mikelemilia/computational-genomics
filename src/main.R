@@ -401,7 +401,7 @@ K<-seq(1,10,by=1)
 for (i in (1:length(K))){
   k <- K[i]
   clusters_hclust_ward<-cutree(cl_hclust_ward, k=k)
-  sk <- c(sk,silhouette(data_normalized,clusters_hclust_ward,k))
+  sk <- c(sk,silhouette(dataNorm_clustering,clusters_hclust_ward,k))
   #print("i: ",i," - sk: ",sk)
 }
 cat("Hierarchial clusters over genes!\n")
@@ -418,8 +418,8 @@ sk <- NULL
 K<-seq(1,10,by=1)
 for (i in (1:length(K))){
   k <- K[i]
-  clusters_hclust_ward<-cutree(cl_hclust_ward, k=k)
-  sk <- c(sk,silhouette(data_normalized,clusters_hclust_ward,k))
+  clusters_hclust_ward_S<-cutree(cl_hclust_ward_S, k=k)
+  sk <- c(sk,silhouette(t(dataNorm_clustering),clusters_hclust_ward_S,k))
 }
 cat("Hierarchial clusters over samples!\n")
 print(sk)
@@ -453,7 +453,7 @@ clus_km_sample<-NULL
 sk <- NULL
 for(i in (1:length(K))) {
   k_i<-K[i]
-  cl_kmeans_samples<-kmeans(x=t(dataNorm_clustering),centers=k_i,iter.max=100,nstart=1)
+  cl_kmeans_samples<-kmeans(x=t(dataNorm_clustering),centers=k_i,iter.max=100,nstart=100)
   clus_km_sample<-c(clus_km_sample,cl_kmeans_samples)
   WITHIN_SS_sample<-rbind(WITHIN_SS_sample, cl_kmeans_samples$tot.withinss)
   sk <- rbind(sk, silhouette(t(dataNorm_clustering),cl_kmeans_samples[[1]], k_i))
@@ -466,11 +466,44 @@ plot(K, WITHIN_SS_sample)
 
 #GAP STATISTIC 
 library(cluster)
-prova<-clusGap(as.matrix(D), kmeans, length(K), B=2)
+
+test <- function(x, k) list(cluster=cutree(hclust(dist(x), method = "average"),k=k))
+
+#SAMPLES
+prova<-clusGap(t(dataNorm_clustering), test, length(K), B=500)
 
 for (i in (2:(nrow(prova[[1]])-1))){
   if (prova[[1]][i,3]>prova[[1]][i+1,3]+prova[[1]][i+1,4])
     break;
 }
-cat("Numero ottimo secondo Gap Statistics: ",i)
+cat("Numero ottimo per hierachical clustering secondo Gap Statistics: ",i)
+
+#GENES
+prova<-clusGap(dataNorm_clustering, test, length(K), B=500)
+
+for (i in (2:(nrow(prova[[1]])-1))){
+  if (prova[[1]][i,3]>prova[[1]][i+1,3]+prova[[1]][i+1,4])
+    break;
+}
+cat("Numero ottimo per hierachical clustering secondo Gap Statistics: ",i)
+
+# ---------------
+
+#SAMPLES
+prova<-clusGap(t(dataNorm_clustering), kmeans, length(K), B=500)
+
+for (i in (2:(nrow(prova[[1]])-1))){
+  if ((prova[[1]][i,3])>(prova[[1]][i+1,3]+prova[[1]][i+1,4]))
+    break;
+}
+cat("Numero ottimo per kmeans secondo Gap Statistics: ",i)
+
+#GENES
+prova<-clusGap(dataNorm_clustering, kmeans, length(K), B=2)
+
+for (i in (2:(nrow(prova[[1]])-1))){
+  if ((prova[[1]][i,3])>(prova[[1]][i+1,3]+prova[[1]][i+1,4]))
+    break;
+}
+cat("Numero ottimo per kmeans secondo Gap Statistics: ",i)
 
