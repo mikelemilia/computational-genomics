@@ -438,7 +438,7 @@ for(i in (1:length(K)))
   cl_kmeans_genes<-kmeans(x=dataNorm_clustering,centers=k_i,iter.max=100,nstart=1)
   clus_km<-c(clus_km,cl_kmeans_genes)
   WITHIN_SS<-rbind(WITHIN_SS, cl_kmeans_genes$tot.withinss)
-  sk <- rbind(sk, silhouette(dataNorm_clustering,cl_kmeans_samples[[1]], k_i))
+  sk <- rbind(sk, silhouette(dataNorm_clustering,cl_kmeans_genes[[1]], k_i))
 }
 print(sk)
 cat("K-Means over samples!\n")

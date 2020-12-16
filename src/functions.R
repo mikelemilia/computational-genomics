@@ -198,16 +198,6 @@ fisher_test_matrixes <- function(matrixes){
   return (pval)
 }
 
-#Function to calculate the distances between a point and points in a matrix
-myEuclid <- function(center, points) {
-  distanceVector <- NULL
-  center<-as.vector(center)
-  for(i in 1:nrow(points)) {
-    distanceVector <- c(distanceVector, dist(rbind(center, points[i])))
-  }
-  return(distanceVector)
-}
-
 #Silhouette Statistic
 silhouette <- function(points, cluster, k){
   #caso particolare, un cluster
@@ -252,40 +242,24 @@ silhouette <- function(points, cluster, k){
         cat("Analizzo punto ", i, " in cluster ",cl, " -- Confronto con cluster ", c, "\n")
         #se ho scelto il cluster a cui il punto appartiene, calcolo a
         if (c == cl){
-          #if (is.null(nrow(points[clusters[[c]],]))){
-          #  l <- clusters[[c]]
-          #  distances_cluster_c <- matrix(points[l,], nrow=1)
-          #} else {
-          #  points_cluster_c <- points[clusters[[c]],]
-          #}
+
           distances_topoint <- distances[clusters[[c]]]
-          #d <- myEuclid(point, points_cluster_c)
-          #cat("d: ",distances_topoint, "\n")
           a <- (sum(distances_topoint))/(length(distances_topoint) - 1)
-          #cat("a: ",a,"\n")
         }
         #se ho scelto un cluster a cui il punto non appartiene, calcolo b
         else{
-          #if (is.null(nrow(points[clusters[[c]],]))){
-          #  l <- clusters[[c]]
-          #  points_cluster_c <- matrix(points[l,], nrow=1)
-          #}
-          #else {
-          #  points_cluster_c <- points[clusters[[c]],]
-          #}
+          
           distances_topoint <- distances[clusters[[c]]]
-          #d <- myEuclid(point,points_cluster_c)
-          #cat("d: ",distances_topoint, "\n")
           if (minb > sum(distances_topoint)){
             minb<-sum(distances_topoint)
             indmin<-c
           }
-          #cat("b: ",minb,"\n")
         }
       }
+      
       minb <- minb/length(clusters[[indmin]])
       s <- c(s,(minb-a)/max(minb,a))
-      #cat("s: ",s,"\n")
+
     }
   }
   return(sum(s))
