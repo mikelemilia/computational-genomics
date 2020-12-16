@@ -396,11 +396,13 @@ D<-dist(dataNorm_clustering) #D is an object of class "dist". To get a matrix on
 cl_hclust_ward<-hclust(d=D,method="ward.D2")
 plot(cl_hclust_ward, hang=-1) 
 
+sk <- NULL
 K<-seq(1,10,by=1)
 for (i in (1:length(K))){
   k <- K[i]
   clusters_hclust_ward<-cutree(cl_hclust_ward, k=k)
   sk <- c(sk,silhouette(data_normalized,clusters_hclust_ward,k))
+  #print("i: ",i," - sk: ",sk)
 }
 cat("Hierarchial clusters over genes!\n")
 print(sk)
@@ -412,6 +414,7 @@ D<-dist(t(dataNorm_clustering))  #D is an object of class "dist". To get a matri
 cl_hclust_ward_S<-hclust(d=D,method="ward.D2")
 plot(cl_hclust_ward_S, hang=-1) 
 
+sk <- NULL
 K<-seq(1,10,by=1)
 for (i in (1:length(K))){
   k <- K[i]
