@@ -406,6 +406,7 @@ plot(cl_hclust_ward_S, hang=-1)
 
 #------------------- k MEANS ----------------------
 #CLUSTERING GENES 
+
 K<-seq(1,3,by=1)
 WITHIN_SS<-NULL
 clus_km<-NULL
@@ -413,7 +414,7 @@ sk <- NULL
 for(i in (1:length(K)))
 {
   k_i<-K[i]
-  cl_kmeans_genes<-kmeans(x=dataNorm_clustering,centers=k_i,iter.max=100,nstart=100)
+  cl_kmeans_genes<-kmeans(x=dataNorm_clustering,centers=k_i,iter.max=100,nstart=1)
   clus_km<-c(clus_km,cl_kmeans_genes)
   WITHIN_SS<-rbind(WITHIN_SS, cl_kmeans_genes$tot.withinss)
   sk <- rbind(sk, silhouette(cl_kmeans_genes, dataNorm_clustering, k_i))
@@ -422,7 +423,7 @@ print(sk)
 plot(K, WITHIN_SS)
 
 #CLUSTERING SAMPLES
-K<-seq(1,10,by=1)
+K<-seq(1,3,by=1)
 WITHIN_SS_sample<-NULL
 clus_km_sample<-NULL
 sk <- NULL
