@@ -507,3 +507,54 @@ for (i in (2:(nrow(prova[[1]])-1))){
 }
 cat("Numero ottimo per kmeans secondo Gap Statistics: ",i)
 
+
+
+
+
+
+
+
+
+## PLOTS-----------------------------------------------------------------
+#kmeans
+#genes
+library(factoextra)
+cl_genes<-kmeans(x=dataNorm_clustering, centers = 2, iter.max = 100, nstart = 100)
+fviz_cluster(cl_genes, data = dataNorm_clustering,
+             palette = c("#2E9FDF", "#00AFBB"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw()
+)
+
+#samples
+cl_samples<-kmeans(x=t(dataNorm_clustering), centers = 3, iter.max = 100, nstart = 100)
+fviz_cluster(cl_samples, data = t(dataNorm_clustering),
+             palette = c("#2E9FDF", "#00AFBB", "#E7B800"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw()
+)
+
+#hierarchical
+#samples
+fviz_dend(cl_hclust_ward_S, rect = TRUE)
+#----oppure------
+nodePar <- list(lab.cex = 0.6, pch = c(NA, 19), 
+                cex = 0.7, col = "blue")
+
+hcd_S <- as.dendrogram(cl_hclust_ward_S)
+plot(hcd_S, type = "rectangle", horiz = FALSE, xlab = "Height", nodePar = nodePar, leaflab = "none")
+
+#genes
+fviz_dend(cl_hclust_ward, rect = TRUE)
+#----oppure------
+nodePar <- list(lab.cex = 0.6, pch = c(NA, 19), 
+                cex = 0.1, col = "blue")
+
+hcd_G <- as.dendrogram(cl_hclust_ward)
+plot(hcd_G, type = "rectangle", horiz = FALSE, ylab = "Height", nodePar = nodePar, leaflab = "none")
+
+
+
+
