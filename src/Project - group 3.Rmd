@@ -1,0 +1,317 @@
+---
+title: "Project - GROUP3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Part 1
+
+### 1 - Load the data in R
+
+```{load data}
+DATA<-read.table(getRawPath("E-GEOD-76987-raw-counts.tsv"), sep = "\t", row.names = 1, header = TRUE)
+LABELS <- read.delim(getRawPath("labels.txt"), sep = "\t", header = TRUE)
+```
+
+### 2 - Calculate the sequencing depth of each sample
+
+```{calculate depth}
+depth <- apply(DATA[-1], 2, sum)
+```
+
+### 3 - Produce the MvA plots of each sample vs. sample 1
+
+TODO: decide with respect to which sample we produce the plots and decide if remove the first column at the beginning or not
+
+```{produce MVA plots}
+indsample <- 2;
+sample <- DATA[,indsample] + 1 # extract the sample 1
+
+cols <- ncol(DATA[-1]) # get number of columns
+rows <- length(sample) # get number of rows
+
+A <- matrix(0, nrow = rows, ncol = 0)
+M <- matrix(0, nrow = rows, ncol = 0)
+
+for(i in 3:cols){
+  png(file = paste(getPlotPath(i-2, "MvA"), ".png", sep = ""))
+  
+  # select the i-th element
+  selected <- DATA[,i] + 1
+  
+  result <- ma(sample, selected)
+  
+  M <- cbind(M, result[[1]])
+  A <- cbind(A, result[[2]])
+  
+  plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA Plot", i-2, sep =" "))
+  abline(0,0)
+  
+  dev.off()
+}
+```
+
+### 4 - Implement the TMM and the quantile normalization
+
+```{TMM-normalization}
+normed <- tmm_normalization(DATA[-1],indsample)
+dataNorm <- normed[[3]]
+
+for(i in 3:cols) {
+  png(file = paste(getPlotPath(i-2, "MvA - TMM Normalization"), ".png", sep = ""))
+  
+  plot(normed[[2]][,i], normed[[1]][,i], ylab="M",xlab="A",main=paste("MvA - TMM Plot", i-2, sep =" "))
+  abline(0,0)
+  
+  dev.off()
+}
+```
+
+```{quantile normalization}
+dataNorm <- quantile_normalization(DATA[-1])
+
+for(i in 3:cols){
+  png(file = paste(getPlotPath(i-2, "MvA - Quantile Normalization"), ".png", sep = ""))
+  
+  # select the i-th element
+  selected <- dataNorm[,i] + 1
+  
+  result <- ma(sample, selected)
+  
+  M <- cbind(M, result[[1]])
+  A <- cbind(A, result[[2]])
+  
+  plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA - Quantile Plot", i-2, sep =" "))
+  abline(0,0)
+  
+  dev.off()
+}
+```
+
+### 5 - Normalize the data using the method of your choice (explaining the reason of your choice)
+
+TODO: write which method we select and why
+
+### 6 - Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice) using normalized data to avaluate if the normalization step was correctly performed or if there are outlier sample.
+
+TODO: report the selected MVA plots and some comments on them
+
+# Part 2
+
+### Note 1 - There can be the same sample measured twice for a specific subject.
+
+```{remove of the duplicates}
+normal <- LABELS[LABELS$sample_type == c("normal"),] # get all the normal samples
+unimuc <- LABELS[LABELS$sample_type == c("uninvolved mucosa"),] # get all the uninvolved mucosa samples
+control <- rbind(normal, unimuc) # concatenate them 
+control<-control[order(as.numeric(control$individual)),] #sort in function of 'individual' value
+
+disease <- LABELS[LABELS$sample_type == c("colon sessile serrated adenoma/polyp"),] # get all the disease samples
+
+control_nodup<-remove_duplicates(dataNorm,control) #Remove duplicates in control
+disease_nodup<-remove_duplicates(dataNorm,disease) #Remove duplicates in disease
+```
+
+### Note 2 - There can be some genes that in both groups 1 and 2 have always expression equal to 0.
+
+```{taking care of zeros}
+groups_nozero <- remove_zeros(control_nodup,disease_nodup)
+control_nodup_nozero<-groups_nozero[[1]]
+disease_nodup_nozero<-groups_nozero[[2]]
+```
+
+### 1 - Calculate p-values of DE analysis (not corrected for multiple testing) between the two groups using t-test, Wilcoxon test and edgeR.
+
+```{p-values}
+Nc<-nrow(control_nodup_nozero)
+c_ttest_pvalue <- NULL
+c_wilcoxon_pvalue <- NULL
+
+selected_ttest<-0
+selected_wilcox<-0
+for(i in (1:Nc)){ 
+  c_ttest_pvalue <- c(c_ttest_pvalue,t.test(control_nodup_nozero[i,], disease_nodup_nozero[i,], var.equal = FALSE)[[3]])
+  c_wilcoxon_pvalue <- c(c_wilcoxon_pvalue,wilcox.test(control_nodup_nozero[i,],disease_nodup_nozero[i,], exact=FALSE)[[3]])
+}
+```
+
+TODO: controllare nomi variabili
+
+```{preprocessing}
+#Rebuilt control matrix with initial data (not normalized)
+control_nodup<-remove_duplicates(DATA,control)
+
+count<-ncol(control_nodup)
+nomi<-rep("", count)
+for (i in (1:count))
+{
+  x<-paste("control",as.character(i),sep='_')
+  nomi[i]<-x
+}
+colnames(control_nodup)<-nomi
+
+#Rebuilt disease matrix with initial data (not normalized)
+
+disease_nodup<-remove_duplicates(DATA,disease)
+
+count<-ncol(disease_nodup)
+nomi<-rep("", count)
+for (i in (1:count))
+{
+  x<-paste("disease",as.character(i),sep='_')
+  nomi[i]<-x
+}
+colnames(disease_nodup)<-nomi
+```
+
+TODO: controllare i commenti da lasciare, i nomi delle variabili e ciò da mostrare in output
+
+```{edgeR}
+#unisco le due tabelle
+mat <- cbind(disease_nodup, control_nodup)
+library(edgeR)
+
+# creo i gruppi che poi mi serviranno per definire "group"; di base mi serve solo che mi separino
+#ciò che c'è in tabella in control e disease
+#sono due vettori
+gruppo_controllo <- rep("control",dim(control_nodup)[2])
+gruppo_malato <- rep("disease",dim(disease_nodup)[2])
+
+#li unisco, mi serve vettore unico per usare factor
+gruppo <- cbind(t(as.data.frame(gruppo_malato)),t(as.data.frame(gruppo_controllo)))
+
+#uso factor(), ottengo un oggetto diviso in due livelli (contorl e disease), come ci serve
+group <- factor(gruppo)
+
+#matrice di design
+design <- model.matrix(~0+group) 
+rownames(design) <- colnames(mat)  
+print(design)
+
+# fit values of phi (we need this step to fit our GLM model)
+y <- DGEList(counts=mat, remove.zeros = TRUE)    # y is an object of type DGE
+y <- calcNormFactors(y)   # This calculates the SF using the TMM normalization !!!
+SF<-y$samples
+
+y <- estimateGLMCommonDisp(y,design, verbose=TRUE) #phi common to the entire dataset
+y <- estimateGLMTrendedDisp(y,design) #phi depends on mu
+y <- estimateGLMTagwiseDisp(y,design) #phi is gene specific
+fit <- glmFit(y,design) #finally the model fit (that accounts for raw NB data and scaling factors and seq. depth) 
+summary(fit)
+
+#il test
+Confronti<-makeContrasts(Treatment=groupdisease-groupcontrol,levels=design)
+RES<-glmLRT(fit,contrast=Confronti[,"Treatment"])
+
+#alcuni output
+
+# The first column of RES reports the log_Fold_Change, i.e.: 
+# log2(Normalized_data_average_groupProvadisease / Normalized_data_average_groupProvacontrol)
+RES$table[1:5,]
+
+out <- topTags(RES, n = "Inf")$table
+out[1:5,]
+```
+
+### 2 - Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha=0.05 and consider G0=N with N being the number of genes.
+
+```{selection for alpha 0.05}
+alpha<-0.05
+
+lower<-(c_ttest_pvalue<alpha)
+selected_ttest<-which(lower==TRUE)
+num_sel_ttest<-length(selected_ttest)
+
+lower<-(c_wilcoxon_pvalue<alpha)
+selected_wilcox<-which(lower==TRUE)
+num_sel_wilcox<-length(selected_wilcox)
+
+#selected usando edgeR 
+indSELedgeR<-length(which(out$PValue<alpha)) #i selected
+```
+
+```{calculation of expected values}
+G<-nrow(control_nodup_nozero)
+G0<-G
+
+#function that returns a vector with, in order, TP FP TN FN
+expected_ttest <- expected_values(G, G0, alpha, num_sel_ttest)
+expected_wilcoxontest <- expected_values(G, G0, alpha, num_sel_wilcox)
+expected_edger <- expected_values(G, G0, alpha, indSELedgeR)
+```
+
+### 3 - Estimate the number of not differentially expressed genes G0 and re-estimate the expected number of false positives and false negatives.
+
+``` {estimation of G0 and re-estimation of the values for each test}
+res <- estimateG0(c_ttest_pvalue, G0, "T test")
+lambda_est_ttest <- 0.8
+eps<-0.1
+G0_est_ttest<-G0_value_estimation(lambda_est_ttest, eps, res)
+
+expected_ttest_est <- expected_values(G, G0_est_ttest, alpha, num_sel_ttest)
+
+res <- estimateG0(c_wilcoxon_pvalue, G0, "Wilcoxon test")
+lambda_est_wilcoxon <- 0.8
+eps<-0.1
+G0_est_wilcoxontest<-G0_value_estimation(lambda_est_wilcoxon, eps, res)
+
+expected_wilcoxontest_est <- expected_values(G, G0_est_wilcoxontest, alpha, num_sel_wilcox)
+
+res <- estimateG0(out[,4], G0, "edgeR test")
+lambda_est_edger <- 0.8
+eps<-0.1
+G0_est_edger<-G0_value_estimation(lambda_est_edger, eps, res)
+
+expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, indSELedgeR)
+```
+
+### 4 - Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice.
+
+TODO: write the motivations of edgeR
+
+### 5 - Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%.
+
+```{select the final list of DE genes}
+FDR <- 0.05
+#values observed as p-value in edgeR (chosen test)
+lambda<-seq(min(out[,4]), max(out[,4]), (max(out[,4])-min(out[,4]))/nrow(out))
+FDR_values<-NULL
+
+for (i in (1:length(lambda))) {
+  #compute FDR for every lambda
+  minori<-(out[,4]<lambda[i])
+  num_sel<-length(which(minori==TRUE))
+  
+  expected_val <- expected_values(G, G0_est_edger, lambda[i], num_sel)
+  
+  if (num_sel==0){
+    FDR_values<-c(FDR_values,0)} 
+  else {
+    FDR_values<-c(FDR_values,(expected_val[2]/num_sel))}
+}
+
+plot(lambda,FDR_values)
+
+#choose the values that are in [0.05-epsilon;0.05+espilon]
+epsilon <- 0.0001
+alpha_index <- which(FDR_values>=0.05-epsilon)
+alpha_index2 <- which(FDR_values<=0.05+epsilon)
+alpha_est <- mean(lambda[intersect(alpha_index,alpha_index2)])
+
+indexes<-which(out$PValue<alpha_est) #the ones selected
+index_genes_selected<-sort(as.numeric(rownames(out[indexes,])))
+
+ID_genes_selected<-rownames(DATA[index_genes_selected,])
+number_genes_selected<-length(ID_genes_selected)
+ID_genes_notselected <- setdiff(rownames(DATA),ID_genes_selected)
+number_genes_notselected<-length(ID_genes_notselected)
+```
+
+# Part 3
+
+
+
+

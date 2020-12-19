@@ -467,45 +467,49 @@ plot(K, WITHIN_SS_sample)
 #GAP STATISTIC 
 library(cluster)
 
-test <- function(x, k) list(cluster=cutree(hclust(dist(x), method = "average"),k=k))
+test_hclust <- function(x, k) list(cluster=cutree(hclust(dist(x), method = "average"),k=k))
 
 #SAMPLES
-prova<-clusGap(t(dataNorm_clustering), test, length(K), B=500)
+prova<-clusGap(t(dataNorm_clustering), test_hclust, length(K), B=100)
 
 for (i in (2:(nrow(prova[[1]])-1))){
   if (prova[[1]][i,3]>prova[[1]][i+1,3]+prova[[1]][i+1,4])
     break;
 }
-cat("Numero ottimo per hierachical clustering secondo Gap Statistics: ",i)
+cat("Numero ottimo per hierachical clustering dei samples secondo Gap Statistics: ",i)
 
 #GENES
-prova<-clusGap(dataNorm_clustering, test, length(K), B=500)
+prova<-clusGap(dataNorm_clustering, test_hclust, length(K), B=100)
 
-for (i in (2:(nrow(prova[[1]])-1))){
+for (i in (1:(nrow(prova[[2]])-1))){
   if (prova[[1]][i,3]>prova[[1]][i+1,3]+prova[[1]][i+1,4])
     break;
 }
-cat("Numero ottimo per hierachical clustering secondo Gap Statistics: ",i)
+cat("Numero ottimo per hierachical clustering dei geni secondo Gap Statistics: ",i)
 
 # ---------------
 
 #SAMPLES
-prova<-clusGap(t(dataNorm_clustering), kmeans, length(K), B=500)
+
+test_kmeans <- function(x, k) (kmeans(x=x,centers=k,iter.max=100,nstart=100))
+
+prova<-clusGap(t(dataNorm_clustering), test_kmeans, length(K), B=100)
 
 for (i in (2:(nrow(prova[[1]])-1))){
   if ((prova[[1]][i,3])>(prova[[1]][i+1,3]+prova[[1]][i+1,4]))
     break;
 }
-cat("Numero ottimo per kmeans secondo Gap Statistics: ",i)
+cat("Numero ottimo per kmeans dei samples secondo Gap Statistics: ",i)
 
 #GENES
-prova<-clusGap(dataNorm_clustering, kmeans, length(K), B=2)
+
+prova<-clusGap(dataNorm_clustering, test_kmeans, length(K), B=2)
 
 for (i in (2:(nrow(prova[[1]])-1))){
   if ((prova[[1]][i,3])>(prova[[1]][i+1,3]+prova[[1]][i+1,4]))
     break;
 }
-cat("Numero ottimo per kmeans secondo Gap Statistics: ",i)
+cat("Numero ottimo per kmeans dei geni secondo Gap Statistics: ",i)
 
 
 
