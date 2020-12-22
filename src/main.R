@@ -37,7 +37,7 @@ for(i in 3:cols){
 
 # 4 - Produce the normalization of data with TMM and print MvA plots
 
-normed <- tmm_normalization(DATA[-1],indsample)
+normed <- tmm_normalization2(DATA[-1],indsample)
 dataNorm <- normed[[3]]
 
 for(i in 3:cols) {
@@ -51,7 +51,7 @@ for(i in 3:cols) {
 
 # 5 - Produce the normalization of data with Quantiles, calculate new M and A and print MvA plots 
 
-dataNorm <- quantile_normalization(DATA[-1])
+dataNorm <- quantile_normalization2(DATA[-1])
 
 for(i in 3:cols){
   png(file = paste(getPlotPath(i-2, "MvA - Quantile Normalization"), ".png", sep = ""))

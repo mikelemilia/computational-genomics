@@ -200,15 +200,20 @@ remove_zeros <- function(group1,group2){
   group1_forcomparison<-apply(group1, 1, sum)
   group2_forcomparison<-apply(group2, 1, sum)
   vec_for_comparison<-as.data.frame(group1_forcomparison+group2_forcomparison)
+  
   #usare i quantili PER TROVARE SOGLIA 
   q<-quantile(unlist(vec_for_comparison))
   #median<-median(unlist(vec_for_comparison)) USANDO MEDIANA? TROPPO POCHI NE RESTANO
+  
   YN<-as.data.frame(vec_for_comparison>q[1])
   index<-which(YN==FALSE) #indici di quelli da togliere
-  group1_nozero<-(control_nodup[-index,])
-  group2_nozero<-disease_nodup[-index, ]
   
-  return(list(group1_nozero,group2_nozero))
+  group1_nozero<- control_nodup[-index,] 
+  group2_nozero<- disease_nodup[-index, ]
+  
+  return(
+    list('control' = group1_nozero, 'disease' = group2_nozero)
+  )
 }
 
 estimateG0<-function(c_pvalue, G, filename) {
