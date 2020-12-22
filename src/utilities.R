@@ -1,8 +1,7 @@
+## ---- 
 getRawPath <- function(filename){
   
   path <- paste(getwd(), "/data/raw/", filename, sep = "")
-  
-  # cat(path, "\n")
   
   if(!file.exists(path)){
     
@@ -10,12 +9,14 @@ getRawPath <- function(filename){
   
   } else {
     
+    message(paste("Successfully loaded :", filename, "\n", sep = " "))
+    
     return(path)
 
   }
 
 }
-
+## ---- getTempPath
 getTempPath <- function(filename){
   
   path <- paste(getwd(), "/data/temp/", filename, sep = "")
@@ -77,3 +78,13 @@ getPlotPath <- function(filename, folder = ""){
   
 }
 
+showProgress <- function(tot){
+  library(progress)
+  
+  pb <- progress_bar$new(total = tot)
+  for (i in 1:tot) {
+    pb$tick()
+    Sys.sleep(1 / 100)
+  }
+  
+}

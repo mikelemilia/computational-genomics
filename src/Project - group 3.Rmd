@@ -1,123 +1,137 @@
 ---
 title: "Project - GROUP3"
-output: html_document
+output: html_notebook
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=TRUE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+knitr::knit_hooks$set(document = function(x) {
+    paste(rapply(strsplit(x, '\n'), function(y) Filter(function(z) !grepl('# HIDE',z),y)), collapse ='\n')
+})
 ```
 
-# Part 1
+## Part 1
+### 1.1 - Load the data in R
 
-### 1 - Load the data in R
+```{r load functions, echo=FALSE}
 
-```{load data}
-DATA<-read.table(getRawPath("E-GEOD-76987-raw-counts.tsv"), sep = "\t", row.names = 1, header = TRUE)
+# You must load the functions inside this chunk
+source(paste(getwd(), '/src/utilities.R', sep = ""))
+source(paste(getwd(), '/src/functions.R', sep = ""))
+
+```
+
+
+```{r load data}
+DATA   <- read.table(getRawPath("E-GEOD-76987-raw-counts.tsv"), sep = "\t", row.names = 1, header = TRUE)
 LABELS <- read.delim(getRawPath("labels.txt"), sep = "\t", header = TRUE)
 ```
 
-### 2 - Calculate the sequencing depth of each sample
+### 1.2 - Calculate the sequencing depth of each sample
 
-```{calculate depth}
-depth <- apply(DATA[-1], 2, sum)
+```{r calculate depth, results='hold', collapse=TRUE}
+genes   <- DATA[,1]                 # name of the genes
+samples <- DATA[,2:ncol(DATA)]      # samples in the datasets
+
+genes_number   <- length(genes)     # it's the same of using -> nrow(samples)       
+samples_number <- length(samples)   # it's the same of using -> ncol(samples)
+
+
+# Computing the sequencing depth of each sample
+
+depth <- apply(samples, 2, sum)     # 2 means that we're appling the sum by columns
+
+{# HIDE
+cat("Our dataset is composed by:\n\n")
+cat(paste("♦", genes_number, "genes\n", sep = " "))           
+cat(paste("♦", samples_number, "samples\n\n", sep = " "))          
+
+cat("The sequencing depht of each sample is:\n", depth)
+
+}# HIDE
+
 ```
 
-### 3 - Produce the MvA plots of each sample vs. sample 1
+### 1.3 - Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice)
 
 TODO: decide with respect to which sample we produce the plots and decide if remove the first column at the beginning or not
 
-```{produce MVA plots}
-indsample <- 2;
-sample <- DATA[,indsample] + 1 # extract the sample 1
+```{r generate temp dataset}
+temp_samples <- samples + 1 # add 1 to all elements to avoid the log(0)
+#TODO: save the temporary datasets into data/temp and reload it
 
-cols <- ncol(DATA[-1]) # get number of columns
-rows <- length(sample) # get number of rows
-
-A <- matrix(0, nrow = rows, ncol = 0)
-M <- matrix(0, nrow = rows, ncol = 0)
-
-for(i in 3:cols){
-  png(file = paste(getPlotPath(i-2, "MvA"), ".png", sep = ""))
-  
-  # select the i-th element
-  selected <- DATA[,i] + 1
-  
-  result <- ma(sample, selected)
-  
-  M <- cbind(M, result[[1]])
-  A <- cbind(A, result[[2]])
-  
-  plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA Plot", i-2, sep =" "))
-  abline(0,0)
-  
-  dev.off()
-}
+extracted_index <- 1
+    
+interval <- (1:samples_number)[-extracted_index]
 ```
 
-### 4 - Implement the TMM and the quantile normalization
+```{r produce MvA plots}
+A <- matrix(0, nrow = genes_number, ncol = 0)
+M <- matrix(0, nrow = genes_number, ncol = 0)
 
-```{TMM-normalization}
-normed <- tmm_normalization(DATA[-1],indsample)
-dataNorm <- normed[[3]]
-
-for(i in 3:cols) {
-  png(file = paste(getPlotPath(i-2, "MvA - TMM Normalization"), ".png", sep = ""))
-  
-  plot(normed[[2]][,i], normed[[1]][,i], ylab="M",xlab="A",main=paste("MvA - TMM Plot", i-2, sep =" "))
-  abline(0,0)
-  
-  dev.off()
-}
+produceMvA(temp_samples, extracted_index, interval,  folder = "MvA", graph_title = "MvA Plot")
 ```
 
-```{quantile normalization}
-dataNorm <- quantile_normalization(DATA[-1])
+### 1.4 - Implement the TMM and the quantile normalization
 
-for(i in 3:cols){
-  png(file = paste(getPlotPath(i-2, "MvA - Quantile Normalization"), ".png", sep = ""))
-  
-  # select the i-th element
-  selected <- dataNorm[,i] + 1
-  
-  result <- ma(sample, selected)
-  
-  M <- cbind(M, result[[1]])
-  A <- cbind(A, result[[2]])
-  
-  plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA - Quantile Plot", i-2, sep =" "))
-  abline(0,0)
-  
-  dev.off()
-}
+```{r TMM Normalization Implementation}
+tmm_normalization
 ```
 
-### 5 - Normalize the data using the method of your choice (explaining the reason of your choice)
+```{r Quantile Normalization Implementation}
+quantile_normalization
+```
 
-TODO: write which method we select and why
+### 1.5 - Normalize the data using the method of your choice (explaining the reason of your choice)
+```{r TMM Normalization}
+A <- matrix(0, nrow = genes_number, ncol = 0)
+M <- matrix(0, nrow = genes_number, ncol = 0)
 
-### 6 - Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice) using normalized data to avaluate if the normalization step was correctly performed or if there are outlier sample.
+tmm_normed <- tmm_normalization(temp_samples, extracted_index, interval)
 
-TODO: report the selected MVA plots and some comments on them
+```
 
-# Part 2
+```{r Quantile normalization}
+A <- matrix(0, nrow = genes_number, ncol = 0)
+M <- matrix(0, nrow = genes_number, ncol = 0)
+
+quantile_normed <- quantile_normalization(temp_samples)
+
+```
+
+#### TODO: write which method we select and why
+
+### 1.6 - Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice) using normalized data to evaluate if the normalization step was correctly performed or if there are outlier sample.
+
+```{r Produce Normalized MvA Plots}
+# TMM Normalization 
+produceMvA(tmm_normed$samples, extracted_index, interval,  folder = "MvA - TMM Normalization", graph_title = "MvA (TMM Normalization)")
+
+# Quantile Normalization
+produceMvA(quantile_normed$samples, extracted_index, interval,  folder = "MvA - Quantile Normalization", graph_title = "MvA (Quantile Normalization)")
+
+#TODO: report the selected MVA plots and some comments on them
+```
+## Part 2
 
 ### Note 1 - There can be the same sample measured twice for a specific subject.
 
-```{remove of the duplicates}
-normal <- LABELS[LABELS$sample_type == c("normal"),] # get all the normal samples
+```{r remove of the duplicates}
+normal <- LABELS[LABELS$sample_type == c("normal"),]            # get all the normal samples
 unimuc <- LABELS[LABELS$sample_type == c("uninvolved mucosa"),] # get all the uninvolved mucosa samples
-control <- rbind(normal, unimuc) # concatenate them 
-control<-control[order(as.numeric(control$individual)),] #sort in function of 'individual' value
+
+control <- rbind(normal, unimuc)                                # concatenate them 
+control<-control[order(as.numeric(control$individual)),]        # sort in function of 'individual' value
 
 disease <- LABELS[LABELS$sample_type == c("colon sessile serrated adenoma/polyp"),] # get all the disease samples
 
-control_nodup<-remove_duplicates(dataNorm,control) #Remove duplicates in control
-disease_nodup<-remove_duplicates(dataNorm,disease) #Remove duplicates in disease
+control_nodup<-remove_duplicates(dataNorm,control) # remove duplicates in control
+disease_nodup<-remove_duplicates(dataNorm,disease) # remove duplicates in disease
 ```
 
 ### Note 2 - There can be some genes that in both groups 1 and 2 have always expression equal to 0.
 
-```{taking care of zeros}
+```{r taking care of zeros}
 groups_nozero <- remove_zeros(control_nodup,disease_nodup)
 control_nodup_nozero<-groups_nozero[[1]]
 disease_nodup_nozero<-groups_nozero[[2]]
@@ -125,7 +139,7 @@ disease_nodup_nozero<-groups_nozero[[2]]
 
 ### 1 - Calculate p-values of DE analysis (not corrected for multiple testing) between the two groups using t-test, Wilcoxon test and edgeR.
 
-```{p-values}
+```{r p-values}
 Nc<-nrow(control_nodup_nozero)
 c_ttest_pvalue <- NULL
 c_wilcoxon_pvalue <- NULL
@@ -140,7 +154,7 @@ for(i in (1:Nc)){
 
 TODO: controllare nomi variabili
 
-```{preprocessing}
+```{r preprocessing}
 #Rebuilt control matrix with initial data (not normalized)
 control_nodup<-remove_duplicates(DATA,control)
 
@@ -169,7 +183,7 @@ colnames(disease_nodup)<-nomi
 
 TODO: controllare i commenti da lasciare, i nomi delle variabili e ciò da mostrare in output
 
-```{edgeR}
+```{r edgeR}
 #unisco le due tabelle
 mat <- cbind(disease_nodup, control_nodup)
 library(edgeR)
@@ -218,7 +232,7 @@ out[1:5,]
 
 ### 2 - Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha=0.05 and consider G0=N with N being the number of genes.
 
-```{selection for alpha 0.05}
+```{r selection for alpha 0.05}
 alpha<-0.05
 
 lower<-(c_ttest_pvalue<alpha)
@@ -233,7 +247,7 @@ num_sel_wilcox<-length(selected_wilcox)
 indSELedgeR<-length(which(out$PValue<alpha)) #i selected
 ```
 
-```{calculation of expected values}
+```{r calculation of expected values}
 G<-nrow(control_nodup_nozero)
 G0<-G
 
@@ -245,7 +259,7 @@ expected_edger <- expected_values(G, G0, alpha, indSELedgeR)
 
 ### 3 - Estimate the number of not differentially expressed genes G0 and re-estimate the expected number of false positives and false negatives.
 
-``` {estimation of G0 and re-estimation of the values for each test}
+``` {r estimation of G0 and re-estimation of the values for each test}
 res <- estimateG0(c_ttest_pvalue, G0, "T test")
 lambda_est_ttest <- 0.8
 eps<-0.1
@@ -274,7 +288,7 @@ TODO: write the motivations of edgeR
 
 ### 5 - Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%.
 
-```{select the final list of DE genes}
+```{r select the final list of DE genes}
 FDR <- 0.05
 #values observed as p-value in edgeR (chosen test)
 lambda<-seq(min(out[,4]), max(out[,4]), (max(out[,4])-min(out[,4]))/nrow(out))
