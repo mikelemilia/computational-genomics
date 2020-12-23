@@ -46,7 +46,7 @@ cat("Our dataset is composed by:\n\n")
 cat(paste("♦", genes_number, "genes\n", sep = " "))           
 cat(paste("♦", samples_number, "samples\n\n", sep = " "))          
 
-cat("The sequencing depht of each sample is:\n", depth)
+# cat("The sequencing depht of each sample is:\n", depth)
 
 }# HIDE
 
