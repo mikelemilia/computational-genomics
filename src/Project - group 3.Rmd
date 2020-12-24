@@ -594,5 +594,50 @@ for (i in (2:(nrow(prova[[1]])-1))){
 }
 cat("Numero ottimo per kmeans dei geni secondo Gap Statistics: ",i)
 ```
+``
 
-## Part 5
+
+```{r plots of part4, HIERARCHICAL}
+# GENES, HIERARCHICAL CLUSTERING
+library(factoextra)
+
+nodePar <- list(lab.cex = 0.6, pch = NA)
+hcd_G <- as.dendrogram(cl_hclust_ward)
+
+#par(mfrow=c(3,1))
+hcd<-as.dendrogram(cl_hclust_ward)
+plot(cut(hcd, h=400)$upper, main="Upper tree of cut at h=400", nodePar = nodePar,
+     leaflab = "textlike")
+
+plot(cut(hcd, h=400)$lower[[2]], nodePar = nodePar, leaflab = "none",
+     main="Second branch of lower tree with cut at h=400")
+
+# SAMPLES, HIERARCHICAL CLUSTERING
+hcd_S <- as.dendrogram(cl_hclust_ward_S)
+plot(hcd_S, type = "rectangle", horiz = TRUE, xlab = "Height", nodePar = nodePar, leaflab = "none", main="Hierarchical clustering of samples")
+
+```
+
+```{r plot of part 4, kmeans}
+#GENES, KMEANS
+library(factoextra)
+cl_genes<-kmeans(x=dataNorm_clustering, centers = 2, iter.max = 100, nstart = 100)
+fviz_cluster(cl_genes, data = dataNorm_clustering,
+             palette = c("#2E9FDF", "#00AFBB"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw(),
+             main="Kmeans clustering of genes"
+)
+
+#SAMPLES, KMEANS
+cl_samples<-kmeans(x=t(dataNorm_clustering), centers = 3, iter.max = 100, nstart = 100)
+fviz_cluster(cl_samples, data = t(dataNorm_clustering),
+             palette = c("#2E9FDF", "#00AFBB", "#E7B800"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw(),
+             main="Kmeans clustering of samples"
+)
+```
+
