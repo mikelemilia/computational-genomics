@@ -10,7 +10,7 @@ knitr::knit_hooks$set(document = function(x) {
 })
 ```
 
-## Part 1
+## PART 1
 ### 1.1 - Load the data in R
 
 ```{r load functions, echo=FALSE}
@@ -99,9 +99,43 @@ quantile_normed <- quantile_normalization(temp_samples)
 
 ```
 
-#### TODO: write which method we select and why
 
-### 1.6 - Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice) using normalized data to evaluate if the normalization step was correctly performed or if there are outlier sample.
+
+### We decided to use the quantile normalization; in fact, this type of normalization seemed more robust and gave better results. In fact, if we look at the MvA plots of sample 1 (the reference) VS sample 12, we can see that in the quantile normalization plot the cloud of points is more or less lying on M=0, as it should, while in the TMM normalization plot the cloud of points is clearly hanging below M=0. 
+### It is to be noted that neither the quantile nor the TMM normalizations get rid of the "V-shaped" outliers near low values of A (average). The code below shows what was said here. 
+
+```{r MvA plot of reference sample (sample 1) VS sample 12 with TMM and quantile normalization}
+
+#quantile
+par(mfrow=c(1,2)) 
+extracted<-quantile_normed$samples[,2]
+selected<-quantile_normed$samples[,12]
+computed <- MA(extracted, selected)
+    
+M <- cbind(M, computed$M) # equivalent to do computed[[1]]
+A <- cbind(A, computed$A) # equivalent to do computed[[2]]
+    
+    
+plot(computed$A, computed$M, xlab="A", ylab="M", main = "MvA plot - quantile", sub = paste("Sample", 1, "vs.", 12, sep = " "))
+abline(0,0)
+
+#TMM
+extracted<-tmm_normed$samples[,2]
+selected<-tmm_normed$samples[,12]
+computed <- MA(extracted, selected)
+    
+M <- cbind(M, computed$M) # equivalent to do computed[[1]]
+A <- cbind(A, computed$A) # equivalent to do computed[[2]]
+    
+    
+plot(computed$A, computed$M, xlab="A", ylab="M", main = "MvA plot - TMM ", sub = paste("Sample", 1, "vs.", 12, sep = " "))
+abline(0,0)
+
+```
+
+
+
+### 1.6 - Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice) using normalized data to evaluate if the normalization step was correctly performed or if there are outlier samples.
 
 ```{r Produce Normalized MvA Plots}
 # TMM Normalization 
@@ -110,11 +144,14 @@ produceMvA(tmm_normed$samples, extracted_index, interval,  folder = "MvA - TMM N
 # Quantile Normalization
 produceMvA(quantile_normed$samples, extracted_index, interval,  folder = "MvA - Quantile Normalization", graph_title = "MvA (Quantile Normalization)")
 
-#TODO: report the selected MVA plots and some comments on them
-```
-## Part 2
 
-### Note 1 - There can be the same sample measured twice for a specific subject.
+```
+
+### See MvA plots of reference sample VS sample 12 and reference sample VS 47; the plots of reference VS 12 was explained above. For reference VS 47 the same comments can be made: MvA plots clearly show a deviance from M=0 in TMM normalization while this deviance is not present in quantile normalizatio. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
+
+## PART 2
+
+### Note 1 - There can be the same sample measured twice for a specific subject. We decided to take care of it by simply using a mean approach: the samples coming from a same subject in the same group (for istance subject 1 is measured two times as a control subject) are mediated.
 
 ```{r remove of the duplicates}
 normal <- LABELS[LABELS$sample_type == c("normal"),]            # get all the normal samples
@@ -129,7 +166,7 @@ control_nodup <- remove_duplicates(quantile_normed$samples, control) # remove du
 disease_nodup <- remove_duplicates(quantile_normed$samples, disease) # remove duplicates in disease
 ```
 
-### Note 2 - There can be some genes that in both groups 1 and 2 have always expression equal to 0.
+### Note 2 - There can be some genes that in both groups 1 and 2 have always expression equal to 0. We took care of this problem by taking out genes that had expression always equal to zero in all samples from the control group and the disease group. For instace, say that we look at gene 1: if the sum of the read counts for gene 1 in all the samples coming from control group is zero as it is in all the samples from the disease group then we can say that gene 1 has always expression zero, so it does not give information about differentially expressed genes in disease VS control groups. Gene 1 in this example is therefore taken out.
 
 ```{r taking care of zeros}
 groups_nozero <- remove_zeros(control_nodup, disease_nodup)
@@ -155,7 +192,8 @@ for(i in (1:Nc)){
 TODO: controllare nomi variabili
 
 ```{r preprocessing}
-#Rebuilt control matrix with initial data (not normalized)
+#Rebuilt control matrix with initial data (not normalized); this is done beacuse edgeR was created to work with data whose distribution is negative binomial, as our initial data matrix. On the other hand, normalized data does not comply to negative binomial distribution, so it cannot be used as input for edgeR functions. 
+
 control_nodup<-remove_duplicates(DATA,control)
 
 count<-ncol(control_nodup)
@@ -184,50 +222,46 @@ colnames(disease_nodup)<-nomi
 TODO: controllare i commenti da lasciare, i nomi delle variabili e ciò da mostrare in output
 
 ```{r edgeR}
-#unisco le due tabelle
-mat <- cbind(disease_nodup, control_nodup)
 library(edgeR)
 
-# creo i gruppi che poi mi serviranno per definire "group"; di base mi serve solo che mi separino
-#ciò che c'è in tabella in control e disease
-#sono due vettori
-gruppo_controllo <- rep("control",dim(control_nodup)[2])
-gruppo_malato <- rep("disease",dim(disease_nodup)[2])
+#unite the 2 tables 
+mat <- cbind(disease_nodup, control_nodup)
 
-#li unisco, mi serve vettore unico per usare factor
-gruppo <- cbind(t(as.data.frame(gruppo_malato)),t(as.data.frame(gruppo_controllo)))
+#create groups
+control_group <- rep("control",dim(control_nodup)[2])
+disease_group <- rep("disease",dim(disease_nodup)[2])
 
-#uso factor(), ottengo un oggetto diviso in due livelli (contorl e disease), come ci serve
-group <- factor(gruppo)
+#merge group; it will be input of factor()
+group_all <- cbind(t(as.data.frame(disease_group)),t(as.data.frame(control_group)))
 
-#matrice di design
+#use factor(): we get an object divided in 2 level (control and disease)
+group <- factor(group_all)
+
+# design matrix
 design <- model.matrix(~0+group) 
 rownames(design) <- colnames(mat)  
-print(design)
+
 
 # fit values of phi (we need this step to fit our GLM model)
-y <- DGEList(counts=mat, remove.zeros = TRUE)    # y is an object of type DGE
-y <- calcNormFactors(y)   # This calculates the SF using the TMM normalization !!!
+y <- DGEList(counts=mat, remove.zeros = TRUE)    
+y <- calcNormFactors(y)   # scaling factors with TMM approach
 SF<-y$samples
 
 y <- estimateGLMCommonDisp(y,design, verbose=TRUE) #phi common to the entire dataset
 y <- estimateGLMTrendedDisp(y,design) #phi depends on mu
 y <- estimateGLMTagwiseDisp(y,design) #phi is gene specific
-fit <- glmFit(y,design) #finally the model fit (that accounts for raw NB data and scaling factors and seq. depth) 
-summary(fit)
+fit <- glmFit(y,design) # the model fit 
 
-#il test
-Confronti<-makeContrasts(Treatment=groupdisease-groupcontrol,levels=design)
-RES<-glmLRT(fit,contrast=Confronti[,"Treatment"])
 
-#alcuni output
+#the test
+Confr<-makeContrasts(Treatment=groupdisease-groupcontrol,levels=design)
+RES<-glmLRT(fit,contrast=Confr[,"Treatment"])
 
-# The first column of RES reports the log_Fold_Change, i.e.: 
-# log2(Normalized_data_average_groupProvadisease / Normalized_data_average_groupProvacontrol)
+#some outputs just to give an idea of the test
+
 RES$table[1:5,]
 
-out <- topTags(RES, n = "Inf")$table
-out[1:5,]
+
 ```
 
 ### 2.2 - Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha = 0.05 and consider G0 = N with N being the number of genes.
@@ -262,29 +296,36 @@ expected_edger <- expected_values(G, G0, alpha, indSELedgeR)
 ``` {r estimation of G0 and re-estimation of the values for each test}
 res <- estimateG0(c_ttest_pvalue, G0, "T test")
 lambda_est_ttest <- 0.8
-eps<-0.1
+eps<-0.03
 G0_est_ttest<-G0_value_estimation(lambda_est_ttest, eps, res)
 
 expected_ttest_est <- expected_values(G, G0_est_ttest, alpha, num_sel_ttest)
 
 res <- estimateG0(c_wilcoxon_pvalue, G0, "Wilcoxon test")
 lambda_est_wilcoxon <- 0.8
-eps<-0.1
+eps<-0.03
 G0_est_wilcoxontest<-G0_value_estimation(lambda_est_wilcoxon, eps, res)
 
 expected_wilcoxontest_est <- expected_values(G, G0_est_wilcoxontest, alpha, num_sel_wilcox)
 
 res <- estimateG0(out[,4], G0, "edgeR test")
 lambda_est_edger <- 0.8
-eps<-0.1
+eps<-0.03
 G0_est_edger<-G0_value_estimation(lambda_est_edger, eps, res)
 
 expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, indSELedgeR)
+
+print("TP, FP, TN, FN with edgeR (using estimated G0)")
+print(expected_edgeR_est)
+print("TP, FP, TN, FN with t-test (using estimated G0)")
+print(expected_ttest_est)
+print("TP, FP, TN, FN with wilcoxon test (using estimated G0)")
+print(expected_wilcoxontest_est)
 ```
 
 ### 2.4 - Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice.
 
-TODO: write the motivations of edgeR
+### We chose edgeR for a few reasons; first of all, edgeR test was built for data with negative binomial distribution, while the other tests do not take into account the characteristics of this particular distribution. Then, it must also be said that it gives the lowest FN rate; while FP rate can be easily taken into account with a correction for multiple test, FN rate is not accounted for with this type of correction; the test must take into account FN rate. To conclude, we chose edgeR on the basis of the theory behind and also given the FP and FN rates.
 
 ### 2.5 - Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%.
 
@@ -327,12 +368,10 @@ number_genes_notselected<-length(ID_genes_notselected)
 ## Part 3
 
 ### 3.1 - extract G0 term associated 
+### We found out that some names of genes were duplicated but not their ENSEMBL IDs; so we used these IDs to get the annotation and extrct the right GO terms asociated with the genes. We also decided to take out those genes whose GOALL was NA, because this means that we don't have their associated term as of right now (the association is not complete in the DB).
 
-```{r extract G0}
+```{r extract GO terms}
 
-## ----- GESTIONE DEI NOMI DOPPI CON GENEID DIFFERENTI  --------------
-#può andare bene?? NB: I NOMI SONO ANCHE DOPPI, MA GLI ENSEMBL (ENSG...) NON LO SONO
-# 14 - estrazione di tutti i GOterm associati ai geni selezionati e creazione delle tabelle associate  
 
 library(AnnotationDbi)
 library(GO.db)
@@ -340,51 +379,18 @@ library(org.Hs.eg.db)
 
 alldata <- select(org.Hs.eg.db, ID_genes_selected, columns = c("SYMBOL","ENTREZID", "ENSEMBL","GOALL"), keytype="ENSEMBL")
 GOALL_NA<-which(is.na(alldata$GOALL))
-#which(!(GOALL_NA==alldata$ONTOLOGYALL)) --> si nota che se NA su GOALL allora NA anche su ONTOLOGYALL 
 ID_goall_na<-alldata$ENSEMBL[GOALL_NA]
 GOALL_NA<-unique(GOALL_NA)
 
 terms <- unique(alldata[,4])
 terms <- terms[!is.na(terms)]
 
-#QUESTO SOSTITUISCE I DUE CICLI FOR SUCCESSIVI, DA CAPIRE COSA TOGLIERE
+#get all the IDs for selected genes which are annotated in the DB (the genes for which we have the annotation in the DB); to improve computation, we also took out all the IDs of genes annotated but not selected and their respective total numbers. 
 ID_genes_selected_notna <- setdiff(ID_genes_selected,ID_goall_na)
 number_genes_selected_notna <- length(ID_genes_selected_notna)
 ID_genes_notselected_notna <- setdiff(ID_genes_notselected,ID_goall_na)
 number_genes_notselected_notna <- length(ID_genes_notselected_notna)
 
-#for(i in (1:length(GOALL_NA))){
-#  term<-names_goall_na[i]
-#  j<-0
-#  l<-length(names_genes_selected)
-#  while(l>0 && j<length(names_genes_selected))
-#  {
-#    j<-j+1
-#    name_sel<-names_genes_selected[j]
-#    if (term==name_sel)
-#    {
-#      names_genes_selected<-names_genes_selected[-j]
-#      number_genes_selected<-number_genes_selected-1
-#    }
-#    l<-l-1
-#  }
-#}
-#for(i in (1:length(GOALL_NA))){
-#  term<-names_goall_na[i]
-#  j<-0
-#  l<-length(names_genes_notselected)
-#  while(l>0 && j<length(names_genes_notselected))
-#  {
-#    j<-j+1
-#    name_sel<-names_genes_notselected[j]
-#    if (term==name_sel)
-#    {
-#      names_genes_notselected<-names_genes_notselected[-j]
-#      number_genes_notselected<-number_genes_notselected-1
-#    }
-#    l<-l-1
-#  }
-#}
 
 matrixes <- NULL
 
@@ -396,7 +402,9 @@ for (i in (1:length(terms))){
   c <- length(GOterm_indexes) - a
   d <- length(ID_genes_notselected_notna)- c
   type<-alldata[(which(alldata[,4]==GOterm))[1],6]
-  #matrice che ha nelle righe i GOterms associati e nelle colonne il tipo di GOterm e i valori di a,b,c,d per il fisher test 
+  
+  
+  #this matrix has on rows the associated GO terms and on columns the type of GOterm and the values for computing the fisher test.
   matrixes <- rbind(matrixes,c(type,a,b,c,d))
 }
 
@@ -405,10 +413,10 @@ rownames(matrixes)<-terms
 matrixes<-matrixes[order(rownames(matrixes)),]
 
 ```
-### 3.2 - extract G0 term associated 
+### 3.2 - fisher test
 
 ```{r fisher test}
-15 - divisione delle tabelle per type e computazione del fisher test
+
 
 matrixesCC <- matrixes[which(matrixes[,1]=="CC"),]
 colnames(matrixesCC)<-c("type","a","b","c","d")
@@ -421,36 +429,22 @@ pval_fisherCC<-fisher_test_matrixes(matrixesCC)
 pval_fisherBP<-fisher_test_matrixes(matrixesBP)
 pval_fisherMF<-fisher_test_matrixes(matrixesMF)
 ```
-### 3.3 - effettuare enrichment analysis or GSEA? (mi sa che ce la siamo persa)
 
 ## Part 4
-
+### 4.0 correcting for length of genes before clustering; we also decided to consider as one sample those samples taken for the same subject in the same group, as we did for testing the DE genes.
 ```{r init clustering}
-# 16 - lunghezza geni e clustering
 
-#library(goseq)
-#lengths_genes_selected<-getlength(ID_genes_selected, 'hg19', 'ensGene')
-#l<-as.matrix(lengths_genes_selected)
 
 library (EDASeq)
 ensembl_list <- ID_genes_selected
 d<-getGeneLengthAndGCContent(ensembl_list, "hsa")
-#d[[1]] contiene le lunghezz dei geni
+#d[[1]] has the length of all genes selected
 
+#prepare the matrix needed to normalize for length of genes
 data_normalized<-DATA[,-1]
 data_normalized<-data_normalized[index_genes_selected,]
 data_normalized<-t(t(data_normalized)/d[[1]])
 
-# da qui in avanti non ci sono gli oggetti nel dataset salvato
-
-# 17 - clustering
-
-## IDEA
-# FACENDO CLUSTERING DEI GENES MI ASPETTO CHE IL CLUSTER SIA 1 O COMUNQUE POCHI CLUSTERS.... SE SONO TUTTI 
-# I SELEZIONATI NON DOVREI VEDERE DIFFERENZE TRA LORO, SONO TUTTI ASSOCIATI ALLA MALATTIA
-
-# FACENDO CLUSTERING DEI SAMPLES, DOVREI VEDERE CHE SI DIVIDONO IN DUE CLASSI, MALATI E SANI
-# BISOGNA RICONSIDERARE I SAMPLES CAMPIONATI DUE VOLTE?
 
 
 dataNorm_nodup_control<-remove_duplicates(data_normalized,control) 
@@ -484,10 +478,9 @@ plot(K, WITHIN_SS)
 
 
 #CLUSTERING GENES hierachical
-D<-dist(dataNorm_clustering) #D is an object of class "dist". To get a matrix one needs to use "as.matrix(D)"
+D<-dist(dataNorm_clustering) 
 
-
-# USIAMO WARD PERCHè SFRUTTA DISTANZA EUCLIDEA E CPSì LO COMPARIAMO BENE CON KMEANS CHE USA SEMPRE LA EUCLIDEA
+#we chose ward.D2 as a method of clustering because it uses the euclidean distance; in this way we have a better way of comparison with k-means, which also uses euclidean distance
 cl_hclust_ward<-hclust(d=D,method="ward.D2")
 plot(cl_hclust_ward, hang=-1) 
 
@@ -508,7 +501,7 @@ cat(max(sk), " - optimal number of clusters is :", K[which(sk == max(sk))])
 ```
 
 
-2. Cluster the samples in your dataset (considering only the genes you have selected in exercise 2) using k-means and hierarchical clustering and compare the results you obtain
+### 2. Cluster the samples in your dataset (considering only the genes you have selected in exercise 2) using k-means and hierarchical clustering and compare the results you obtain
 
 ```{r clustering samples}
 #CLUSTERING SAMPLES kmeans
@@ -529,7 +522,7 @@ cat(max(sk), " - optimal number of cluster is :", K[which(sk == max(sk))])
 plot(K, WITHIN_SS_sample)
 
 #CLUSTERING SAMPLES hierachical
-D<-dist(t(dataNorm_clustering))  #D is an object of class "dist". To get a matrix one needs to use "as.matrix(D)"
+D<-dist(t(dataNorm_clustering)) 
 
 cl_hclust_ward_S<-hclust(d=D,method="ward.D2")
 plot(cl_hclust_ward_S, hang=-1) 
@@ -546,12 +539,12 @@ print(sk)
 cat(max(sk), " - optimal number of clusters is :", K[which(sk == max(sk))])
 
 ```
-3. Choose the optimal number of clusters using the silhouette statistic. Do not use available R functions, I want you to implement it.
+### 3. Choose the optimal number of clusters using the silhouette statistic. Do not use available R functions, I want you to implement it.
 
 ```{r silhouette implementation}
 silhouette
 ```
-4. Choose the optimal number of clusters using the Gap statistic. In this case you can use the R function clusGap() in the library “cluster”
+### 4. Choose the optimal number of clusters using the Gap statistic. In this case you can use the R function clusGap() in the library “cluster”
 
 ```{r gap}
 #GAP STATISTIC 
