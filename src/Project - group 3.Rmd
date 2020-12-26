@@ -194,31 +194,34 @@ TODO: controllare nomi variabili
 ```{r preprocessing}
 #Rebuilt control matrix with initial data (not normalized); this is done because edgeR was created to work with data whose distribution is negative binomial, as our initial data matrix. On the other hand, normalized data does not comply to negative binomial distribution, so it cannot be used as input for edgeR functions. 
 
-control_nodup<-remove_duplicates(DATA, control)
 
-count<-ncol(control_nodup)
+control_nodup <- remove_duplicates(DATA, control)
+control_nodup <- renameColumns(control_nodup, "control")
+# count<-ncol(control_nodup)
+# 
+# nomi<-rep("", count)
+# for (i in (1:count)) {
+#   x<-paste("control",as.character(i),sep='_')
+#   nomi[i]<-x
+# }
+# colnames(control_nodup)<-nomi
 
-nomi<-rep("", count)
-for (i in (1:count)) {
-  x<-paste("control",as.character(i),sep='_')
-  nomi[i]<-x
-}
-colnames(control_nodup)<-nomi
 
-renameColumns(control_nodup, "test")
+
 
 #Rebuilt disease matrix with initial data (not normalized)
 
-disease_nodup<-remove_duplicates(DATA,disease)
+disease_nodup <- remove_duplicates(DATA, disease)
+disease_nodup <- renameColumns(control_nodup, "disease")
 
-count<-ncol(disease_nodup)
-nomi<-rep("", count)
-for (i in (1:count))
-{
-  x<-paste("disease",as.character(i),sep='_')
-  nomi[i]<-x
-}
-colnames(disease_nodup)<-nomi
+# count<-ncol(disease_nodup)
+# nomi<-rep("", count)
+# for (i in (1:count))
+# {
+#   x<-paste("disease",as.character(i),sep='_')
+#   nomi[i]<-x
+# }
+# colnames(disease_nodup)<-nomi
 ```
 
 TODO: controllare i commenti da lasciare, i nomi delle variabili e ciò da mostrare in output
@@ -245,9 +248,9 @@ rownames(design) <- colnames(mat)
 
 
 # fit values of phi (we need this step to fit our GLM model)
-y <- DGEList(counts=mat, remove.zeros = TRUE)    
-y <- calcNormFactors(y)   # scaling factors with TMM approach
-SF<-y$samples
+y  <- DGEList(counts=mat, remove.zeros = TRUE)    
+y  <- calcNormFactors(y)   # scaling factors with TMM approach
+SF <- y$samples
 
 y <- estimateGLMCommonDisp(y,design, verbose=TRUE) #phi common to the entire dataset
 y <- estimateGLMTrendedDisp(y,design) #phi depends on mu
