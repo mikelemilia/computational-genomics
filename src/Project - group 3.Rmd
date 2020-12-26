@@ -1,6 +1,8 @@
 ---
 title: "Project - GROUP3"
-output: html_notebook
+output: 
+  html_notebook:
+    number_section: true
 ---
 
 ```{r setup, include=TRUE, echo=FALSE}
@@ -10,24 +12,22 @@ knitr::knit_hooks$set(document = function(x) {
 })
 ```
 
-## PART 1
-### 1.1 - Load the data in R
-
 ```{r load functions, echo=FALSE}
-
-# You must load the functions inside this chunk
 source(paste(getwd(), '/src/utilities.R', sep = ""))
 source(paste(getwd(), '/src/functions.R', sep = ""))
-
 ```
 
+# First Part
+## Load the data in R
 
-```{r load data}
+```{r load data, results='hold', collapse=TRUE}
+{# HIDE
 DATA   <- read.table(getRawPath("E-GEOD-76987-raw-counts.tsv"), sep = "\t", row.names = 1, header = TRUE)
 LABELS <- read.delim(getRawPath("labels.txt"), sep = "\t", header = TRUE)
+}# HIDE
 ```
 
-### 1.2 - Calculate the sequencing depth of each sample
+## Calculate the sequencing depth of each sample
 
 ```{r calculate depth, results='hold', collapse=TRUE}
 genes   <- DATA[,1]                 # name of the genes
@@ -46,13 +46,13 @@ cat("Our dataset is composed by:\n\n")
 cat(paste("♦", genes_number, "genes\n", sep = " "))           
 cat(paste("♦", samples_number, "samples\n\n", sep = " "))          
 
-# cat("The sequencing depht of each sample is:\n", depth)
+# cat("The sequencing depth of each sample is:\n", depth)
 
 }# HIDE
 
 ```
 
-### 1.3 - Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice)
+## Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice)
 
 TODO: decide with respect to which sample we produce the plots and decide if remove the first column at the beginning or not
 
@@ -72,7 +72,7 @@ M <- matrix(0, nrow = genes_number, ncol = 0)
 produceMvA(temp_samples, extracted_index, interval,  folder = "MvA", graph_title = "MvA Plot")
 ```
 
-### 1.4 - Implement the TMM and the quantile normalization
+## - Implement the TMM and the quantile normalization
 
 ```{r TMM Normalization Implementation}
 tmm_normalization
@@ -82,7 +82,7 @@ tmm_normalization
 quantile_normalization
 ```
 
-### 1.5 - Normalize the data using the method of your choice (explaining the reason of your choice)
+## Normalize the data using the method of your choice (explaining the reason of your choice)
 ```{r TMM Normalization}
 A <- matrix(0, nrow = genes_number, ncol = 0)
 M <- matrix(0, nrow = genes_number, ncol = 0)
@@ -99,18 +99,18 @@ quantile_normed <- quantile_normalization(temp_samples)
 
 ```
 
+<!-- explanation of our choice -->
+We decided to use the quantile normalization; in fact, this type of normalization seemed more robust and gave better results. In fact, if we look at the MvA plots of sample 1 (the reference) VS sample 12, we can see that in the quantile normalization plot the cloud of points is more or less lying on M=0, as it should, while in the TMM normalization plot the cloud of points is clearly hanging below M=0. 
 
-
-### We decided to use the quantile normalization; in fact, this type of normalization seemed more robust and gave better results. In fact, if we look at the MvA plots of sample 1 (the reference) VS sample 12, we can see that in the quantile normalization plot the cloud of points is more or less lying on M=0, as it should, while in the TMM normalization plot the cloud of points is clearly hanging below M=0. 
-### It is to be noted that neither the quantile nor the TMM normalizations get rid of the "V-shaped" outliers near low values of A (average). The code below shows what was said here. 
+It is to be noted that neither the quantile nor the TMM normalization get rid of the "V-shaped" outliers near low values of A (average). The code below shows what was said here. 
 
 ```{r MvA plot of reference sample (sample 1) VS sample 12 with TMM and quantile normalization}
 
-#quantile
+# Quantile
 par(mfrow=c(1,2)) 
-extracted<-quantile_normed$samples[,2]
-selected<-quantile_normed$samples[,12]
-computed <- MA(extracted, selected)
+extracted <- quantile_normed$samples[,1]
+selected  <- quantile_normed$samples[,12]
+computed  <- MA(extracted, selected)
     
 M <- cbind(M, computed$M) # equivalent to do computed[[1]]
 A <- cbind(A, computed$A) # equivalent to do computed[[2]]
@@ -119,10 +119,10 @@ A <- cbind(A, computed$A) # equivalent to do computed[[2]]
 plot(computed$A, computed$M, xlab="A", ylab="M", main = "MvA plot - quantile", sub = paste("Sample", 1, "vs.", 12, sep = " "))
 abline(0,0)
 
-#TMM
-extracted<-tmm_normed$samples[,2]
-selected<-tmm_normed$samples[,12]
-computed <- MA(extracted, selected)
+# TMM
+extracted <- tmm_normed$samples[,1]
+selected  <- tmm_normed$samples[,12]
+computed  <- MA(extracted, selected)
     
 M <- cbind(M, computed$M) # equivalent to do computed[[1]]
 A <- cbind(A, computed$A) # equivalent to do computed[[2]]
@@ -133,23 +133,23 @@ abline(0,0)
 
 ```
 
-
-
-### 1.6 - Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice) using normalized data to evaluate if the normalization step was correctly performed or if there are outlier samples.
+## Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice) using normalized data to evaluate if the normalization step was correctly performed or if there are outlier samples.
 
 ```{r Produce Normalized MvA Plots}
+{# HIDE
 # TMM Normalization 
 produceMvA(tmm_normed$samples, extracted_index, interval,  folder = "MvA - TMM Normalization", graph_title = "MvA (TMM Normalization)")
 
 # Quantile Normalization
 produceMvA(quantile_normed$samples, extracted_index, interval,  folder = "MvA - Quantile Normalization", graph_title = "MvA (Quantile Normalization)")
-
-
+}# HIDE
 ```
 
-### See MvA plots of reference sample VS sample 12 and reference sample VS 47; the plots of reference VS 12 was explained above. For reference VS 47 the same comments can be made: MvA plots clearly show a deviance from M=0 in TMM normalization while this deviance is not present in quantile normalizatio. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
+<div style="text-align: justify">
+You can see MvA plots inside output/plots folder, in particular you can notice that in some of them it's clear what was explained above with reference sample vs. sample 12. For example in reference sample vs. sample 47 plot the same comments can be made: MvA plots clearly show a deviance from M = 0 in TMM normalization while this deviance is not present in quantile normalization. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
+</div>
 
-## PART 2
+# Second Part
 
 ### Note 1 - There can be the same sample measured twice for a specific subject. We decided to take care of it by simply using a mean approach: the samples coming from a same subject in the same group (for istance subject 1 is measured two times as a control subject) are mediated.
 
@@ -174,7 +174,7 @@ control_nodup_nozero<-groups_nozero$control
 disease_nodup_nozero<-groups_nozero$disease
 ```
 
-### 2.1 - Calculate p-values of DE analysis (not corrected for multiple testing) between the two groups using t-test, Wilcoxon test and edgeR.
+## Calculate p-values of DE analysis (not corrected for multiple testing) between the two groups using t-test, Wilcoxon test and edgeR.
 
 ```{r p-values}
 Nc<-nrow(control_nodup_nozero)
@@ -192,18 +192,20 @@ for(i in (1:Nc)){
 TODO: controllare nomi variabili
 
 ```{r preprocessing}
-#Rebuilt control matrix with initial data (not normalized); this is done beacuse edgeR was created to work with data whose distribution is negative binomial, as our initial data matrix. On the other hand, normalized data does not comply to negative binomial distribution, so it cannot be used as input for edgeR functions. 
+#Rebuilt control matrix with initial data (not normalized); this is done because edgeR was created to work with data whose distribution is negative binomial, as our initial data matrix. On the other hand, normalized data does not comply to negative binomial distribution, so it cannot be used as input for edgeR functions. 
 
-control_nodup<-remove_duplicates(DATA,control)
+control_nodup<-remove_duplicates(DATA, control)
 
 count<-ncol(control_nodup)
+
 nomi<-rep("", count)
-for (i in (1:count))
-{
+for (i in (1:count)) {
   x<-paste("control",as.character(i),sep='_')
   nomi[i]<-x
 }
 colnames(control_nodup)<-nomi
+
+renameColumns(control_nodup, "test")
 
 #Rebuilt disease matrix with initial data (not normalized)
 
@@ -264,7 +266,7 @@ RES$table[1:5,]
 
 ```
 
-### 2.2 - Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha = 0.05 and consider G0 = N with N being the number of genes.
+## Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha = 0.05 and consider G0 = N with N being the number of genes.
 
 ```{r selection for alpha 0.05}
 alpha<-0.05
@@ -291,7 +293,7 @@ expected_wilcoxontest <- expected_values(G, G0, alpha, num_sel_wilcox)
 expected_edger <- expected_values(G, G0, alpha, indSELedgeR)
 ```
 
-### 2.3 - Estimate the number of not differentially expressed genes G0 and re-estimate the expected number of false positives and false negatives.
+## Estimate the number of not differentially expressed genes G0 and re-estimate the expected number of false positives and false negatives.
 
 ``` {r estimation of G0 and re-estimation of the values for each test}
 res <- estimateG0(c_ttest_pvalue, G0, "T test")
@@ -323,11 +325,11 @@ print("TP, FP, TN, FN with wilcoxon test (using estimated G0)")
 print(expected_wilcoxontest_est)
 ```
 
-### 2.4 - Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice.
+## Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice.
 
-### We chose edgeR for a few reasons; first of all, edgeR test was built for data with negative binomial distribution, while the other tests do not take into account the characteristics of this particular distribution. Then, it must also be said that it gives the lowest FN rate; while FP rate can be easily taken into account with a correction for multiple test, FN rate is not accounted for with this type of correction; the test must take into account FN rate. To conclude, we chose edgeR on the basis of the theory behind and also given the FP and FN rates.
+We chose edgeR for a few reasons; first of all, edgeR test was built for data with negative binomial distribution, while the other tests do not take into account the characteristics of this particular distribution. Then, it must also be said that it gives the lowest FN rate; while FP rate can be easily taken into account with a correction for multiple test, FN rate is not accounted for with this type of correction; the test must take into account FN rate. To conclude, we chose edgeR on the basis of the theory behind and also given the FP and FN rates.
 
-### 2.5 - Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%.
+## Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%.
 
 ```{r select the final list of DE genes}
 FDR <- 0.05
@@ -365,10 +367,10 @@ ID_genes_notselected <- setdiff(rownames(DATA),ID_genes_selected)
 number_genes_notselected<-length(ID_genes_notselected)
 ```
 
-## Part 3
+# Third Part
 
-### 3.1 - extract G0 term associated 
-### We found out that some names of genes were duplicated but not their ENSEMBL IDs; so we used these IDs to get the annotation and extrct the right GO terms asociated with the genes. We also decided to take out those genes whose GOALL was NA, because this means that we don't have their associated term as of right now (the association is not complete in the DB).
+## Extract G0 term associated 
+We found out that some names of genes were duplicated but not their ENSEMBL IDs; so we used these IDs to get the annotation and extrct the right GO terms asociated with the genes. We also decided to take out those genes whose GOALL was NA, because this means that we don't have their associated term as of right now (the association is not complete in the DB).
 
 ```{r extract GO terms}
 
@@ -413,7 +415,7 @@ rownames(matrixes)<-terms
 matrixes<-matrixes[order(rownames(matrixes)),]
 
 ```
-### 3.2 - fisher test
+## Fisher test
 
 ```{r fisher test}
 
@@ -430,8 +432,8 @@ pval_fisherBP<-fisher_test_matrixes(matrixesBP)
 pval_fisherMF<-fisher_test_matrixes(matrixesMF)
 ```
 
-## Part 4
-### 4.0 correcting for length of genes before clustering; we also decided to consider as one sample those samples taken for the same subject in the same group, as we did for testing the DE genes.
+# Fourth Part 
+### correcting for length of genes before clustering; we also decided to consider as one sample those samples taken for the same subject in the same group, as we did for testing the DE genes.
 ```{r init clustering}
 
 
@@ -453,7 +455,7 @@ dataNorm_nodup_disease<-remove_duplicates(data_normalized,disease)
 dataNorm_clustering<-cbind(dataNorm_nodup_control,dataNorm_nodup_disease)
 ```
 
-### 1. Cluster the genes you have selected in exercise 2 using k-means and hierarchical clustering and compare the results you obtain.
+## Cluster the genes you have selected in exercise 2 using k-means and hierarchical clustering and compare the results you obtain.
 
 ```{r clustering genes}
 #CLUSTERING GENES kmeans
@@ -501,7 +503,7 @@ cat(max(sk), " - optimal number of clusters is :", K[which(sk == max(sk))])
 ```
 
 
-### 2. Cluster the samples in your dataset (considering only the genes you have selected in exercise 2) using k-means and hierarchical clustering and compare the results you obtain
+## Cluster the samples in your dataset (considering only the genes you have selected in exercise 2) using k-means and hierarchical clustering and compare the results you obtain
 
 ```{r clustering samples}
 #CLUSTERING SAMPLES kmeans
@@ -539,12 +541,13 @@ print(sk)
 cat(max(sk), " - optimal number of clusters is :", K[which(sk == max(sk))])
 
 ```
-### 3. Choose the optimal number of clusters using the silhouette statistic. Do not use available R functions, I want you to implement it.
+
+## Choose the optimal number of clusters using the silhouette statistic. Do not use available R functions, I want you to implement it.
 
 ```{r silhouette implementation}
 silhouette
 ```
-### 4. Choose the optimal number of clusters using the Gap statistic. In this case you can use the R function clusGap() in the library “cluster”
+## Choose the optimal number of clusters using the Gap statistic. In this case you can use the R function clusGap() in the library “cluster”
 
 ```{r gap}
 #GAP STATISTIC 
@@ -594,7 +597,6 @@ for (i in (2:(nrow(prova[[1]])-1))){
 }
 cat("Numero ottimo per kmeans dei geni secondo Gap Statistics: ",i)
 ```
-``
 
 
 ```{r plots of part4, HIERARCHICAL}

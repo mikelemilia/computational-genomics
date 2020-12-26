@@ -62,33 +62,33 @@ tmm_normalization <- function(x, index, interval){
 }
 
 # codice di Giulia
-tmm_normalization2 <- function(DATA, refsample){
-
-  refsample <- as.numeric(refsample)
-  ref <- DATA[,refsample] + 1
-  A <- matrix(0, nrow = length(ref), ncol = 1)
-  M <- matrix(0, nrow = length(ref), ncol = 1)
-  norm <- matrix(ref, nrow = dim(DATA)[1], ncol = 1)
-
-  for (i in 3:ncol(DATA))
-  {
-    temp <- DATA[i]+1
-    temp <- unlist(temp,use.names=FALSE)
-    ref <- unlist(ref,use.names=FALSE)
-    result <- ma(ref,temp)
-
-    SF <- mean(result[[1]],trim=0.1)
-    modtemp <- temp+2^(SF)
-
-    result2 <- ma(ref,modtemp)
-
-    norm <- cbind(norm,modtemp)
-    A <- cbind(A,result2[[2]])
-    M <- cbind(M,result2[[1]])
-  }
-
-  return(list(M,A,norm))
-}
+# tmm_normalization2 <- function(DATA, refsample){
+# 
+#   refsample <- as.numeric(refsample)
+#   ref <- DATA[,refsample] + 1
+#   A <- matrix(0, nrow = length(ref), ncol = 1)
+#   M <- matrix(0, nrow = length(ref), ncol = 1)
+#   norm <- matrix(ref, nrow = dim(DATA)[1], ncol = 1)
+# 
+#   for (i in 3:ncol(DATA))
+#   {
+#     temp <- DATA[i]+1
+#     temp <- unlist(temp,use.names=FALSE)
+#     ref <- unlist(ref,use.names=FALSE)
+#     result <- ma(ref,temp)
+# 
+#     SF <- mean(result[[1]],trim=0.1)
+#     modtemp <- temp+2^(SF)
+# 
+#     result2 <- ma(ref,modtemp)
+# 
+#     norm <- cbind(norm,modtemp)
+#     A <- cbind(A,result2[[2]])
+#     M <- cbind(M,result2[[1]])
+#   }
+# 
+#   return(list(M,A,norm))
+# }
 
 quantile_normalization <- function(x){
   
@@ -125,64 +125,67 @@ quantile_normalization <- function(x){
 }
 
 # codice di Giulia
-quantile_normalization2 <- function(DATA){
-  cols <- ncol(DATA[]) # get number of columns
-  rows <- nrow(DATA[]) # get number of rows
-  dataSort = matrix(0, rows, cols)
-  dataIdx  = matrix(0, rows, cols)
-  dataNorm = matrix(0, rows, cols)
-
-  # setting the header of dataNorm
-  colnames(dataNorm) <- names(DATA[])
-
-  for(i in 1:cols){
-    data = DATA[,i]
-    dataSorted = sort(data)
-    dataSortedIdxs = rank(data, ties.method="average")
-    dataSort[,i] = dataSorted
-    dataIdx[,i] = dataSortedIdxs
-  }
-
-  dataMean = apply(dataSort, 1, mean)
-
-  for(i in 1:cols ) {
-    for(k in 1:rows ) {
-      dataNorm[k,i]= dataMean[dataIdx[k,i]]
-    }
-  }
-
-  return(dataNorm)
-}
+# quantile_normalization2 <- function(DATA){
+#   cols <- ncol(DATA[]) # get number of columns
+#   rows <- nrow(DATA[]) # get number of rows
+#   dataSort = matrix(0, rows, cols)
+#   dataIdx  = matrix(0, rows, cols)
+#   dataNorm = matrix(0, rows, cols)
+# 
+#   # setting the header of dataNorm
+#   colnames(dataNorm) <- names(DATA[])
+# 
+#   for(i in 1:cols){
+#     data = DATA[,i]
+#     dataSorted = sort(data)
+#     dataSortedIdxs = rank(data, ties.method="average")
+#     dataSort[,i] = dataSorted
+#     dataIdx[,i] = dataSortedIdxs
+#   }
+# 
+#   dataMean = apply(dataSort, 1, mean)
+# 
+#   for(i in 1:cols ) {
+#     for(k in 1:rows ) {
+#       dataNorm[k,i]= dataMean[dataIdx[k,i]]
+#     }
+#   }
+# 
+#   return(dataNorm)
+# }
 
 #function that removes duplicated in the 'individual' column
 remove_duplicates <- function (data, group){
   #TAKING CARE OF DUPLICATES FOR GROUP
   duplicates <- duplicated(group$individual) # get the position of all the duplicated individual 
-  #get only the duplicated
-  duplicate_group <- group$individual[duplicates == TRUE]
-  #find indexes in group of duplicated subjects
-  d <- as.numeric(group$individual)
   
-  dim <- dim(group)
-  group_nodup <- matrix(0,nrow(data),dim[1])
+  duplicate_group <- group$individual[duplicates == TRUE] #get only the duplicated
+  d <- as.numeric(group$individual)   #find indexes in group of duplicated subjects
+
+  # dim <- dim(group)
+  group_nodup <- matrix(0, nrow(data), ncol(group)) # ncol(group) == dim[1]
+  
   #initialize a count because matrix at the end WON'T have same columns as dim[1]=41, the group SRR
   count<-0
-  for (i in 1:length(duplicate_group))
-  {
+  
+  for (i in 1:length(duplicate_group)) {
+
     indexes <- which(d %in% duplicate_group[i])
     #find samples of duplicated subjects, get the SRR code
     seq_sample <- group[indexes,]$seq.sample
+
     #mean of duplicated samples
     group_nodup[,i] <- apply(data[, seq_sample], 1, mean)
+    
     count <- count+1;
+    
   }
   
   #finding subjects NOT DUPLICATED
   '%notin%' <- Negate(`%in%`)
   ind<-which(d %notin% duplicate_group)
   
-  for (i in 1:length(ind))
-  {
+  for (i in 1:length(ind))  {
     
     #find samples of duplicated subjects, get the SRR code
     seq_sample<-group[ind[i],]$seq.sample

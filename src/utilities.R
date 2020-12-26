@@ -88,3 +88,15 @@ showProgress <- function(tot){
   }
   
 }
+
+renameColumns <- function(x, value){
+
+  names <- rep("", ncol(x))
+  
+  for (name in names) {
+    name <-paste(value, as.character(i), sep = '_')
+  }
+  
+  colnames(x) <- names
+  cat(x)
+}
