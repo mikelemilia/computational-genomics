@@ -162,8 +162,8 @@ remove_duplicates <- function (data, group){
   duplicate_group <- group$individual[duplicates == TRUE] #get only the duplicated
   d <- as.numeric(group$individual)   #find indexes in group of duplicated subjects
 
-  # dim <- dim(group)
-  group_nodup <- matrix(0, nrow(data), ncol(group)) # ncol(group) == dim[1]
+  dim <- dim(group)
+  group_nodup <- matrix(0, nrow(data), dim[1]) # ncol(group) == dim[1]
   
   #initialize a count because matrix at the end WON'T have same columns as dim[1]=41, the group SRR
   count<-0
