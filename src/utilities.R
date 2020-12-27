@@ -1,4 +1,3 @@
-## ---- 
 getRawPath <- function(filename){
   
   path <- paste(getwd(), "/data/raw/", filename, sep = "")
@@ -12,25 +11,20 @@ getRawPath <- function(filename){
     message(paste("Successfully loaded :", filename, "\n", sep = " "))
     
     return(path)
-
   }
-
 }
-## ---- getTempPath
+
 getTempPath <- function(filename){
-  
   path <- paste(getwd(), "/data/temp/", filename, sep = "")
   
   if(!file.exists(path)){
     
-    stop(paste("The file", filename, "you're looking for in data/temp doesn't exist.", sep = " "))
-    
-  } else {
+    stop(paste("The file", filename, "you're looking for in data/temp doesn't exist.", sep = " "))} 
+  
+  else {
     
     return(path)
-    
   }
-  
 }
 
 getProcessedPath <- function(filename){
@@ -39,14 +33,12 @@ getProcessedPath <- function(filename){
   
   if(!file.exists(path)){
     
-    stop(paste("The file", filename, "you're looking for in data/processed doesn't exist.", sep = " "))
-    
-  } else {
+    stop(paste("The file", filename, "you're looking for in data/processed doesn't exist.", sep = " "))}
+  
+  else {
     
     return(path)
-    
   }
-  
 }
 
 getPlotPath <- function(filename, folder = ""){
@@ -60,22 +52,18 @@ getPlotPath <- function(filename, folder = ""){
     
     if(!dir.exists(file.path(curDir, subDir))){
       dir.create(file.path(curDir, subDir), showWarnings = FALSE)
+      path <- paste(curDir, subDir, "/", filename, sep = "")} 
+    else {
       path <- paste(curDir, subDir, "/", filename, sep = "")
-      
-    } else {
-      
-      path <- paste(curDir, subDir, "/", filename, sep = "")
-      
-    }
-    
-  } else {
+    }} 
+  
+  else {
     
     path <- paste(curDir, subDir, "/", filename, sep = "")
     
   }
   
   return(path)
-  
 }
 
 showProgress <- function(tot){
@@ -86,7 +74,6 @@ showProgress <- function(tot){
     pb$tick()
     Sys.sleep(1 / 100)
   }
-  
 }
 
 renameColumns <- function(x, value){
@@ -95,15 +82,11 @@ renameColumns <- function(x, value){
   print(names)
   
   for (i in (1:length(names))) {
-    
-    names[i] <- paste(value, as.character(i), sep = '_')
-    
-  }
+    names[i] <- paste(value, as.character(i), sep = '_')}
   
   print(names)
   
   colnames(x) <- names
   
   return(x)
-  # cat(x)
 }

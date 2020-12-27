@@ -3,9 +3,7 @@ MA <- function(x, y){
   M <- log2(x) - log2(y)
   A <- (log2(x) + log2(y))/2
   
-  return(
-    list('M' = M, 'A' = A)
-  )
+  return(list('M' = M, 'A' = A))
 }
 
 produceMvA <- function(x, index, interval, folder, graph_title){
@@ -13,32 +11,25 @@ produceMvA <- function(x, index, interval, folder, graph_title){
   extracted <- x[,index] # extract the sample i
   
   for(i in interval){
-      
     png(file = paste(getPlotPath(filename = paste(index, "vs.", i, sep = " "), folder = folder), ".png", sep = ""))
       
     # select the i-th element
     selected <- x[,i]
       
     computed <- MA(extracted, selected)
-    
     M <- cbind(M, computed$M) # equivalent to do computed[[1]]
     A <- cbind(A, computed$A) # equivalent to do computed[[2]]
-    
     
     plot(computed$A, computed$M, xlab="A", ylab="M", main = graph_title, sub = paste("Sample", index, "vs.", i, sep = " "))
     abline(0,0)
     
     dev.off()
-    
-      
   }
-    
 }
 
 tmm_normalization <- function(x, index, interval){
   
   extracted <- x[,index] # extract the sample i
-  
   normed_samples <- matrix(extracted, nrow = genes_number, ncol = 1)
   
   for (i in interval) {
@@ -46,13 +37,10 @@ tmm_normalization <- function(x, index, interval){
     selected <- x[,i]
     
     computed <- MA(extracted, selected)
-    
     SF <- mean(computed$M, trim = 0.1)
     
     normed <- selected + 2^SF
-    
     normed_samples <- cbind(normed_samples, normed)
-
   }
   
   return(
@@ -60,35 +48,6 @@ tmm_normalization <- function(x, index, interval){
   )
   
 }
-
-# codice di Giulia
-# tmm_normalization2 <- function(DATA, refsample){
-# 
-#   refsample <- as.numeric(refsample)
-#   ref <- DATA[,refsample] + 1
-#   A <- matrix(0, nrow = length(ref), ncol = 1)
-#   M <- matrix(0, nrow = length(ref), ncol = 1)
-#   norm <- matrix(ref, nrow = dim(DATA)[1], ncol = 1)
-# 
-#   for (i in 3:ncol(DATA))
-#   {
-#     temp <- DATA[i]+1
-#     temp <- unlist(temp,use.names=FALSE)
-#     ref <- unlist(ref,use.names=FALSE)
-#     result <- ma(ref,temp)
-# 
-#     SF <- mean(result[[1]],trim=0.1)
-#     modtemp <- temp+2^(SF)
-# 
-#     result2 <- ma(ref,modtemp)
-# 
-#     norm <- cbind(norm,modtemp)
-#     A <- cbind(A,result2[[2]])
-#     M <- cbind(M,result2[[1]])
-#   }
-# 
-#   return(list(M,A,norm))
-# }
 
 quantile_normalization <- function(x){
   
@@ -124,99 +83,63 @@ quantile_normalization <- function(x){
   )
 }
 
-# codice di Giulia
-# quantile_normalization2 <- function(DATA){
-#   cols <- ncol(DATA[]) # get number of columns
-#   rows <- nrow(DATA[]) # get number of rows
-#   dataSort = matrix(0, rows, cols)
-#   dataIdx  = matrix(0, rows, cols)
-#   dataNorm = matrix(0, rows, cols)
-# 
-#   # setting the header of dataNorm
-#   colnames(dataNorm) <- names(DATA[])
-# 
-#   for(i in 1:cols){
-#     data = DATA[,i]
-#     dataSorted = sort(data)
-#     dataSortedIdxs = rank(data, ties.method="average")
-#     dataSort[,i] = dataSorted
-#     dataIdx[,i] = dataSortedIdxs
-#   }
-# 
-#   dataMean = apply(dataSort, 1, mean)
-# 
-#   for(i in 1:cols ) {
-#     for(k in 1:rows ) {
-#       dataNorm[k,i]= dataMean[dataIdx[k,i]]
-#     }
-#   }
-# 
-#   return(dataNorm)
-# }
 
-#function that removes duplicated in the 'individual' column
 remove_duplicates <- function (data, group){
-  #TAKING CARE OF DUPLICATES FOR GROUP
-  duplicates <- duplicated(group$individual) # get the position of all the duplicated individual 
+  # function that removes duplicated in the 'individual' column for 'group'
   
-  duplicate_group <- group$individual[duplicates == TRUE] #get only the duplicated
-  d <- as.numeric(group$individual)   #find indexes in group of duplicated subjects
-
+  # get all the duplicated individuals
+  duplicates <- duplicated(group$individual)  
+  duplicate_group <- group$individual[duplicates == TRUE]
+  
+  d <- as.numeric(group$individual)
   dim <- dim(group)
   group_nodup <- matrix(0, nrow(data), dim[1]) # ncol(group) == dim[1]
-  
-  #initialize a count because matrix at the end WON'T have same columns as dim[1]=41, the group SRR
-  count<-0
+  count <- 0
   
   for (i in 1:length(duplicate_group)) {
-
+    #find samples of duplicated subjects and get the SRR code
     indexes <- which(d %in% duplicate_group[i])
-    #find samples of duplicated subjects, get the SRR code
     seq_sample <- group[indexes,]$seq.sample
 
     #mean of duplicated samples
     group_nodup[,i] <- apply(data[, seq_sample], 1, mean)
-    
     count <- count+1;
-    
   }
   
-  #finding subjects NOT DUPLICATED
+  #finding subjects not duplicated
   '%notin%' <- Negate(`%in%`)
   ind<-which(d %notin% duplicate_group)
   
   for (i in 1:length(ind))  {
-    
     #find samples of duplicated subjects, get the SRR code
-    seq_sample<-group[ind[i],]$seq.sample
+    seq_sample <- group[ind[i],]$seq.sample
     #mean of duplicated samples
-    group_nodup[,length(duplicate_group)+i]<-data[,seq_sample]
-    count<-count+1;
+    group_nodup[,length(duplicate_group)+i] <- data[,seq_sample]
+    count <- count+1;
   }
   
   group_nodup<-group_nodup[,1:count]
   return(group_nodup)
 }
 
-#functions to remove rows where there are only 0 in the two groups (matrixes)
 remove_zeros <- function(group1,group2){
-  group1_forcomparison<-apply(group1, 1, sum)
-  group2_forcomparison<-apply(group2, 1, sum)
-  vec_for_comparison<-as.data.frame(group1_forcomparison+group2_forcomparison)
+  # functions to remove rows where there are only 0 in the two groups (matrixes)
   
-  #usare i quantili PER TROVARE SOGLIA 
-  q<-quantile(unlist(vec_for_comparison))
-  #median<-median(unlist(vec_for_comparison)) USANDO MEDIANA? TROPPO POCHI NE RESTANO
+  # sum for each column of the data
+  group1_forcomparison <- apply(group1, 1, sum)
+  group2_forcomparison <- apply(group2, 1, sum)
+  vec_for_comparison <- as.data.frame(group1_forcomparison+group2_forcomparison)
   
-  YN<-as.data.frame(vec_for_comparison>q[1])
-  index<-which(YN==FALSE) #indici di quelli da togliere
+  # use of the quantile to find the threshold
+  q <- quantile(unlist(vec_for_comparison))
   
-  group1_nozero<- control_nodup[-index,] 
-  group2_nozero<- disease_nodup[-index, ]
+  # extract indexes of data to remove and remove the correspondent rows
+  YN <- as.data.frame(vec_for_comparison>q[1])
+  index <- which(YN==FALSE)
+  group1_nozero <- control_nodup[-index,] 
+  group2_nozero <- disease_nodup[-index,]
   
-  return(
-    list('control' = group1_nozero, 'disease' = group2_nozero)
-  )
+  return (list('control' = group1_nozero, 'disease' = group2_nozero))
 }
 
 estimateG0<-function(c_pvalue, G, filename) {
@@ -229,7 +152,6 @@ estimateG0<-function(c_pvalue, G, filename) {
   lambda_estimate <- NULL
   
   while (i<=length(lambda)) {
-    
     l<-lambda[i]
     
     minori<-(c_pvalue<l)
@@ -242,21 +164,16 @@ estimateG0<-function(c_pvalue, G, filename) {
     
     G0_prev<-G0[i]
     i<-i+1
-    
-    
   }
   
   G0_estimate<-G0[which.min(r)]
   lambda_estimate <- lambda[which.min(r)]
-  
-  
   
   # plot the estimates
   png(file = paste(getPlotPath(filename, "G0 estimate"), ".png", sep = ""))
   plot(lambda, G0/G, xlab="lambda", ylab="G0", main=filename)
   points(lambda_estimate, G0_estimate/G, col= "red")
   dev.off()
-  
   
   return(list(G0,lambda))
 }
@@ -273,7 +190,6 @@ G0_value_estimation<-function(lambda_est, eps, res) {
   
   return(G0_est)
 }
-
 
 expected_values <- function(G,G0,alpha,selected_genes){
   expected_FP <- min(G0*alpha, selected_genes)
@@ -299,57 +215,49 @@ fisher_test_matrixes <- function(matrixes){
   return (pval)
 }
 
-#Silhouette Statistic
 silhouette <- function(points, cluster, k){
-  #caso particolare, un cluster
-  if(k == 1){
-    s <- -1
-    return(s)
-  }
+  # particular case of only one cluster
+  if(k == 1){return(-1)}
   
-  cat ("Analisi per k=",k)
-  
+  # calculate the distances between points and variables initialization
   d <- as.matrix(dist(points))
-  
   s <- NULL
   clusters <- vector(mode = "list", length = k)
   
-  #divisione degli indici degli elementi in liste, raggruppati per il cluster a cui appartengono
+  # division of the indexes in lists according to their cluster number
   i <- 1
   while(i <= k) {
     elements <- which(cluster == i)
     clusters[[i]] <- elements 
-    cat("Cluster ", i, " has length ", length(clusters[[i]]), "\n")
-    cat("Cluster ", i, ": ", clusters[[i]], "\n")
     i <- i + 1
   }
   
-  #scandisco ogni singolo punto
+  # scan each point in datamatrix
   for (i in (1:nrow(points))){
+    # extract the point, the distances of this point from the others in the dataset and its cluster number 
     point <- points[i]
     distances <- d[i,]
     cl <- cluster[i]
     
-    if(length(distances[clusters[[cl]]]) == 1) { # ho un singleton
-      
+    if(length(distances[clusters[[cl]]]) == 1) {
+      # if it is a singleton cluster, the silhouette is 1
       s <- c(s,1)
-      
-    } else { #non ho un singleton
-      
+    } 
+    
+    else {
+      # the cluster contains more points
       indmin <- 0
       minb <- Inf
-      #scandisco ogni possibile cluster
+      
+      # scan each possible cluster
       for (c in (1:k)){
-        cat("Analizzo punto ", i, " in cluster ",cl, " -- Confronto con cluster ", c, "\n")
-        #se ho scelto il cluster a cui il punto appartiene, calcolo a
         if (c == cl){
-
+          # if we are consider the same cluster of the point, we calculate the value 'a'
           distances_topoint <- distances[clusters[[c]]]
           a <- (sum(distances_topoint))/(length(distances_topoint) - 1)
         }
-        #se ho scelto un cluster a cui il punto non appartiene, calcolo b
         else{
-          
+          # with a different cluster, we calculate the value 'b' and we maintain always the max(b)
           distances_topoint <- distances[clusters[[c]]]
           if (minb > sum(distances_topoint)){
             minb<-sum(distances_topoint)
@@ -357,12 +265,12 @@ silhouette <- function(points, cluster, k){
           }
         }
       }
-      
+      # calculate the final silhouette for the point
       minb <- minb/length(clusters[[indmin]])
       s <- c(s,(minb-a)/max(minb,a))
-
     }
   }
+  # the output is the sum of the silhouettes for all the points in the dataset
   return(sum(s))
 }
 
