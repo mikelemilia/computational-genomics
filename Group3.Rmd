@@ -231,7 +231,7 @@ control_nodup <- renameColumns(control_nodup, "control")
 
 # rebuilt disease matrix and label with the proper name 
 disease_nodup <- remove_duplicates(DATA, disease)
-disease_nodup <- renameColumns(control_nodup, "disease")
+disease_nodup <- renameColumns(disease_nodup, "disease")
 ```
 
 ```{r edgeR}
@@ -272,6 +272,7 @@ RES$table[1:5,]
 # final values
 out <- topTags(RES, n = "Inf")$table
 out[1:5,]
+
 ```
 
 ## Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha = 0.05 and consider G0 = N with N being the number of genes
