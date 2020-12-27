@@ -1,0 +1,725 @@
+---
+title: "GROUP3"
+output: 
+  html_notebook:
+    number_section: true
+---
+
+```{r setup, include=TRUE, echo=FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+knitr::knit_hooks$set(document = function(x) {
+    paste(rapply(strsplit(x, '\n'), function(y) Filter(function(z) !grepl('# HIDE',z),y)), collapse ='\n')
+})
+```
+
+```{r load functions, echo=FALSE}
+source(paste(getwd(), '/src/utilities.R', sep = ""))
+source(paste(getwd(), '/src/functions.R', sep = ""))
+```
+
+# First Part
+
+## Load the data in R
+
+```{r load data, results='hold', collapse=TRUE}
+{# HIDE
+DATA   <- read.table(getRawPath("E-GEOD-76987-raw-counts.tsv"), sep = "\t", row.names = 1, header = TRUE)
+LABELS <- read.delim(getRawPath("labels.txt"), sep = "\t", header = TRUE)
+}# HIDE
+```
+
+## Calculate the sequencing depth of each sample
+
+```{r calculate depth, results='hold', collapse=TRUE}
+# extract information about data
+genes <- DATA[,1]                
+samples <- DATA[,2:ncol(DATA)]
+genes_number <- length(genes)         
+samples_number <- length(samples)   
+
+# Computing the sequencing depth of each sample
+
+depth <- apply(samples, 2, sum)     # 2 means that we're appling the sum by columns
+
+{# HIDE
+cat("Our dataset is composed by:\n\n")
+cat(paste("♦", genes_number, "genes\n", sep = " "))           
+cat(paste("♦", samples_number, "samples\n\n", sep = " "))
+
+# cat("The sequencing depth of each sample is:\n", depth)
+
+}# HIDE
+```
+
+## Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice)
+
+TODO: decide with respect to which sample we produce the plots and decide if remove the first column at the beginning or not
+
+```{r generate temp dataset}
+temp_samples <- samples + 1 # add 1 to all elements to avoid the log(0)
+#TODO: save the temporary datasets into data/temp and reload it
+
+extracted_index <- 1
+    
+interval <- (1:samples_number)[-extracted_index]
+```
+
+```{r MA function}
+MA
+```
+
+```{r produceMvA function}
+produceMvA
+```
+
+```{r produce MvA plots}
+A <- matrix(0, nrow = genes_number, ncol = 0)
+M <- matrix(0, nrow = genes_number, ncol = 0)
+
+produceMvA(temp_samples, extracted_index, interval,  folder = "MvA", graph_title = "MvA Plot")
+```
+
+## Implement the TMM and the quantile normalization
+
+```{r TMM Normalization Implementation}
+tmm_normalization
+```
+
+```{r Quantile Normalization Implementation}
+quantile_normalization
+```
+
+## Normalize the data using the method of your choice (explaining the reason of your choice)
+
+```{r TMM Normalization}
+A <- matrix(0, nrow = genes_number, ncol = 0)
+M <- matrix(0, nrow = genes_number, ncol = 0)
+
+tmm_normed <- tmm_normalization(temp_samples, extracted_index, interval)
+```
+
+```{r Quantile normalization}
+A <- matrix(0, nrow = genes_number, ncol = 0)
+M <- matrix(0, nrow = genes_number, ncol = 0)
+
+quantile_normed <- quantile_normalization(temp_samples)
+```
+
+<div style="text-align: justify">
+With the results obtained, we decide to use for the subsequent analysus the quantile normalization of the data; in fact, this type of normalization seems more robust and gives better results. In fact, if we look at the MvA plots of sample 1 (the reference) VS sample 12, we can see that in the quantile normalization plot the cloud of points is more or less lying on M=0, as it should, while in the TMM normalization plot the cloud of points is clearly hanging below M=0. 
+It is to be noted that neither the quantile nor the TMM normalization get rid of the "V-shaped" outliers near low values of A (average). The code below shows what was said here. 
+</div>
+
+```{r MvA plot of reference sample (sample 1) VS sample 12 with TMM and quantile normalization}
+# Quantile normalization: data extraction and plot 
+par(mfrow=c(1,2)) 
+extracted <- quantile_normed$samples[,1]
+selected  <- quantile_normed$samples[,12]
+computed  <- MA(extracted, selected)
+    
+M <- cbind(M, computed$M)
+A <- cbind(A, computed$A) 
+    
+plot(computed$A, computed$M, xlab="A", ylab="M", main = "MvA plot - quantile", sub = paste("Sample", 1, "vs.", 12, sep = " "))
+abline(0,0)
+
+# TMM normalization: data extraction and plot 
+extracted <- tmm_normed$samples[,1]
+selected  <- tmm_normed$samples[,12]
+computed  <- MA(extracted, selected)
+    
+M <- cbind(M, computed$M)
+A <- cbind(A, computed$A)
+    
+plot(computed$A, computed$M, xlab="A", ylab="M", main = "MvA plot - TMM ", sub = paste("Sample", 1, "vs.", 12, sep = " "))
+abline(0,0)
+```
+
+## Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice) using normalized data to evaluate if the normalization step was correctly performed or if there are outlier samples
+
+```{r Produce Normalized MvA Plots}
+{# HIDE
+# TMM Normalization 
+produceMvA(tmm_normed$samples, extracted_index, interval,  folder = "MvA - TMM Normalization", graph_title = "MvA (TMM Normalization)")
+
+# Quantile Normalization
+produceMvA(quantile_normed$samples, extracted_index, interval,  folder = "MvA - Quantile Normalization", graph_title = "MvA (Quantile Normalization)")
+}# HIDE
+```
+
+<div style="text-align: justify">
+You can see MvA plots inside output/plots folder and in particular you can notice that in some of them it's clear what was explained above with reference sample vs. sample 12. For example in reference sample vs. sample 47 plot the same comments can be made: MvA plots clearly show a deviance from M=0 in TMM normalization while this deviance is not present in the analysis with the quantile normalization. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
+</div>
+
+# Second Part
+
+## [Note] There can be the same sample measured twice for a specific subject
+
+<div style="text-align: justify">
+We decided to take care of this issue by simply using a mean approach: the samples coming from the same subject and present in the same group (for instance subject 1 is measured two times as a control subject) are mediated. To do this task we decided to implement the remove_duplicates function. 
+</div>
+
+
+```{r remove duplicates function}
+remove_duplicates
+```
+
+```{r remove of the duplicates}
+# get the 'normal' and 'uninvolved mucosa' samples (samples of the control group) 
+normal <- LABELS[LABELS$sample_type == c("normal"),]            
+unimuc <- LABELS[LABELS$sample_type == c("uninvolved mucosa"),] 
+
+# concatenate and sort samples
+control <- rbind(normal, unimuc)                               
+control <- control[order(as.numeric(control$individual)),]    
+
+# get the 'colon sessile serrated adenoma/polyp' samples (samples of the disease group)
+disease <- LABELS[LABELS$sample_type == c("colon sessile serrated adenoma/polyp"),]
+
+# remove duplicates in the groups
+control_nodup <- remove_duplicates(quantile_normed$samples, control)
+disease_nodup <- remove_duplicates(quantile_normed$samples, disease) 
+```
+
+## [Note] There can be some genes that in both groups 1 and 2 have always expression equal to 0
+
+<div style="text-align: justify">
+We took care of this problem by taking out genes that had expression always equal to zero in all samples from the control group and the disease group. For instace, say that we look at gene 1: if the sum of the read counts for gene 1 in all the samples coming from control group is zero as it is in all the samples from the disease group then we can say that gene 1 has always expression zero, so it does not give information about differentially expressed genes in disease VS control groups. Gene 1 in this example is therefore taken out. We implemented this in the remove_zeros function.
+</div>
+
+```{r remove zero function}
+remove_zeros
+```
+
+```{r taking care of zeros}
+groups_nozero <- remove_zeros(control_nodup, disease_nodup)
+control_nodup_nozero<-groups_nozero$control
+disease_nodup_nozero<-groups_nozero$disease
+```
+
+## Calculate p-values of DE analysis (not corrected for multiple testing) between the two groups using t-test, Wilcoxon test and edgeR
+
+<div style="text-align: justify">
+For the t-test and the Wilcoxon tests, we use the functions of the Stats library.
+</div>
+
+```{r p-values}
+#initialization of the variables
+Nc <- nrow(control_nodup_nozero)
+c_ttest_pvalue <- NULL
+c_wilcoxon_pvalue <- NULL
+
+# use of the t.test and wilcoxon.test functions for each gene
+for(i in (1:Nc)){ 
+  c_ttest_pvalue <- c(c_ttest_pvalue,t.test(control_nodup_nozero[i,], disease_nodup_nozero[i,], var.equal = FALSE)$p.value)
+  c_wilcoxon_pvalue <- c(c_wilcoxon_pvalue,wilcox.test(control_nodup_nozero[i,],disease_nodup_nozero[i,], exact=FALSE)$p.value)
+}
+```
+
+<div style="text-align: justify">
+For edgeR, we have to do a preprocessing of data and then we use functions of the edgeR library. We have to rebuilt the control and disease matrixes with data not normalized because edgeR was created to work with data whose distribution is a negative binomial: the initial data matrix has this type of distribution, while normalized data does not comply to negative binomial distribution. To correctly use the functions we have to label samples in control and disease groups with 'control_1', 'control_2', ..., 'disease_1', and so on. 
+</div>
+
+```{r rename column function}
+renameColumns
+```
+
+```{r preprocessing}
+# rebuilt control matrix and label with the proper name
+control_nodup <- remove_duplicates(DATA, control)
+control_nodup <- renameColumns(control_nodup, "control")
+
+# rebuilt disease matrix and label with the proper name 
+disease_nodup <- remove_duplicates(DATA, disease)
+disease_nodup <- renameColumns(control_nodup, "disease")
+```
+
+```{r edgeR}
+library(edgeR)
+
+# merge the two tables of disease and control 
+mat <- cbind(disease_nodup, control_nodup)
+
+# create groups and merge them
+control_group <- rep("control",dim(control_nodup)[2])
+disease_group <- rep("disease",dim(disease_nodup)[2])
+group_all <- cbind(t(as.data.frame(disease_group)),t(as.data.frame(control_group)))
+
+# with factor() we get an object divided in two levels (control and disease)
+group <- factor(group_all)
+
+# design matrix
+design <- model.matrix(~0+group) 
+rownames(design) <- colnames(mat)
+
+# fit values of phi (we need this step to fit our GLM model)
+y <- DGEList(counts=mat, remove.zeros = TRUE)    
+y <- calcNormFactors(y)   # scaling factors with TMM approach
+SF <- y$samples
+
+y <- estimateGLMCommonDisp(y,design, verbose=TRUE) # phi common to the entire dataset
+y <- estimateGLMTrendedDisp(y,design) # phi depends on mu
+y <- estimateGLMTagwiseDisp(y,design) # phi is gene specific
+fit <- glmFit(y,design) # the model fit 
+
+# the test
+Confr <- makeContrasts(Treatment=groupdisease-groupcontrol,levels=design)
+RES <- glmLRT(fit,contrast=Confr[,"Treatment"])
+
+# some outputs to give an idea of the test's results
+RES$table[1:5,]
+
+# final values
+out <- topTags(RES, n = "Inf")$table
+out[1:5,]
+```
+
+## Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha = 0.05 and consider G0 = N with N being the number of genes
+
+```{r selection for alpha 0.05}
+alpha<-0.05
+
+# selected values for t-test
+lower <- (c_ttest_pvalue<alpha)
+selected_ttest <- which(lower==TRUE)
+num_sel_ttest <- length(selected_ttest)
+
+# selected values for Wilcoxon test
+lower <- (c_wilcoxon_pvalue<alpha)
+selected_wilcox <- which(lower==TRUE)
+num_sel_wilcox <- length(selected_wilcox)
+
+#selected values for edgeR
+indSELedgeR <- length(which(out$PValue<alpha)) #i selected
+```
+
+```{r expected values function}
+expected_values
+```
+
+```{r calculation of expected values}
+G <- nrow(control_nodup_nozero)
+G0 <- G
+
+#function that returns a vector with, in order, TP FP TN FN
+expected_ttest <- expected_values(G, G0, alpha, num_sel_ttest)
+expected_wilcoxontest <- expected_values(G, G0, alpha, num_sel_wilcox)
+expected_edger <- expected_values(G, G0, alpha, indSELedgeR)
+```
+
+## Estimate the number of not differentially expressed genes G0 and re-estimate the expected number of false positives and false negatives
+
+```{r estimation of G0 function}
+estimateG0
+G0_value_estimation
+```
+
+``` {r estimation of G0 and re-estimation of the values for each test}
+# t-test analysis
+res <- estimateG0(c_ttest_pvalue, G0, "T test")
+lambda_est_ttest <- 0.8
+eps <- 0.03
+G0_est_ttest <- G0_value_estimation(lambda_est_ttest, eps, res)
+
+expected_ttest_est <- expected_values(G, G0_est_ttest, alpha, num_sel_ttest)
+
+# Wilcoxon analysis
+res <- estimateG0(c_wilcoxon_pvalue, G0, "Wilcoxon test")
+lambda_est_wilcoxon <- 0.8
+eps <- 0.03
+G0_est_wilcoxontest <- G0_value_estimation(lambda_est_wilcoxon, eps, res)
+
+expected_wilcoxontest_est <- expected_values(G, G0_est_wilcoxontest, alpha, num_sel_wilcox)
+
+# edgeR analysis
+res <- estimateG0(out[,4], G0, "edgeR test")
+lambda_est_edger <- 0.8
+eps <- 0.03
+G0_est_edger <- G0_value_estimation(lambda_est_edger, eps, res)
+
+expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, indSELedgeR)
+
+# print results
+cat("TP, FP, TN, FN with edgeR (using estimated G0): ")
+cat(expected_edgeR_est)
+cat("\nTP, FP, TN, FN with t-test (using estimated G0): ")
+cat(expected_ttest_est)
+cat("\nTP, FP, TN, FN with wilcoxon test (using estimated G0): ")
+cat(expected_wilcoxontest_est)
+```
+
+## Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice
+
+<div style="text-align: justify">
+We chose edgeR for few reasons; first of all, edgeR test was built for data with negative binomial distribution, while the other tests do not take into account the characteristics of this particular distribution and, in this sense, this analysis can give more specific results. Then, it must also be said that it gives the lowest FN rate; while FP rate can be easily taken into account with a correction for multiple test, FN rate is not accounted for with this type of correction. In this sense, we are not able to reduce this rate with some corrections; since it is a 'bad' result, we have to minimize it. To conclude, we chose edgeR on the basis of the theory behind and also on the FP and FN rates.
+</div>
+
+## Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%
+
+```{r select the final list of DE genes}
+FDR <- 0.05
+# values in the range observed as p-value in edgeR
+lambda <- seq(min(out[,4]), max(out[,4]), (max(out[,4])-min(out[,4]))/nrow(out))
+FDR_values <- NULL
+
+# compute FDR for every lambda
+for (i in (1:length(lambda))) {
+  less <- (out[,4]<lambda[i])
+  num_sel <- length(which(less==TRUE))
+  
+  expected_val <- expected_values(G, G0_est_edger, lambda[i], num_sel)
+  
+  if (num_sel==0){
+    FDR_values <- c(FDR_values,0)} 
+  else {
+    FDR_values <- c(FDR_values,(expected_val[2]/num_sel))}
+}
+
+plot(lambda, FDR_values, main = 'FDR values for different alpha')
+
+# choose the values that are in [0.05-epsilon;0.05+espilon]
+epsilon <- 0.0001
+alpha_index <- which(FDR_values>=0.05-epsilon)
+alpha_index2 <- which(FDR_values<=0.05+epsilon)
+alpha_est <- mean(lambda[intersect(alpha_index,alpha_index2)])
+
+# selection of the correspondent indexes and ID genes in the table
+indexes <- which(out$PValue<alpha_est) 
+index_genes_selected <- sort(as.numeric(rownames(out[indexes,])))
+
+ID_genes_selected <- rownames(DATA[index_genes_selected,])
+number_genes_selected <- length(ID_genes_selected)
+ID_genes_notselected <- setdiff(rownames(DATA),ID_genes_selected)
+number_genes_notselected <- length(ID_genes_notselected)
+
+# print results
+cat("Number of selected genes: ")
+cat(number_genes_selected)
+cat("\nNumber of not selected genes: ")
+cat(number_genes_notselected)
+```
+
+# Third Part
+
+## Extract G0 term associated
+
+<div style="text-align: justify">
+We found out that some gene names were duplicated but not their ENSEMBL IDs; for this reason, we decided to use these IDs to get the annotation and extract the right GO terms associated with the genes. We also decided to take out those genes whose GOALL was NA: as a matter of fact, this NA value means that we don't have their associated term right now (the association is not complete in the DB).  To improve computation, we also took out all the IDs of genes annotated but not selected and their respective total numbers. 
+After the data extraction and the pre-processing, we built a matrix that has on rows the associated GO terms and on columns the type of GOterm and the values useful for the computation of the fisher test.
+</div>
+
+```{r extract GO terms}
+library(AnnotationDbi)
+library(GO.db)
+library(org.Hs.eg.db)
+
+# extraction of the associated terms in function of the ENSEMBL ID 
+alldata <- select(org.Hs.eg.db, ID_genes_selected, columns = c("SYMBOL","ENTREZID", "ENSEMBL","GOALL"), keytype="ENSEMBL")
+
+# remove the genes for which we have the NA term associated 
+GOALL_NA <- which(is.na(alldata$GOALL))
+ID_goall_na <- alldata$ENSEMBL[GOALL_NA]
+
+ID_genes_selected_notna <- setdiff(ID_genes_selected,ID_goall_na)
+number_genes_selected_notna <- length(ID_genes_selected_notna)
+ID_genes_notselected_notna <- setdiff(ID_genes_notselected,ID_goall_na)
+number_genes_notselected_notna <- length(ID_genes_notselected_notna)
+
+# remove the duplicates in the extracted terms 
+terms <- unique(alldata[,4])
+terms <- terms[!is.na(terms)]
+
+# print outputs
+cat("Number of unique extracted terms: ", length(terms))
+cat("\nNumber of selected genes not NA: ", number_genes_selected_notna)
+
+#creation of the matrix for the Fisher test, one row for each GOterm
+matrixes <- NULL
+for (i in (1:length(terms))){
+  GOterm <- terms[i]
+  GOterm_indexes <- which(alldata$GOALL==GOterm)
+  a <- length(intersect(alldata[GOterm_indexes,1],ID_genes_selected_notna))
+  b <- number_genes_selected - a
+  c <- length(GOterm_indexes) - a
+  d <- length(ID_genes_notselected_notna)- c
+  type<-alldata[(which(alldata[,4]==GOterm))[1],6]
+
+  matrixes <- rbind(matrixes,c(type,a,b,c,d))
+}
+
+colnames(matrixes)<-c("type","a","b","c","d")
+rownames(matrixes)<-terms
+matrixes<-matrixes[order(rownames(matrixes)),]
+```
+
+## Fisher test
+
+```{r fisher test}
+# creation of three sub-matrices in function of the GOterm's type  
+matrixesCC <- matrixes[which(matrixes[,1]=="CC"),]
+colnames(matrixesCC)<-c("type","a","b","c","d")
+matrixesBP <- matrixes[which(matrixes[,1]=="BP"),]
+colnames(matrixesBP)<-c("type","a","b","c","d")
+matrixesMF <- matrixes[which(matrixes[,1]=="MF"),]
+colnames(matrixesMF)<-c("type","a","b","c","d")
+
+# implementation of the Fisher test with the R function 
+pval_fisherCC<-fisher_test_matrixes(matrixesCC)
+pval_fisherBP<-fisher_test_matrixes(matrixesBP)
+pval_fisherMF<-fisher_test_matrixes(matrixesMF)
+```
+
+# Fourth Part 
+
+## [Note] Correcting for length of genes before clustering
+
+<div style="text-align: justify">
+We correct our data for the length of genes to perform a better clustering analysis and to not have a bias in the results do to the lengths. To do it we extracted the gene lengths with the 'getGeneLengthAndGCContent' function and then divide each value for this length. We also decided to consider as one sample all those samples taken from the same subject in the same group, as we did for testing the DE genes.
+</div>
+
+```{r init clustering}
+library (EDASeq)
+
+d <- getGeneLengthAndGCContent(ID_genes_selected, "hsa")
+#d[[1]] has the length of all genes selected
+
+# remove the first column of data (gene names), extract the selected genes and normalize them
+data_normalized <- DATA[,-1]
+data_normalized <- data_normalized[index_genes_selected,]
+data_normalized <- t(t(data_normalized)/d[[1]])
+
+# remove the duplicates and bind them
+dataNorm_nodup_control <- remove_duplicates(data_normalized,control) 
+dataNorm_nodup_disease <- remove_duplicates(data_normalized,disease) 
+dataNorm_clustering <- cbind(dataNorm_nodup_control,dataNorm_nodup_disease)
+```
+
+## Cluster the genes you have selected in exercise 2 using k-means and hierarchical clustering and compare the results you obtain
+
+<div style="text-align: justify">
+We defined a grid of possible values for the number of clusters and for each of them we implement the clustering, with the kmeans function of R. For THIS function, we used as parameters iter.max=100 to avoid a too long computation or an overfitting of the data and nstart=100 to have multiple startings that lead to better results trying to avoid local minimum of the cost function. 
+For the hierarchical cluster, we used the hclust function of R, with as parameter method="ward.D2": we chose ward.D2 as a method of clustering because it uses the euclidean distance and in this way we can perform a better comparison with k-means, which also uses euclidean distance. Once the entire hierarchical tree is build, we cut the tree in order to obtain different numbers of clusters (inside the for cycle).
+In each iteration on possible values of k, we calculate also the Silhouette value.
+</div>
+
+```{r values of K}
+K <- seq(1,10)
+```
+
+```{r clustering genes with kmeans}
+# Clustering genes with kmeans
+
+WITHIN_SS_gene_kmeans <- NULL
+clus_km <- NULL
+s_genes_kmeans <- NULL
+
+for(i in K){
+  k <- K[i]
+  cl_kmeans_genes <- kmeans(x=dataNorm_clustering,centers=k,iter.max=100,nstart=3)
+  clus_km <- c(clus_km,cl_kmeans_genes)
+  WITHIN_SS_gene_kmeans <- rbind(WITHIN_SS_gene_kmeans, cl_kmeans_genes$tot.withinss)
+  s_genes_kmeans <- rbind(s_genes_kmeans, silhouette(dataNorm_clustering,cl_kmeans_genes[[1]], k))
+}
+
+plot(K, WITHIN_SS_gene_kmeans, main = 'K-Means over genes')
+```
+
+```{r clustering genes with hierarchical}
+# Clustering genes with hierarchical
+
+D <- dist(dataNorm_clustering) 
+cl_hclust_ward <- hclust(d=D, method="ward.D2")
+plot(cl_hclust_ward, hang=-1, main = 'Hierarchical clustering over genes') 
+
+s_genes_hierar <- NULL
+
+for (i in (1:length(K))){
+  k <- K[i]
+  clusters_hclust_ward <- cutree(cl_hclust_ward, k=k)
+  s_genes_hierar <- c(s_genes_hierar, silhouette(dataNorm_clustering,clusters_hclust_ward,k))
+}
+```
+
+## Cluster the samples in your dataset (considering only the genes you have selected in exercise 2) using k-means and hierarchical clustering and compare the results you obtain
+
+<div style="text-align: justify">
+All the implementation and the parameters are equal to the implementation above. We only had to consider the transpose of the initial data matrix to analyze the samples instead of the genes.
+</div>
+
+```{r clustering sample with kmeans}
+# Clustering samples with kmeans
+
+WITHIN_SS_sample <- NULL
+clus_km_sample <- NULL
+s_samples_kmeans <- NULL
+
+for(i in K) {
+  k<-K[i]
+  cl_kmeans_samples<-kmeans(x=t(dataNorm_clustering),centers=k,iter.max=100,nstart=100)
+  clus_km_sample<-c(clus_km_sample,cl_kmeans_samples)
+  WITHIN_SS_sample<-rbind(WITHIN_SS_sample, cl_kmeans_samples$tot.withinss)
+  s_samples_kmeans <- rbind(s_samples_kmeans, silhouette(t(dataNorm_clustering),cl_kmeans_samples[[1]], k))
+}
+
+plot(K, WITHIN_SS_sample, main = 'K-Means over samples')
+```
+
+```{r clustering sample with hierarchical}
+# Clustering samples with hierarchical
+
+D<-dist(t(dataNorm_clustering)) 
+cl_hclust_ward_S<-hclust(d=D,method="ward.D2")
+plot(cl_hclust_ward_S, hang=-1, main = 'Hierarchical over samples') 
+
+s_samples_hierar <- NULL
+
+for (i in (1:length(K))){
+  k <- K[i]
+  clusters_hclust_ward_S<-cutree(cl_hclust_ward_S, k=k)
+  s_samples_hierar <- c(s_samples_hierar, silhouette(t(dataNorm_clustering),clusters_hclust_ward_S,k))
+}
+```
+
+## Choose the optimal number of clusters using the silhouette statistic
+
+```{r silhouette implementation}
+silhouette
+```
+
+```{r results of the sihouette}
+# results for silhouette
+
+cat("K-Means over genes!\n")
+#cat(s_genes_kmeans)
+cat("The maximum silhouette is", max(s_genes_kmeans), ", obtained for the optimal number of clusters:", K[which(s_genes_kmeans == max(s_genes_kmeans))])
+
+cat("\n\nHierarchical clustering over genes!\n")
+#cat(s_genes_hierar)
+cat("The maximum silhouette is", max(s_genes_hierar), ", obtained for the optimal number of clusters:", K[which(s_genes_hierar == max(s_genes_hierar))])
+
+cat("\n\nK-Means over samples!\n")
+#cat(s_samples_kmeans)
+cat("The maximum silhouette is", max(s_samples_kmeans), ", obtained for the optimal number of clusters:", K[which(s_samples_kmeans == max(s_samples_kmeans))])
+
+cat("\n\nHierarchical clustering over samples!\n")
+#cat(s_samples_hierar)
+cat("The maximum silhouette is", max(s_samples_hierar), ", obtained for the optimal number of clusters:", K[which(s_samples_hierar == max(s_samples_hierar))])
+```
+
+## Choose the optimal number of clusters using the Gap statistic. In this case you can use the R function clusGap() in the library “cluster”
+
+<div style="text-align: justify">
+To implement the gap statistic, we used the clusGap function of the cluster library. For each analysis we implemented before, we determined the best number of clusters with its definition. 
+</div>
+
+```{r gap}
+# results for the gap statistic
+
+library(cluster)
+#functions for the subsequent analysis
+test_hclust <- function(x, k) list(cluster=cutree(hclust(dist(x), method = "average"),k=k))
+test_kmeans <- function(x, k) (kmeans(x=x,centers=k,iter.max=100,nstart=100))
+
+# K-Means - genes
+
+gap_res<-clusGap(dataNorm_clustering, test_kmeans, length(K), B=2)
+
+for (i in (2:(nrow(gap_res[[1]])-1))){
+  if ((gap_res[[1]][i,3])>(gap_res[[1]][i+1,3]+gap_res[[1]][i+1,4]))
+    break;
+}
+kopt_genes_kmeans <- i
+
+# K-Means - samples
+
+gap_res<-clusGap(t(dataNorm_clustering), test_kmeans, length(K), B=100)
+
+for (i in (2:(nrow(gap_res[[1]])-1))){
+  if ((gap_res[[1]][i,3])>(gap_res[[1]][i+1,3]+gap_res[[1]][i+1,4]))
+    break;
+}
+kopt_samples_kmeans <- i
+
+# Hierarchical - genes
+
+gap_res<-clusGap(dataNorm_clustering, test_hclust, length(K), B=100)
+
+for (i in (1:(nrow(gap_res[[2]])-1))){
+  if (gap_res[[1]][i,3]>gap_res[[1]][i+1,3]+gap_res[[1]][i+1,4])
+    break;
+}
+kopt_genes_hier <- i
+
+# Hierarchical - samples
+
+gap_res <-clusGap(t(dataNorm_clustering), test_hclust, length(K), B=100)
+
+for (i in (2:(nrow(gap_res[[1]])-1))){
+  if (gap_res[[1]][i,3]>gap_res[[1]][i+1,3]+gap_res[[1]][i+1,4])
+    break;
+}
+kopt_samples_hier <- i
+```
+
+```{r results of the gap statistic}
+# results for gap statistic
+
+cat("K-Means over genes!\n")
+cat("The optimal number of clusters is:", kopt_genes_kmeans)
+
+cat("\n\nHierarchical clustering over genes!\n")
+cat("The optimal number of clusters is:", kopt_samples_kmeans)
+
+cat("\n\nK-Means over samples!\n")
+cat("The optimal number of clusters is:", kopt_genes_hier)
+
+cat("\n\nHierarchical clustering over samples!\n")
+cat("The optimal number of clusters is:", kopt_samples_hier)
+```
+
+
+
+```{r plots of part4, HIERARCHICAL}
+# GENES, HIERARCHICAL CLUSTERING
+library(factoextra)
+
+nodePar <- list(lab.cex = 0.6, pch = NA)
+hcd_G <- as.dendrogram(cl_hclust_ward)
+
+#par(mfrow=c(3,1))
+hcd<-as.dendrogram(cl_hclust_ward)
+plot(cut(hcd, h=400)$upper, main="Upper tree of cut at h=400", nodePar = nodePar,
+     leaflab = "textlike")
+
+plot(cut(hcd, h=400)$lower[[2]], nodePar = nodePar, leaflab = "none",
+     main="Second branch of lower tree with cut at h=400")
+
+# SAMPLES, HIERARCHICAL CLUSTERING
+hcd_S <- as.dendrogram(cl_hclust_ward_S)
+plot(hcd_S, type = "rectangle", horiz = TRUE, xlab = "Height", nodePar = nodePar, leaflab = "none", main="Hierarchical clustering of samples")
+
+```
+
+```{r plot of part 4, kmeans}
+#GENES, KMEANS
+library(factoextra)
+cl_genes<-kmeans(x=dataNorm_clustering, centers = 2, iter.max = 100, nstart = 100)
+fviz_cluster(cl_genes, data = dataNorm_clustering,
+             palette = c("#2E9FDF", "#00AFBB"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw(),
+             main="Kmeans clustering of genes"
+)
+
+#SAMPLES, KMEANS
+cl_samples<-kmeans(x=t(dataNorm_clustering), centers = 3, iter.max = 100, nstart = 100)
+fviz_cluster(cl_samples, data = t(dataNorm_clustering),
+             palette = c("#2E9FDF", "#00AFBB", "#E7B800"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw(),
+             main="Kmeans clustering of samples"
+)
+```
+
