@@ -724,3 +724,94 @@ fviz_cluster(cl_samples, data = t(dataNorm_clustering),
 )
 ```
 
+# Fifth Part
+
+## Considering the two groups you have used for differential expression analysis split your data in training and test
+
+```{r data splitting}
+data_nodup_control <- remove_duplicates(samples[index_genes_selected,], control) 
+data_nodup_disease <- remove_duplicates(samples[index_genes_selected,], disease)
+data_SVM <- cbind(data_nodup_control, data_nodup_disease)
+namegroup <- c(rep("control", ncol(data_nodup_control)),rep("disease", ncol(data_nodup_disease)))
+
+library(caret)
+set.seed(3456)
+trainIndex <- createDataPartition((1:ncol(data_SVM)), p=0.7, list=FALSE, times=1)
+data_train <- t(data_SVM)[trainIndex,]
+data_test <- t(data_SVM)[-trainIndex,]
+
+label_train <- namegroup[trainIndex]
+label_test <- namegroup[-trainIndex]
+```
+
+```{r}
+
+# data_nodup_control <- remove_duplicates(samples[index_genes_selected,],control) 
+# data_nodup_disease <- remove_duplicates(samples[index_genes_selected,],disease)
+# data_SVM <- cbind(data_nodup_control,data_nodup_disease)
+# namegroup <- c(rep("control", ncol(data_nodup_control)),rep("disease", ncol(data_nodup_disease)))
+# 
+# library(e1071)
+# 
+# index <- 1:ncol(data_SVM)
+# testindex <- sample(index, trunc(length(index)/3))
+# data_test <- t(data_SVM)[testindex,]
+# data_train <- t(data_SVM)[-testindex,]
+# 
+# label_train <- namegroup[-testindex]
+# label_test <- namegroup[testindex]
+
+
+
+
+
+```
+## Standardize each feature in your dataset (so to have mean=0 and sd=1)
+
+```{r normalized}
+dataNorm_train <- scale(data_train)
+
+#mean_train <- apply(data_train,2,mean)
+#sd_train <- apply(data_train,2,sd)
+
+#dataNorm_test <- scale(data_test, center = mean_train, scale = sd_train)
+
+dataNorm_test <- scale(data_test)
+```
+
+## Use linear support vector machines to learn classifying your subjects in the two classes 
+
+```{r}
+# svm_linear <- svm(group ~ ., data = dataNorm_train, cost = 10, gamma = 1)
+# 
+# prediction <- predict(svm_linear, dataNorm_test)
+# 
+# 
+# table(prediction, factor(label_test))
+
+
+group <- factor(label_train)
+
+trctrl <- trainControl(method = "cv", number = 5)
+svm_Linear <- train(group~., 
+                    data = dataNorm_train, 
+                    method = "svmLinear", 
+                    trControl=trctrl)
+
+prediction <- predict(svm_linear, dataNorm_test)
+confusionMatrix(prediction, label_test)
+
+```
+
+
+
+```{r}
+prediction
+svm_linear
+```
+
+
+```{r}
+test_pred <- predict(svm_Linear, data_test)
+confusionMatrix(test_pred, label_test)
+```
