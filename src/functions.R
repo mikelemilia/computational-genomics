@@ -136,10 +136,10 @@ remove_zeros <- function(group1,group2){
   # extract indexes of data to remove and remove the correspondent rows
   YN <- as.data.frame(vec_for_comparison>q[1])
   index <- which(YN==FALSE)
-  group1_nozero <- control_nodup[-index,] 
-  group2_nozero <- disease_nodup[-index,]
+  group1_nozero <- group1[-index,] 
+  group2_nozero <- group2[-index,]
   
-  return (list('control' = group1_nozero, 'disease' = group2_nozero))
+  return (list('control' = group1_nozero, 'disease' = group2_nozero, 'removedindexes' = index))
 }
 
 estimateG0<-function(c_pvalue, G, filename) {
