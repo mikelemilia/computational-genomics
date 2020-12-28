@@ -142,6 +142,20 @@ remove_zeros <- function(group1,group2){
   return (list('control' = group1_nozero, 'disease' = group2_nozero, 'removedindexes' = index))
 }
 
+remove_zeros_onegroup <- function(group){
+  group_forcomparison <- as.data.frame(apply(group, 1, sum))
+  
+  # use of the quantile to find the threshold
+  q <- quantile(unlist(group_forcomparison))
+  
+  # extract indexes of data to remove and remove the correspondent rows
+  YN <- as.data.frame(group_forcomparison>q[1])
+  index <- which(YN==FALSE)
+  group_nozero <- group[-index,] 
+  
+  return (list('group' = group_nozero, 'removedindexes' = index))
+}
+
 estimateG0<-function(c_pvalue, G, filename) {
   lambda<-seq(0, 1, 0.01)
   i<-1

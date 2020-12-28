@@ -679,7 +679,6 @@ cat("The optimal number of clusters is:", kopt_samples_hier)
 ```
 
 
-
 ```{r plots of part4, HIERARCHICAL}
 # GENES, HIERARCHICAL CLUSTERING
 library(factoextra)
@@ -729,30 +728,48 @@ fviz_cluster(cl_samples, data = t(dataNorm_clustering),
 ## Considering the two groups you have used for differential expression analysis split your data in training and test
 
 ```{r data splitting}
+library(caret)
+library(e1071)
+set.seed(3738)
+
+# extract data, remove duplicates and zeros
 data_nodup_control <- remove_duplicates(samples[index_genes_selected,], control) 
 data_nodup_disease <- remove_duplicates(samples[index_genes_selected,], disease)
 groups_nozero <- remove_zeros(data_nodup_control, data_nodup_disease)
 data_nodup_control <- groups_nozero$control
 data_nodup_disease <- groups_nozero$disease
 data_SVM <- cbind(data_nodup_control, data_nodup_disease)
+# assign its ID to each gene
 rownames(data_SVM) <- ID_genes_selected[-groups_nozero$removedindexes]
+# construct the vector for control and disease 
 namegroup <- c(rep("control", ncol(data_nodup_control)),rep("disease", ncol(data_nodup_disease)))
 
-library(caret)
-library(e1071)
-set.seed(3456)
-
+# separate in train and test, both data and labels
 trainIndex <- createDataPartition((1:ncol(data_SVM)), p=0.7, list=FALSE, times=1)
-data_train <- t(data_SVM)[trainIndex,]
-data_test <- t(data_SVM)[-trainIndex,]
+data_train <- data_SVM[,trainIndex]
+data_test <- data_SVM[,-trainIndex]
 
 label_train <- namegroup[trainIndex]
 label_test <- namegroup[-trainIndex]
+
+# we can still have genes in data_train and data_test for which all values are 0: we remove these genes (if in one group it generates this problem, we have to remove that gene also from the other group). If we do the other "normalization" we can eliminate the second three lines.
+prova<-remove_zeros_onegroup(data_train)
+data_train<-prova$group
+data_test<-data_test[-prova$removedindexes,]
+
+prova<-remove_zeros_onegroup(data_test)
+data_test<-prova$group
+data_train<-data_train[-prova$removedindexes,]
+
+# finally, take the transpose to have samples on the rows
+data_test<-t(data_test)
+data_train<-t(data_train)
 ```
 
 ## Standardize each feature in your dataset (so to have mean=0 and sd=1)
 
 ```{r normalized}
+dataNorm_test <- NULL
 dataNorm_train <- scale(data_train)
 
 #mean_train <- apply(data_train,2,mean)
@@ -765,8 +782,11 @@ dataNorm_test <- scale(data_test)
 ## Use linear support vector machines to learn classifying your subjects in the two classes 
 
 ```{r e1071}
+#QUESTO ANCORA NON FUNZIONA!
 group <- factor(label_train)
-svm_linear <- svm(group ~ ., data = dataNorm_train, cost = 10, gamma = 1)
+
+svm_linear <- svm(x=dataNorm_train, y=group, scale = FALSE, kernel = "linear")
+
 test_pred <- predict(svm_linear, data_test)
 
 svm_linear
@@ -775,16 +795,28 @@ confusionMatrix(factor(test_pred), factor(label_test))
 ```
 
 ```{r caret}
-group <- factor(label_train)
-# Setup for cross validation
+# create data.frames in which in the first element we have the factor element (and rename it)
+dataNorm_train<-as.data.frame(dataNorm_train)
+dataNorm_train<-cbind(factor(label_train),dataNorm_train)
 
-model <- train(x=as.data.frame(dataNorm_train), y=group, method = "svmLinear",
-  trControl = trainControl("cv", number = 10)
-  )
+colnames(dataNorm_train)[colnames(dataNorm_train) == 'factor(label_train)'] <- 'Group'
 
-prediction <- predict(svm_linear, dataNorm_test)
-confusionMatrix(prediction, label_test)
+dataNorm_test<-as.data.frame(dataNorm_test)
+dataNorm_test<-cbind(factor(label_test),dataNorm_test)
 
+colnames(dataNorm_test)[colnames(dataNorm_test) == 'factor(label_test)'] <- 'Group'
+
+# train the model
+model <- train(Group~., data=dataNorm_train, method = "svmLinear", scale = FALSE, na.action=na.fail, metric = "Accuracy", maximize = TRUE, trControl = trainControl(method = "repeatedcv", number =10, repeats = 3))
+summary(model)
+
+# only some stupid results
+train_pred<-predict(model,dataNorm_train)
+confusionMatrix(train_pred, factor(label_train))
+
+# test the model on the test set
+test_pred<-predict(model,dataNorm_test)
+confusionMatrix(test_pred, factor(label_test))
 ```
 
 
