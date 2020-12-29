@@ -806,20 +806,23 @@ colnames(dataNorm_test)[colnames(dataNorm_test) == 'factor(label_test)'] <- 'Gro
 
 
 ##--------
-ng<-rep(c(-1, 1), c(21, 12)) #-1 for control, 1 for disease
-datTRAIN <- data.frame(dataNorm_train, y = as.factor(ng))
-svmfit <- svm(ng ~ ., data = datTRAIN, kernel = "linear", type = 'C-classification', 
+#-1 for control, 1 for disease
+namegroup_int<-c(rep(-1, ncol(data_nodup_control)),rep(1, ncol(data_nodup_disease)))
+ng<-namegroup_int[trainIndex]
+dat <- data.frame(dataNorm_train, y = as.factor(ng))
+svmfit <- svm(ng ~ ., data = dat, kernel = "linear", type = 'C-classification', 
              scale = FALSE)
 print(svmfit)
 
 
-ng<-rep(c(-1, 1), c(8, 4))
-datTEST <- data.frame(dataNorm_test, y = as.factor(ng))
-test_pred <- predict(svmfit, newdata=datTEST, decision.values = FALSE)
+ng<-namegroup_int[-trainIndex]
+dat <- data.frame(dataNorm_test, y = as.factor(ng))
+test_pred <- predict(svmfit, newdata=dat, decision.values = FALSE)
 
 
 
 confusionMatrix(test_pred, factor(ng))
+
 #accuraci di 1.....? 
 
 ```
