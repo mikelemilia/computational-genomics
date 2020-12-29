@@ -781,17 +781,47 @@ dataNorm_test <- scale(data_test)
 
 ## Use linear support vector machines to learn classifying your subjects in the two classes 
 
-```{r e1071}
-#QUESTO ANCORA NON FUNZIONA!
-group <- factor(label_train)
+```{r e1071 ADESSO FUNZIONA, con standardizzazione suggerita da prof}
+## Standardize each feature in your dataset (so to have mean=0 and sd=1)
 
-svm_linear <- svm(x=dataNorm_train, y=group, scale = FALSE, kernel = "linear")
+mean_train <- apply(data_train,2,mean)
+sd_train <- apply(data_train,2,sd)
+ind_NA_sd<-which(sd_train == 0)
+data_train<-data_train[,-ind_NA_sd]
+sd_train<-sd_train[-ind_NA_sd]
+mean_train<-mean_train[-ind_NA_sd]
+dataNorm_train <- scale(data_train, center = mean_train, scale = sd_train)
+#which(is.na(dataNorm_train)) dovrebbe dare integer(0)
 
-test_pred <- predict(svm_linear, data_test)
+dataNorm_train<-as.data.frame(dataNorm_train)
+dataNorm_train<-cbind(factor(label_train),dataNorm_train)
 
-svm_linear
+colnames(dataNorm_train)[colnames(dataNorm_train) == 'factor(label_train)'] <- 'Group'
 
-confusionMatrix(factor(test_pred), factor(label_test))
+data_test<-data_test[,-ind_NA_sd]
+dataNorm_test<-scale(data_test, center = mean_train, scale = sd_train)
+dataNorm_test<-as.data.frame(dataNorm_test)
+dataNorm_test<-cbind(factor(label_test),dataNorm_test)
+colnames(dataNorm_test)[colnames(dataNorm_test) == 'factor(label_test)'] <- 'Group'
+
+
+##--------
+ng<-rep(c(-1, 1), c(21, 12)) #-1 for control, 1 for disease
+datTRAIN <- data.frame(dataNorm_train, y = as.factor(ng))
+svmfit <- svm(ng ~ ., data = datTRAIN, kernel = "linear", type = 'C-classification', 
+             scale = FALSE)
+print(svmfit)
+
+
+ng<-rep(c(-1, 1), c(8, 4))
+datTEST <- data.frame(dataNorm_test, y = as.factor(ng))
+test_pred <- predict(svmfit, newdata=datTEST, decision.values = FALSE)
+
+
+
+confusionMatrix(test_pred, factor(ng))
+#accuraci di 1.....? 
+
 ```
 
 ```{r caret}
