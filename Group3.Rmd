@@ -815,22 +815,26 @@ test_pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
 confusionMatrix(test_pred, factor(label_test))
 
 df <- dataNorm_train
-K <- 2000
+K <- 4000
 R <- ncol(df)-1
 
 #manca da inserire un controllo su C nel while: non possiamo avere accuracy troppo basse
 while(R > K){
   w <- t(svmfit$coefs)%*% svmfit$SV
   b <- -1 * svmfit$rho
-  names <- colnames(df[,-1])
+  names <- as.vector(colnames(df[,-1]))
+  names[1]
   
   # absolute value
   w <- abs(w)
   w_sort <- sort(w, decreasing = TRUE)
-  indsort <- rank(w, ties="first")
-  for(i in 1:length(names) ) { 
-    names[i] <- names[indsort[i]]
-  }
+  
+  names <-names[order(w, decreasing=TRUE)]
+  
+  # indsort <- rank(desc(w), ties="first")
+  # for(i in (1:length(names))) { 
+  #   names[i] <- names[which(indsort==1)]
+  # }
   m <- as.integer(sqrt(R))
   w <- w_sort[1:(length(w_sort)-m)] 
   names <- names[1:(length(names)-m)]
@@ -840,24 +844,29 @@ while(R > K){
   colnames(df)[colnames(df) == 'factor(label_train)'] <- 'Group'
   
   svmfit <- svm(Group ~ ., data = df, kernel = "linear", type = 'C-classification', scale = FALSE)
+  
+  df_test <- dataNorm_test
+  df_test<-df_test[,names]
+  test_pred <- predict(svmfit, newdata=cbind(factor(label_test),df_test), decision.values = FALSE)
+  confusionMatrix(test_pred, factor(label_test))
   R <- ncol(df)-1
 }
 
-while(R > 1){
-  w <- t(svmfit$coefs)%*% svmfit$SV
-  b <- -1 * svmfit$rho 
-  names <- colnames(df[,-1])
-  
-  for(i in 1:length(names)) { 
-    name<-names[i]
-    df<-df[,-name]
-    df<-cbind(factor(label_train),df)
-    colnames(df)[colnames(df) == 'factor(label_train)'] <- 'Group'
-  
-    svmfit <- svm(Group ~ ., data = df, kernel = "linear", type = 'C-classification', scale = FALSE)
-    #manca da capire qual è quella migliore da togliere (nelle slide parla di C, che è l'accuracy) e poi aggiornare i valori
-  }
-}
+# while(R > 1){
+#   w <- t(svmfit$coefs)%*% svmfit$SV
+#   b <- -1 * svmfit$rho 
+#   names <- colnames(df[,-1])
+#   
+#   for(i in 1:length(names)) { 
+#     name<-names[i]
+#     df<-df[,-name]
+#     df<-cbind(factor(label_train),df)
+#     colnames(df)[colnames(df) == 'factor(label_train)'] <- 'Group'
+#   
+#     svmfit <- svm(Group ~ ., data = df, kernel = "linear", type = 'C-classification', scale = FALSE)
+#     #manca da capire qual è quella migliore da togliere (nelle slide parla di C, che è l'accuracy) e poi aggiornare i valori
+#   }
+# }
 ```
 
 
