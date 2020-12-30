@@ -740,7 +740,7 @@ data_nodup_control <- groups_nozero$control
 data_nodup_disease <- groups_nozero$disease
 data_SVM <- cbind(data_nodup_control, data_nodup_disease)
 # assign its ID to each gene
-rownames(data_SVM) <- ID_genes_selected[-groups_nozero$removedindexes]
+rownames(data_SVM) <- ID_genes_selected[-(groups_nozero$removedindexes)]
 # construct the vector for control and disease 
 namegroup <- c(rep("control", ncol(data_nodup_control)),rep("disease", ncol(data_nodup_disease)))
 
@@ -768,66 +768,16 @@ data_train<-t(data_train)
 
 ## Standardize each feature in your dataset (so to have mean=0 and sd=1)
 
-```{r normalized}
+```{r data preprocessing}
 dataNorm_test <- NULL
 dataNorm_train <- scale(data_train)
 
-#mean_train <- apply(data_train,2,mean)
-#sd_train <- apply(data_train,2,sd)
-#dataNorm_test <- scale(data_test, center = mean_train, scale = sd_train)
-
-dataNorm_test <- scale(data_test)
-```
-
-## Use linear support vector machines to learn classifying your subjects in the two classes 
-
-```{r e1071 ADESSO FUNZIONA, con standardizzazione suggerita da prof}
-## Standardize each feature in your dataset (so to have mean=0 and sd=1)
-
 mean_train <- apply(data_train,2,mean)
 sd_train <- apply(data_train,2,sd)
-ind_NA_sd<-which(sd_train == 0)
-data_train<-data_train[,-ind_NA_sd]
-sd_train<-sd_train[-ind_NA_sd]
-mean_train<-mean_train[-ind_NA_sd]
-dataNorm_train <- scale(data_train, center = mean_train, scale = sd_train)
-#which(is.na(dataNorm_train)) dovrebbe dare integer(0)
+dataNorm_test <- scale(data_test, center = mean_train, scale = sd_train)
 
-dataNorm_train<-as.data.frame(dataNorm_train)
-dataNorm_train<-cbind(factor(label_train),dataNorm_train)
+#dataNorm_test <- scale(data_test)
 
-colnames(dataNorm_train)[colnames(dataNorm_train) == 'factor(label_train)'] <- 'Group'
-
-data_test<-data_test[,-ind_NA_sd]
-dataNorm_test<-scale(data_test, center = mean_train, scale = sd_train)
-dataNorm_test<-as.data.frame(dataNorm_test)
-dataNorm_test<-cbind(factor(label_test),dataNorm_test)
-colnames(dataNorm_test)[colnames(dataNorm_test) == 'factor(label_test)'] <- 'Group'
-
-
-##--------
-#-1 for control, 1 for disease
-namegroup_int<-c(rep(-1, ncol(data_nodup_control)),rep(1, ncol(data_nodup_disease)))
-ng<-namegroup_int[trainIndex]
-dat <- data.frame(dataNorm_train, y = as.factor(ng))
-svmfit <- svm(ng ~ ., data = dat, kernel = "linear", type = 'C-classification', 
-             scale = FALSE)
-print(svmfit)
-
-
-ng<-namegroup_int[-trainIndex]
-dat <- data.frame(dataNorm_test, y = as.factor(ng))
-test_pred <- predict(svmfit, newdata=dat, decision.values = FALSE)
-
-
-
-confusionMatrix(test_pred, factor(ng))
-
-#accuraci di 1.....? 
-
-```
-
-```{r caret}
 # create data.frames in which in the first element we have the factor element (and rename it)
 dataNorm_train<-as.data.frame(dataNorm_train)
 dataNorm_train<-cbind(factor(label_train),dataNorm_train)
@@ -839,6 +789,11 @@ dataNorm_test<-cbind(factor(label_test),dataNorm_test)
 
 colnames(dataNorm_test)[colnames(dataNorm_test) == 'factor(label_test)'] <- 'Group'
 
+```
+
+## Use linear support vector machines to learn classifying your subjects in the two classes 
+
+```{r caret}
 # train the model
 model <- train(Group~., data=dataNorm_train, method = "svmLinear", scale = FALSE, na.action=na.fail, metric = "Accuracy", maximize = TRUE, trControl = trainControl(method = "repeatedcv", number =10, repeats = 3))
 summary(model)
@@ -851,5 +806,42 @@ confusionMatrix(train_pred, factor(label_train))
 test_pred<-predict(model,dataNorm_test)
 confusionMatrix(test_pred, factor(label_test))
 ```
+
+```{r e1071}
+svmfit <- svm(Group ~ ., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE)
+print(svmfit)
+
+test_pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
+confusionMatrix(test_pred, factor(label_test))
+
+names <- colnames(dataNorm_train[,-1])
+df <- dataNorm_train
+K <- 100
+
+while(R > K){
+  w <- t(svmfit$coefs)%*% svmfit$SV
+  b <- -1 * svmfit$rho #(sometimes called w0)
+
+  # absolute value
+  w <- abs(w)
+  R <- length(w)
+  w_sort <- sort(w, decreasing = TRUE)
+  indsort <- rank(w, ties="first")
+  for(i in 1:length(names) ) { 
+    names[i] <- names[indsort[i]]
+  }
+  m <- as.integer(sqrt(R))
+  w <- w_sort[1:(length(w_sort)-m)] 
+  names <- names[1:(length(names)-m)]
+  
+  df<-df[,names]
+  df<-cbind(factor(label_train),df)
+  colnames(df)[colnames(df) == 'factor(label_train)'] <- 'Group'
+  
+  svmfit <- svm(Group ~ ., data = df, kernel = "linear", type = 'C-classification', scale = FALSE)
+}
+```
+
+
 
 
