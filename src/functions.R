@@ -156,50 +156,33 @@ remove_zeros_onegroup <- function(group){
   return (list('group' = group_nozero, 'removedindexes' = index))
 }
 
-estimateG0<-function(c_pvalue, G, filename) {
-  lambda<-seq(0, 1, 0.01)
-  i<-1
-  G0_prev<-0
-  G0<-vector("integer",length(length(lambda)))
-  r<-vector("integer",length(length(lambda)))
-  G0_estimate<-NULL
-  lambda_estimate <- NULL
-  
-  while (i<=length(lambda)) {
-    l<-lambda[i]
-    
+G0values<-function(lambda, c_pvalue, G, filename) {
+  G0<-NULL
+  for(l in lambda) {
     minori<-(c_pvalue<l)
     selected<-which(minori==TRUE)
     num_sel<-length(selected)
-    
-    G0[i]<-(G-num_sel)/(1-l)
-    
-    r[i]<-(G0[i]-G0_prev)^2
-    
-    G0_prev<-G0[i]
-    i<-i+1
+    G0<-c(G0,(G-num_sel)/(1-l))
   }
   
-  G0_estimate<-G0[which.min(r)]
-  lambda_estimate <- lambda[which.min(r)]
+  plot(lambda, G0/G, xlab="lambda", ylab="G0", main=filename)
   
   # plot the estimates
   png(file = paste(getPlotPath(filename, "G0 estimate"), ".png", sep = ""))
   plot(lambda, G0/G, xlab="lambda", ylab="G0", main=filename)
-  points(lambda_estimate, G0_estimate/G, col= "red")
   dev.off()
   
-  return(list(G0,lambda))
+  return(list('G0'=G0,'lambda'=lambda))
 }
 
 G0_value_estimation<-function(lambda_est, eps, res) {
   
   lambda_min<-lambda_est-eps
   lambda_max<-lambda_est+eps
-  index_min<-which(res[[2]]==lambda_min)
-  index_max<-which(res[[2]]==lambda_max)
-  G0_min <- res[[1]][index_min]
-  G0_max <- res[[1]][index_max]
+  index_min<-which(res$lambda==lambda_min)
+  index_max<-which(res$lambda==lambda_max)
+  G0_min <- res$G0[index_min]
+  G0_max <- res$G0[index_max]
   G0_est<-round(mean(G0_min, G0_max)) 
   
   return(G0_est)
@@ -211,7 +194,7 @@ expected_values <- function(G,G0,alpha,selected_genes){
   expected_TN <- G0 - expected_FP
   expected_FN <- max(0,G-selected_genes-expected_TN)
   
-  return (c(expected_TP,expected_FP,expected_TN,expected_FN))
+  return (list('TP'=expected_TP,'FP'=expected_FP,'TN'=expected_TN,'FN'=expected_FN))
 }
 
 fisher_test_matrixes <- function(matrixes){
@@ -227,6 +210,54 @@ fisher_test_matrixes <- function(matrixes){
     pval<-rbind(pval,res$p.value)
   } 
   return (pval)
+}
+
+FDR_fisher<-function(pval_fisher, terms){
+  FDR <- 0.05
+  # values in the range observed as p-value in fisher exact test
+  lambda <- seq(min(out[,4]), max(out[,4]), (max(out[,4])-min(out[,4]))/nrow(out))
+  FDR_values_fisher <- NULL
+  
+  # compute FDR for every lambda
+  for (i in (1:length(lambda))) {
+    less <- (pval_fisher<lambda[i])
+    num_sel <- length(which(less==TRUE))
+    
+    #length(pval_fisher_BP) è il numero dei test fatti
+    expected_FP <- min(length(pval_fisher)*lambda[i], num_sel)
+    
+    if (num_sel==0){
+      FDR_values_fisher <- c(FDR_values_fisher,0)} 
+    else {
+      FDR_values_fisher <- c(FDR_values_fisher,(expected_FP/num_sel))}
+  }
+  
+  #plot(lambda, FDR_values_fisher, main = 'FDR values for different alpha')
+  
+  # choose the values that are in [0.05-epsilon;0.05+espilon]
+  epsilon <- 0.0001
+  alpha_index <- which(FDR_values_fisher>=0.05-epsilon)
+  alpha_index2 <- which(FDR_values_fisher<=0.05+epsilon)
+  alpha_est <- mean(lambda[intersect(alpha_index,alpha_index2)])
+  
+  # selection of the correspondent indexes and ID genes in the table
+  indexes_annotated <- which(pval_fisher<alpha_est) 
+  terms_annotated<-terms[indexes_annotated]
+  
+  return (list(indexes_annotated,terms_annotated))
+  
+}
+
+annotation_terms<-function(vals, terms){
+  p<-NULL
+  for(i in(1:length(terms))){
+    t<-terms[i]
+    p<-c(p,which(vals$GOID==t))
+    
+  }
+  ann<-vals$TERM[p]
+  
+  return(ann)
 }
 
 silhouette <- function(points, cluster, k){

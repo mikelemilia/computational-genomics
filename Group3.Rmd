@@ -1,8 +1,10 @@
 ---
 title: "GROUP3"
-output: 
+output:
+  html_document:
+    df_print: paged
   html_notebook:
-    number_section: true
+    number_section: yes
 ---
 
 ```{r setup, include=TRUE, echo=FALSE}
@@ -46,23 +48,30 @@ cat("Our dataset is composed by:\n\n")
 cat(paste("♦", genes_number, "genes\n", sep = " "))           
 cat(paste("♦", samples_number, "samples\n\n", sep = " "))
 
-# cat("The sequencing depth of each sample is:\n", depth)
+cat("The sequencing depth of each sample is:\n", depth)
 
+cat("\nThe average depth is:", mean(depth))
 }# HIDE
 ```
 
-## Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice)
+## Produce the MvA plots of each sample vs. sample 1 
 
-TODO: decide with respect to which sample we produce the plots and decide if remove the first column at the beginning or not
+<div style="text-align: justify">
+We decided to use the first sample as reference because we noticed that there was not any significant difference between plots with other references. We added 1 to each value in the data matrix to avoid the log(0)computation.
+</div>
 
 ```{r generate temp dataset}
-temp_samples <- samples + 1 # add 1 to all elements to avoid the log(0)
+temp_samples <- samples + 1
 #TODO: save the temporary datasets into data/temp and reload it
 
 extracted_index <- 1
     
 interval <- (1:samples_number)[-extracted_index]
 ```
+
+<div style="text-align: justify">
+The following function computes the intensity ratio and the average intensity of the vectors distribution in input by definition and return a list of them. The second function receives in input a matrix, the reference column index, the interval used to scan other samples, eventually a folder in which plots will be saved and the graph title. It computes M and A thanks to the MA function and plots the results.
+</div>
 
 ```{r MA function}
 MA
@@ -81,21 +90,39 @@ produceMvA(temp_samples, extracted_index, interval,  folder = "MvA", graph_title
 
 ## Implement the TMM and the quantile normalization
 
+<div style="text-align: justify">
+The following function implements the Trimmed-Mean Normalization. It receives in input a matrix x with samples in rows and genes in columns, a reference index with respect to which we perform normalization and an interval through which we scan all the other genes. For each gene except for the index, it computes the MA values with respect to the reference, calculates the scaling factor as the trimmed mean of M values and does the normalization adding the scaling factor as exponential to the current gene. 
+</div>
+
 ```{r TMM Normalization Implementation}
 tmm_normalization
 ```
+
+<div style="text-align: justify">
+The following function implements the Quantile Normalization. It receives in input the matrix x with samples in rows and genes in columns for which it computes the quantile normalization as definition. 
+</div>
 
 ```{r Quantile Normalization Implementation}
 quantile_normalization
 ```
 
-## Normalize the data using the method of your choice (explaining the reason of your choice)
+## Normalize the data using the method of your choice
 
 ```{r TMM Normalization}
 A <- matrix(0, nrow = genes_number, ncol = 0)
 M <- matrix(0, nrow = genes_number, ncol = 0)
 
 tmm_normed <- tmm_normalization(temp_samples, extracted_index, interval)
+```
+
+```{r TMM plots}
+par(mfrow=c(1,2)) 
+extracted <- tmm_normed$samples[,1]
+selected  <- tmm_normed$samples[,12]
+
+plot(samples[,1], samples[,12], xlab="Sample 1", ylab="Sample 12", main = "Samples plot")
+
+plot(extracted, selected, xlab="Sample 1", ylab="Sample 12", main = "Samples plot - Normalized")
 ```
 
 ```{r Quantile normalization}
@@ -105,8 +132,18 @@ M <- matrix(0, nrow = genes_number, ncol = 0)
 quantile_normed <- quantile_normalization(temp_samples)
 ```
 
+```{r Quantile plots}
+par(mfrow=c(1,2)) 
+extracted <- quantile_normed$samples[,1]
+selected  <- quantile_normed$samples[,12]
+
+plot(samples[,1], samples[,12], xlab="Sample 1", ylab="Sample 12", main = "Samples plot")
+
+plot(extracted, selected, xlab="Sample 1", ylab="Sample 12", main = "Samples plot - Normalized")
+```
+
 <div style="text-align: justify">
-With the results obtained, we decide to use for the subsequent analysus the quantile normalization of the data; in fact, this type of normalization seems more robust and gives better results. In fact, if we look at the MvA plots of sample 1 (the reference) VS sample 12, we can see that in the quantile normalization plot the cloud of points is more or less lying on M=0, as it should, while in the TMM normalization plot the cloud of points is clearly hanging below M=0. 
+With the results obtained, we decide to use for the subsequent analysis the <strong>quantile normalization</strong> of the data; in fact, this type of normalization seems more robust and gives better results. In fact, if we look at the MvA plots of sample 1 (the reference) VS sample 12, we can see that in the quantile normalization plot the cloud of points is more or less lying on M=0, as it should, while in the TMM normalization plot the cloud of points is clearly hanging below M=0. 
 It is to be noted that neither the quantile nor the TMM normalization get rid of the "V-shaped" outliers near low values of A (average). The code below shows what was said here. 
 </div>
 
@@ -115,6 +152,7 @@ It is to be noted that neither the quantile nor the TMM normalization get rid of
 par(mfrow=c(1,2)) 
 extracted <- quantile_normed$samples[,1]
 selected  <- quantile_normed$samples[,12]
+
 computed  <- MA(extracted, selected)
     
 M <- cbind(M, computed$M)
@@ -135,7 +173,7 @@ plot(computed$A, computed$M, xlab="A", ylab="M", main = "MvA plot - TMM ", sub =
 abline(0,0)
 ```
 
-## Produce the MvA plots of each sample vs. sample 1 (or another sample of your choice) using normalized data to evaluate if the normalization step was correctly performed or if there are outlier samples
+## Produce the MvA plots of each sample vs. sample 1 using normalized data to evaluate if the normalization step was correctly performed or if there are outlier samples
 
 ```{r Produce Normalized MvA Plots}
 {# HIDE
@@ -157,8 +195,8 @@ You can see MvA plots inside output/plots folder and in particular you can notic
 
 <div style="text-align: justify">
 We decided to take care of this issue by simply using a mean approach: the samples coming from the same subject and present in the same group (for instance subject 1 is measured two times as a control subject) are mediated. To do this task we decided to implement the remove_duplicates function. 
+<strong>TODO: Martina per favore commenta questa funzione</strong>
 </div>
-
 
 ```{r remove duplicates function}
 remove_duplicates
@@ -181,10 +219,26 @@ control_nodup <- remove_duplicates(quantile_normed$samples, control)
 disease_nodup <- remove_duplicates(quantile_normed$samples, disease) 
 ```
 
+```{r remove_duplicates outputs}
+{# HIDE
+# some outputs
+cat("The number of control samples is:",nrow(control))
+cat("\nThe number of diseased samples is:",nrow(disease))
+
+cat("\nThe number of control samples after duplicates removal is:",ncol(control_nodup))
+cat("\nThe number of diseased samples after duplicates removal is:",ncol(disease_nodup))
+
+ratio <- 1-(ncol(control_nodup)/nrow(control))
+cat("\nThe compression ratio for control has been of:", ratio)
+ratio <- 1-(ncol(disease_nodup)/nrow(disease))
+cat("\nThe compression ratio for disease has been of:", ratio)
+}# HIDE
+```
+
 ## [Note] There can be some genes that in both groups 1 and 2 have always expression equal to 0
 
 <div style="text-align: justify">
-We took care of this problem by taking out genes that had expression always equal to zero in all samples from the control group and the disease group. For instace, say that we look at gene 1: if the sum of the read counts for gene 1 in all the samples coming from control group is zero as it is in all the samples from the disease group then we can say that gene 1 has always expression zero, so it does not give information about differentially expressed genes in disease VS control groups. Gene 1 in this example is therefore taken out. We implemented this in the remove_zeros function.
+We took care of the zero problem by taking out genes that had expression always equal to zero in all samples from the control group and the disease group. For instance, say that we look at gene 1: if the sum of the read counts for gene 1 in all the samples coming from control group is zero as it is in all the samples from the disease group then we can say that gene 1 has always expression zero, so it does not give information about differentially expressed genes in disease VS control groups. Gene 1 in this example is therefore taken out. We implemented this in the remove_zeros function.
 </div>
 
 ```{r remove zero function}
@@ -195,6 +249,17 @@ remove_zeros
 groups_nozero <- remove_zeros(control_nodup, disease_nodup)
 control_nodup_nozero<-groups_nozero$control
 disease_nodup_nozero<-groups_nozero$disease
+```
+
+```{r remove_zeros outputs}
+{# HIDE
+# some outputs
+cat("The number of initial genes is:",nrow(control_nodup))
+cat("\nThe number of genes after zeros removal for control is:",nrow(control_nodup_nozero))
+
+ratio <- 1-(nrow(control_nodup_nozero)/nrow(control_nodup))
+cat("\nThe compression ratio for control has been of:", ratio)
+}# HIDE
 ```
 
 ## Calculate p-values of DE analysis (not corrected for multiple testing) between the two groups using t-test, Wilcoxon test and edgeR
@@ -233,6 +298,8 @@ control_nodup <- renameColumns(control_nodup, "control")
 disease_nodup <- remove_duplicates(DATA, disease)
 disease_nodup <- renameColumns(disease_nodup, "disease")
 ```
+
+TODO: commentare o no??
 
 ```{r edgeR}
 library(edgeR)
@@ -277,6 +344,10 @@ out[1:5,]
 
 ## Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha = 0.05 and consider G0 = N with N being the number of genes
 
+<div style="text-align: justify">
+For each test, we extracted the genes that have p-value lower than a fixed alpha. With the following function we calculate the expected values of true positive, false positive, true negative and false negative implementing their definition. We then applied the function with G0 (number of selected genes) equal to the total number of genes.
+</div>
+
 ```{r selection for alpha 0.05}
 alpha<-0.05
 
@@ -306,18 +377,38 @@ G0 <- G
 expected_ttest <- expected_values(G, G0, alpha, num_sel_ttest)
 expected_wilcoxontest <- expected_values(G, G0, alpha, num_sel_wilcox)
 expected_edger <- expected_values(G, G0, alpha, indSELedgeR)
+
+cat("TP, FP, TN, FN with t-test:\n")
+print(expected_ttest)
+cat("\nTP, FP, TN, FN with wilcoxon test:\n")
+print(expected_wilcoxontest)
+cat("\nTP, FP, TN, FN with edgeR:\n")
+print(expected_edger)
 ```
 
 ## Estimate the number of not differentially expressed genes G0 and re-estimate the expected number of false positives and false negatives
 
+<div style="text-align: justify">
+The first function calculates the values of G0 for a given set of lambda values corrected for multiple testings. It receives in input also the p-values for which do the computation, G and the filename in which save the plot. From the plot we choose by hand the best value for our lambda (in this case 0.8) and with the second function, we provide an estimate of the previous lambda value passed (considering a mean of the values within an interval around the best lambda).
+</div>
+
+```{r G0 values function}
+G0values
+```
+
 ```{r estimation of G0 function}
-estimateG0
 G0_value_estimation
 ```
 
+<div style="text-align: justify">
+In the following chunk we perform the estimation of G0 and after seeing the plots, we choose lambda = 0.8 because we saw that around it the graph has a constant mean value with little variability.
+</div>
+
 ``` {r estimation of G0 and re-estimation of the values for each test}
+lambda<-seq(0, 0.99, 0.01)
+
 # t-test analysis
-res <- estimateG0(c_ttest_pvalue, G0, "T test")
+res <- G0values(lambda,c_ttest_pvalue, G0, "T test")
 lambda_est_ttest <- 0.8
 eps <- 0.03
 G0_est_ttest <- G0_value_estimation(lambda_est_ttest, eps, res)
@@ -325,7 +416,7 @@ G0_est_ttest <- G0_value_estimation(lambda_est_ttest, eps, res)
 expected_ttest_est <- expected_values(G, G0_est_ttest, alpha, num_sel_ttest)
 
 # Wilcoxon analysis
-res <- estimateG0(c_wilcoxon_pvalue, G0, "Wilcoxon test")
+res <- G0values(lambda,c_wilcoxon_pvalue, G0, "Wilcoxon test")
 lambda_est_wilcoxon <- 0.8
 eps <- 0.03
 G0_est_wilcoxontest <- G0_value_estimation(lambda_est_wilcoxon, eps, res)
@@ -333,7 +424,7 @@ G0_est_wilcoxontest <- G0_value_estimation(lambda_est_wilcoxon, eps, res)
 expected_wilcoxontest_est <- expected_values(G, G0_est_wilcoxontest, alpha, num_sel_wilcox)
 
 # edgeR analysis
-res <- estimateG0(out[,4], G0, "edgeR test")
+res <- G0values(lambda,out[,4], G0, "edgeR test")
 lambda_est_edger <- 0.8
 eps <- 0.03
 G0_est_edger <- G0_value_estimation(lambda_est_edger, eps, res)
@@ -341,12 +432,12 @@ G0_est_edger <- G0_value_estimation(lambda_est_edger, eps, res)
 expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, indSELedgeR)
 
 # print results
-cat("TP, FP, TN, FN with edgeR (using estimated G0): ")
-cat(expected_edgeR_est)
-cat("\nTP, FP, TN, FN with t-test (using estimated G0): ")
-cat(expected_ttest_est)
-cat("\nTP, FP, TN, FN with wilcoxon test (using estimated G0): ")
-cat(expected_wilcoxontest_est)
+cat("TP, FP, TN, FN with t-test (using estimated G0):\n")
+print(expected_ttest_est)
+cat("\nTP, FP, TN, FN with wilcoxon test (using estimated G0):\n")
+print(expected_wilcoxontest_est)
+cat("\nTP, FP, TN, FN with edgeR (using estimated G0):\n")
+print(expected_edgeR_est)
 ```
 
 ## Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice
@@ -357,7 +448,11 @@ We chose edgeR for few reasons; first of all, edgeR test was built for data with
 
 ## Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%
 
-```{r select the final list of DE genes}
+<div style="text-align: justify">
+First of all, we compute the lambda values choosing an interval within min and max of edgeR's p-values and for each of them we compute FDR value by definition. Moreover we estimate the alpha value as the mean of alphas which have FDR close to 0.05 by a certain epsilon (0.0001).
+</div>
+
+```{r choose alpha}
 FDR <- 0.05
 # values in the range observed as p-value in edgeR
 lambda <- seq(min(out[,4]), max(out[,4]), (max(out[,4])-min(out[,4]))/nrow(out))
@@ -373,17 +468,23 @@ for (i in (1:length(lambda))) {
   if (num_sel==0){
     FDR_values <- c(FDR_values,0)} 
   else {
-    FDR_values <- c(FDR_values,(expected_val[2]/num_sel))}
+    FDR_values <- c(FDR_values,(expected_val[[2]]/num_sel))}
 }
 
 plot(lambda, FDR_values, main = 'FDR values for different alpha')
 
 # choose the values that are in [0.05-epsilon;0.05+espilon]
 epsilon <- 0.0001
-alpha_index <- which(FDR_values>=0.05-epsilon)
-alpha_index2 <- which(FDR_values<=0.05+epsilon)
+alpha_index <- which(FDR_values>=FDR-epsilon)
+alpha_index2 <- which(FDR_values<=FDR+epsilon)
 alpha_est <- mean(lambda[intersect(alpha_index,alpha_index2)])
+```
 
+<div style="text-align: justify">
+We finally select the genes with p-value lower than the estimated alpha.
+</div>
+
+```{r extraction}
 # selection of the correspondent indexes and ID genes in the table
 indexes <- which(out$PValue<alpha_est) 
 index_genes_selected <- sort(as.numeric(rownames(out[indexes,])))
@@ -455,19 +556,48 @@ matrixes<-matrixes[order(rownames(matrixes)),]
 
 ## Fisher test
 
+```{r fisher functions}
+fisher_test_matrixes
+FDR_fisher
+annotation_terms
+```
+
 ```{r fisher test}
 # creation of three sub-matrices in function of the GOterm's type  
 matrixesCC <- matrixes[which(matrixes[,1]=="CC"),]
+indexCC<-which(matrixes[,1]=="CC")
+terms_CC<-terms[indexCC]
 colnames(matrixesCC)<-c("type","a","b","c","d")
 matrixesBP <- matrixes[which(matrixes[,1]=="BP"),]
+indexBP<-which(matrixes[,1]=="BP")
+terms_BP<-terms[indexBP]
 colnames(matrixesBP)<-c("type","a","b","c","d")
 matrixesMF <- matrixes[which(matrixes[,1]=="MF"),]
+indexMF<-which(matrixes[,1]=="MF")
+terms_MF<-terms[indexMF]
 colnames(matrixesMF)<-c("type","a","b","c","d")
 
-# implementation of the Fisher test with the R function 
 pval_fisherCC<-fisher_test_matrixes(matrixesCC)
 pval_fisherBP<-fisher_test_matrixes(matrixesBP)
 pval_fisherMF<-fisher_test_matrixes(matrixesMF)
+
+# correction for multiple testing in fisher per BP
+
+fisher_analysis_BP<-FDR_fisher(pval_fisherBP,terms_BP)
+number_terms_annotatedBP<-length(fisher_analysis_BP[[1]])
+
+fisher_analysis_CC<-FDR_fisher(pval_fisherCC,terms_CC)
+number_terms_annotatedCC<-length(fisher_analysis_CC[[1]])
+
+fisher_analysis_MF<-FDR_fisher(pval_fisherMF,terms_MF)
+number_terms_annotatedMF<-length(fisher_analysis_MF[[1]])
+
+# ATTENIONE: NON BISOGNA AVERE DPLYR IN LIBRERIA! (SOVRASCRIVE SELECT)
+vals = select(GO.db, keys(GO.db, "GOID"), c("TERM", "ONTOLOGY"))
+
+annotation_terms_BP<-annotation_terms(vals, terms_BP)
+annotation_terms_CC<-annotation_terms(vals, terms_CC)
+annotation_terms_MF<-annotation_terms(vals, terms_MF)
 ```
 
 # Fourth Part 
@@ -816,7 +946,9 @@ res <- confusionMatrix(test_pred, factor(label_test))
 print(res)
 
 df <- dataNorm_train
-K <- 100
+df_test <- dataNorm_test
+
+K <- 1050
 R <- ncol(df)-1
 
 C <- res[["overall"]][["Accuracy"]]
@@ -843,9 +975,11 @@ while(R > K){
   
   svmfit <- svm(Group ~ ., data = df, kernel = "linear", type = 'C-classification', scale = FALSE)
   
-  df_test <- dataNorm_test
-  df_test<-df_test[,names]
-  test_pred <- predict(svmfit, newdata=cbind(factor(label_test),df_test), decision.values = FALSE)
+  df_test<-df_test[,names_sorted]
+  df_test<-cbind(factor(label_test),df_test)
+  colnames(df_test)[colnames(df_test) == 'factor(label_test)'] <- 'Group'
+  
+  test_pred <- predict(svmfit, newdata=df_test, decision.values = FALSE)
   res <- confusionMatrix(test_pred, factor(label_test))
   R <- ncol(df)-1
   
@@ -855,21 +989,58 @@ while(R > K){
 
 plot (x=num_par,y=C)
 
-# while(R > 1){
-#   w <- t(svmfit$coefs)%*% svmfit$SV
-#   b <- -1 * svmfit$rho 
-#   names <- colnames(df[,-1])
-#   
-#   for(i in 1:length(names)) { 
-#     name<-names[i]
-#     df<-df[,-name]
-#     df<-cbind(factor(label_train),df)
-#     colnames(df)[colnames(df) == 'factor(label_train)'] <- 'Group'
-#   
-#     svmfit <- svm(Group ~ ., data = df, kernel = "linear", type = 'C-classification', scale = FALSE)
-#     #manca da capire qual è quella migliore da togliere (nelle slide parla di C, che è l'accuracy) e poi aggiornare i valori
-#   }
-# }
+C0 <- C[length(C)]   # needed for first cicle
+
+num_par2 <- R # number of features without group
+C2 <- C0  # accuracy last iteration
+
+while(R > 950 ){
+  
+  deltas <- NULL
+  
+  w <- t(svmfit$coefs)%*% svmfit$SV
+  b <- -1 * svmfit$rho
+  names <- colnames(df[,-1])
+  
+  cat("R value: ", R, "\n")
+  
+  for(i in 2:ncol(df)) {
+    
+    # cat("\t cycle: ", i, "\n")
+    # name<-names[i]
+    df_train <- df[,-i]
+    df_test2  <- df_test[,-i]
+    
+    # df<-cbind(factor(label_train), df)
+    # colnames(df)[colnames(df) == 'factor(label_train)'] <- 'Group'
+    
+    svmfit <- svm(Group ~ ., data = df_train, kernel = "linear", type = 'C-classification', scale = FALSE)
+    #manca da capire qual Ã¨ quella migliore da togliere (nelle slide parla di C, che Ã¨ l'accuracy) e poi aggiornare i valori
+    
+    pred <- predict(svmfit, newdata=df_test2, decision.values = FALSE)
+    res2 <- confusionMatrix(pred, factor(label_test))
+    
+    delta <- C0 - res2[["overall"]][["Accuracy"]]
+    
+    deltas <- c(deltas, delta)
+  }
+  
+  idx <- which(deltas == min(deltas))
+  idx <- sample(idx, 1)
+  
+  # remove features
+  df <- df[, -idx]
+  df_test <- df_test[, -idx]
+  
+  C0 <- deltas[idx] + C0
+  
+  R <- ncol(df)-1
+  
+  C2 <- c(C2, C0)
+  num_par2 <- c(num_par2, R)
+  
+}
+plot (x=num_par2,y=C2)
 ```
 
 
