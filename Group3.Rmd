@@ -86,6 +86,26 @@ A <- matrix(0, nrow = genes_number, ncol = 0)
 M <- matrix(0, nrow = genes_number, ncol = 0)
 
 produceMvA(temp_samples, extracted_index, interval,  folder = "MvA", graph_title = "MvA Plot")
+producePlots(temp_samples, extracted_index, interval, folder = "Other")
+
+```
+
+```{r compute PCA}
+library(factoextra)
+library(FactoMineR)
+
+computePCA ## questa funzione è l'implementazione dell'SVD suggerita dalla prof, è da riguarare, ad ogni modo non mi convincono i grafici delle PCA già implementate
+
+temp_pca <- PCA(t(temp_samples), scale.unit = TRUE, ncp = 5, graph = FALSE)
+summary(temp_pca)
+
+fviz_pca_var(temp_pca, col.var = 'cos2')
+
+temp_pca <- prcomp(temp_samples, scale. = TRUE, )
+
+summary(temp_pca)
+
+fviz_pca_var(temp_pca, col.var = 'cos2')
 ```
 
 ## Implement the TMM and the quantile normalization

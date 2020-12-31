@@ -6,6 +6,38 @@ MA <- function(x, y){
   return(list('M' = M, 'A' = A))
 }
 
+computePCA <- function(x) {
+  
+  n = nrow(x) # number of samples
+  m = ncol(x) # number of variables (genes)
+  
+  # gene_means = apply(X,2,mean)
+  # gene_sd = apply(X,2,sd)
+  # 
+  # Zt = (t(X)-gene_means)/gene_sd
+  
+  z = scale(x)
+
+  if(n > m) {
+    SVD = svd(z)  # Singular Value Decomposition
+    PCs = SVD$v   # PCs
+  } else {
+    SVD = svd(t(z))
+    PCs = t(z) %*% SVD$v
+  }
+  
+  d = SVD$d #diagonal of D
+  
+  L = length(d)
+  
+  var=d^2
+  var_cum = rep(0,L)
+  
+  for(i in 1:length(d)) var_cum[i] <- sum(var[1:i])/var
+  
+  return(list('z'= z, var=var,var_cum=var_cum, 'PC' = PCs))
+}
+
 produceMvA <- function(x, index, interval, folder, graph_title){
   
   extracted <- x[,index] # extract the sample i
@@ -22,6 +54,32 @@ produceMvA <- function(x, index, interval, folder, graph_title){
     
     plot(computed$A, computed$M, xlab="A", ylab="M", main = graph_title, sub = paste("Sample", index, "vs.", i, sep = " "))
     abline(0,0)
+    
+    dev.off()
+  }
+}
+
+producePlots <- function(x, index, interval, folder, graph_title = ""){
+  
+  extracted <- x[,index] # extract the sample i
+  
+  for(i in interval){
+    png(file = paste(getPlotPath(filename = paste(index, "vs.", i, sep = " "), folder = folder), ".png", sep = ""))
+    
+    par(mfrow =c(2,2))
+    # select the i-th element
+    selected <- x[,i]
+    
+    computed <- MA(extracted, selected)
+    M <- cbind(M, computed$M) # equivalent to do computed[[1]]
+    A <- cbind(A, computed$A) # equivalent to do computed[[2]]
+    
+    hist(computed$A, main = graph_title)
+    boxplot(computed$A, main = graph_title)
+    
+    hist(computed$M, main = graph_title)
+    boxplot(computed$M, main = graph_title)
+    
     
     dev.off()
   }
