@@ -57,7 +57,7 @@ cat("\nThe average depth is:", mean(depth))
 ## Produce the MvA plots of each sample vs. sample 1 
 
 <div style="text-align: justify">
-We decided to use the first sample as reference because we noticed that there was not any significant difference between plots with other references. We added 1 to each value in the data matrix to avoid the log(0)computation.
+We decided to use the first sample as reference because we noticed that there was not any significant difference between plots with other references. We added 1 to each value in the data matrix to avoid the log(0) computation in the following analysis.
 </div>
 
 ```{r generate temp dataset}
@@ -87,7 +87,6 @@ M <- matrix(0, nrow = genes_number, ncol = 0)
 
 produceMvA(temp_samples, extracted_index, interval,  folder = "MvA", graph_title = "MvA Plot")
 producePlots(temp_samples, extracted_index, interval, folder = "Other")
-
 ```
 
 ```{r compute PCA}
@@ -96,16 +95,20 @@ library(FactoMineR)
 
 computePCA ## questa funzione è l'implementazione dell'SVD suggerita dalla prof, è da riguarare, ad ogni modo non mi convincono i grafici delle PCA già implementate
 
-temp_pca <- PCA(t(temp_samples), scale.unit = TRUE, ncp = 5, graph = FALSE)
+# PCA for samples
+temp_pca <- PCA(t(temp_samples), scale.unit = FALSE, ncp = 5, graph = FALSE)
 summary(temp_pca)
+fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for samples')
 
-fviz_pca_var(temp_pca, col.var = 'cos2')
-
-temp_pca <- prcomp(temp_samples, scale. = TRUE, )
-
+# PCA for genes
+temp_pca <- PCA(temp_samples, scale.unit = FALSE, ncp = 5, graph = FALSE)
 summary(temp_pca)
+fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for genes')
 
-fviz_pca_var(temp_pca, col.var = 'cos2')
+# temp_pca <- prcomp(temp_samples, scale = FALSE)
+# summary(temp_pca)
+# fviz_pca_var(temp_pca, col.var = 'cos2', label = 'none', geom = 'point')
+# fviz_pca_ind(temp_pca, col.var = 'cos2', label = 'none', geom = 'point')
 ```
 
 ## Implement the TMM and the quantile normalization
@@ -208,6 +211,29 @@ produceMvA(quantile_normed$samples, extracted_index, interval,  folder = "MvA - 
 <div style="text-align: justify">
 You can see MvA plots inside output/plots folder and in particular you can notice that in some of them it's clear what was explained above with reference sample vs. sample 12. For example in reference sample vs. sample 47 plot the same comments can be made: MvA plots clearly show a deviance from M=0 in TMM normalization while this deviance is not present in the analysis with the quantile normalization. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
 </div>
+
+```{r compute normalized PCA}
+library(factoextra)
+library(FactoMineR)
+
+# PCA for samples
+temp_pca <- PCA(t(tmm_normed$samples), scale.unit = FALSE, ncp = 5, graph = FALSE)
+summary(temp_pca)
+fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for samples after TMM normalization')
+
+temp_pca <- PCA(t(quantile_normed$samples), scale.unit = FALSE, ncp = 5, graph = FALSE)
+summary(temp_pca)
+fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for samples after quantile normalization')
+
+# PCA for genes
+temp_pca <- PCA(tmm_normed$samples, scale.unit = FALSE, ncp = 5, graph = FALSE)
+summary(temp_pca)
+fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for genes after TMM normalization')
+
+temp_pca <- PCA(quantile_normed$samples, scale.unit = FALSE, ncp = 5, graph = FALSE)
+summary(temp_pca)
+fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for genes after quantile normalization')
+```
 
 # Second Part
 
@@ -359,7 +385,10 @@ RES$table[1:5,]
 # final values
 out <- topTags(RES, n = "Inf")$table
 out[1:5,]
+```
 
+```{r plot p-values}
+boxplot(c_ttest_pvalue, c_wilcoxon_pvalue, out$PValue, names = c('t-test','Wilcoxon test', 'edgeR'), main = 'p-values')
 ```
 
 ## Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha = 0.05 and consider G0 = N with N being the number of genes
@@ -382,7 +411,12 @@ selected_wilcox <- which(lower==TRUE)
 num_sel_wilcox <- length(selected_wilcox)
 
 #selected values for edgeR
-indSELedgeR <- length(which(out$PValue<alpha)) #i selected
+num_sel_edgeR <- length(which(out$PValue<alpha)) #i selected
+
+cat("Results")
+cat("\nNumber of selected genes with t-test:",num_sel_ttest)
+cat("\nNumber of selected genes with Wilcoxon-test:",num_sel_wilcox)
+cat("\nNumber of selected genes with edgeR:",num_sel_edgeR)
 ```
 
 ```{r expected values function}
@@ -396,14 +430,14 @@ G0 <- G
 #function that returns a vector with, in order, TP FP TN FN
 expected_ttest <- expected_values(G, G0, alpha, num_sel_ttest)
 expected_wilcoxontest <- expected_values(G, G0, alpha, num_sel_wilcox)
-expected_edger <- expected_values(G, G0, alpha, indSELedgeR)
+expected_edger <- expected_values(G, G0, alpha, num_sel_edgeR)
 
-cat("TP, FP, TN, FN with t-test:\n")
-print(expected_ttest)
-cat("\nTP, FP, TN, FN with wilcoxon test:\n")
-print(expected_wilcoxontest)
-cat("\nTP, FP, TN, FN with edgeR:\n")
-print(expected_edger)
+library(kableExtra)
+dt <- matrix(c(expected_ttest,expected_wilcoxontest,expected_edger),nrow=3)
+dt <- cbind(c(G0,G0,G0),dt)
+rownames(dt)<-c('t-test', 'Wilcoxon-test', 'edgeR')
+colnames(dt)<-c('G0 estimated','TP', 'FP', 'TN', 'FN')
+dt %>% kbl() %>% kable_paper("hover", full_width = T)
 ```
 
 ## Estimate the number of not differentially expressed genes G0 and re-estimate the expected number of false positives and false negatives
@@ -449,15 +483,14 @@ lambda_est_edger <- 0.8
 eps <- 0.03
 G0_est_edger <- G0_value_estimation(lambda_est_edger, eps, res)
 
-expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, indSELedgeR)
+expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, num_sel_edgeR)
 
 # print results
-cat("TP, FP, TN, FN with t-test (using estimated G0):\n")
-print(expected_ttest_est)
-cat("\nTP, FP, TN, FN with wilcoxon test (using estimated G0):\n")
-print(expected_wilcoxontest_est)
-cat("\nTP, FP, TN, FN with edgeR (using estimated G0):\n")
-print(expected_edgeR_est)
+dt <- matrix(c(expected_ttest_est,expected_wilcoxontest_est,expected_edgeR_est),nrow=3)
+dt <- cbind(c(G0_est_ttest,G0_est_wilcoxontest,G0_est_edger),dt)
+rownames(dt)<-c('t-test', 'Wilcoxon-test', 'edgeR')
+colnames(dt)<-c('G0 estimated','TP', 'FP', 'TN', 'FN')
+dt %>% kbl() %>% kable_paper("hover", full_width = T)
 ```
 
 ## Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice
@@ -488,7 +521,7 @@ for (i in (1:length(lambda))) {
   if (num_sel==0){
     FDR_values <- c(FDR_values,0)} 
   else {
-    FDR_values <- c(FDR_values,(expected_val[[2]]/num_sel))}
+    FDR_values <- c(FDR_values,(expected_val[2]/num_sel))}
 }
 
 plot(lambda, FDR_values, main = 'FDR values for different alpha')
