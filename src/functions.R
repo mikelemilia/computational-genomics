@@ -364,14 +364,13 @@ silhouette <- function(points, cluster, k){
         else{
           # with a different cluster, we calculate the value 'b' and we maintain always the max(b)
           distances_topoint <- distances[clusters[[c]]]
+          x <- sum(distances_topoint)/length(distances_topoint)
           if (minb > sum(distances_topoint)){
-            minb<-sum(distances_topoint)
-            indmin<-c
+            minb <- x
           }
         }
       }
       # calculate the final silhouette for the point
-      minb <- minb/length(clusters[[indmin]])
       s <- c(s,(minb-a)/max(minb,a))
     }
   }
