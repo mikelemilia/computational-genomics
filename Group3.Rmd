@@ -89,6 +89,10 @@ produceMvA(temp_samples, extracted_index, interval,  folder = "MvA", graph_title
 producePlots(temp_samples, extracted_index, interval, folder = "Other")
 ```
 
+
+## TO DO: COMMENTARE PCA 
+
+
 ```{r compute PCA}
 library(factoextra)
 library(FactoMineR)
@@ -114,7 +118,7 @@ fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for genes'
 ## Implement the TMM and the quantile normalization
 
 <div style="text-align: justify">
-The following function implements the Trimmed-Mean Normalization. It receives in input a matrix x with samples in rows and genes in columns, a reference index with respect to which we perform normalization and an interval through which we scan all the other genes. For each gene except for the index, it computes the MA values with respect to the reference, calculates the scaling factor as the trimmed mean of M values and does the normalization adding the scaling factor as exponential to the current gene. 
+The following function implements the Trimmed-Mean Normalization. It receives in input a matrix x with samples in columns and genes in rows, a reference index of the reference subject with respect to which we perform normalization and an interval through which we scan all the other genes. For each gene except for the reference, it computes the MA values with respect to that reference, calculates the scaling factor as the trimmed mean of M values and does the normalization adding the scaling factor as exponential in base 2 to the current gene. 
 </div>
 
 ```{r TMM Normalization Implementation}
@@ -122,7 +126,8 @@ tmm_normalization
 ```
 
 <div style="text-align: justify">
-The following function implements the Quantile Normalization. It receives in input the matrix x with samples in rows and genes in columns for which it computes the quantile normalization as definition. 
+The following function implements the Quantile Normalization. It receives in input the matrix x with samples in columns and genes in rows for which it computes the quantile normalization as defined in theory lessons. The setup matrixes for indexes, sorted values and for normed values are created; then, for each subject, the gene raw counts of that subject are sorted and given a rank usign the average method to deal with ties. Ranks will be used as indexes. Then, the mean by row is calculated on the matrix with sorted columns. At last,column by column,  the normalized matrix is built using the indexes from the ranking function to choose which mean values should be put in which positions. 
+The quantile normalization return a matrix whose columns have all the same distribution. 
 </div>
 
 ```{r Quantile Normalization Implementation}
@@ -166,7 +171,7 @@ plot(extracted, selected, xlab="Sample 1", ylab="Sample 12", main = "Samples plo
 ```
 
 <div style="text-align: justify">
-With the results obtained, we decide to use for the subsequent analysis the <strong>quantile normalization</strong> of the data; in fact, this type of normalization seems more robust and gives better results. In fact, if we look at the MvA plots of sample 1 (the reference) VS sample 12, we can see that in the quantile normalization plot the cloud of points is more or less lying on M=0, as it should, while in the TMM normalization plot the cloud of points is clearly hanging below M=0. 
+With the results obtained, we decided to use for the subsequent analysis the <strong>quantile normalization</strong> of the data; in fact, this type of normalization seems more robust and gives better results. If we look at the MvA plots of sample 1 (the reference) VS sample 12, we can see that in the quantile normalization plot the cloud of points is more or less lying on M=0, as it should, while in the TMM normalization plot the cloud of points is clearly hanging below M=0. 
 It is to be noted that neither the quantile nor the TMM normalization get rid of the "V-shaped" outliers near low values of A (average). The code below shows what was said here. 
 </div>
 
@@ -211,6 +216,9 @@ produceMvA(quantile_normed$samples, extracted_index, interval,  folder = "MvA - 
 <div style="text-align: justify">
 You can see MvA plots inside output/plots folder and in particular you can notice that in some of them it's clear what was explained above with reference sample vs. sample 12. For example in reference sample vs. sample 47 plot the same comments can be made: MvA plots clearly show a deviance from M=0 in TMM normalization while this deviance is not present in the analysis with the quantile normalization. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
 </div>
+
+
+## TO DO - COMMENTARE PCA
 
 ```{r compute normalized PCA}
 library(factoextra)
@@ -341,7 +349,7 @@ for(i in (1:Nc)){
 ```
 
 <div style="text-align: justify">
-For edgeR, we have to do a preprocessing of data and then we use functions of the edgeR library. We have to rebuilt the control and disease matrixes with data not normalized because edgeR was created to work with data whose distribution is a negative binomial: the initial data matrix has this type of distribution, while normalized data does not comply to negative binomial distribution. To correctly use the functions we have to label samples in control and disease groups with 'control_1', 'control_2', ..., 'disease_1', and so on. 
+For edgeR, we have to do a preprocessing of data and then we use functions of the edgeR library. We have to rebuild the control and disease matrixes with data not normalized because edgeR was created to work with data whose distribution is a negative binomial: the initial data matrix has this type of distribution, while normalized data does not comply to negative binomial distribution. To correctly use the functions we have to label samples in control and disease groups with 'control_1', 'control_2', ..., 'disease_1', and so on. 
 </div>
 
 ```{r rename column function}
@@ -358,7 +366,10 @@ disease_nodup <- remove_duplicates(DATA, disease)
 disease_nodup <- renameColumns(disease_nodup, "disease")
 ```
 
-TODO: commentare o no??
+<div style="text-align: justify">
+The next chunk implements edgeR in order to get the pvalues of this test. It is to be noted that the test uses a generalized linear regression approach.
+</div>
+
 
 ```{r edgeR}
 library(edgeR)
@@ -400,6 +411,10 @@ out <- topTags(RES, n = "Inf")$table
 out[1:5,]
 ```
 
+<div style="text-align: justify">
+Boxplots of the p-values obtained by the three tests are shown.
+</div>
+
 ```{r plot p-values}
 boxplot(c_ttest_pvalue, c_wilcoxon_pvalue, out$PValue, names = c('t-test','Wilcoxon test', 'edgeR'), main = 'p-values')
 ```
@@ -407,7 +422,7 @@ boxplot(c_ttest_pvalue, c_wilcoxon_pvalue, out$PValue, names = c('t-test','Wilco
 ## Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha = 0.05 and consider G0 = N with N being the number of genes
 
 <div style="text-align: justify">
-For each test, we extracted the genes that have p-value lower than a fixed alpha. With the following function we calculate the expected values of true positive, false positive, true negative and false negative implementing their definition. We then applied the function with G0 (number of selected genes) equal to the total number of genes.
+For each test, we extracted the genes that have p-value lower than a fixed alpha. With the following function we calculate the expected values of true positives, false positives, true negatives and false negatives implementing their definition. We then applied the function with G0 (number of selected genes) equal to the total number of genes.
 </div>
 
 ```{r selection for alpha 0.05}
@@ -436,6 +451,8 @@ cat("\nNumber of selected genes with edgeR:",num_sel_edgeR)
 expected_values
 ```
 
+
+
 ```{r calculation of expected values}
 G <- nrow(control_nodup_nozero)
 G0 <- G
@@ -456,7 +473,7 @@ dt %>% kbl() %>% kable_paper("hover", full_width = T)
 ## Estimate the number of not differentially expressed genes G0 and re-estimate the expected number of false positives and false negatives
 
 <div style="text-align: justify">
-The first function calculates the values of G0 for a given set of lambda values corrected for multiple testings. It receives in input also the p-values for which do the computation, G and the filename in which save the plot. From the plot we choose by hand the best value for our lambda (in this case 0.8) and with the second function, we provide an estimate of the previous lambda value passed (considering a mean of the values within an interval around the best lambda).
+The first function calculates the values of G0 for a given set of lambda values. It's used to estimate the correct value of G0 rather than assuming that G0 is equal to the total number of genes. It receives in input also the p-values for which the computation must be done, the total number of genes G and the filename in which the plot of "G0 VS lambda" should be saved. From the plot we choose by hand the best value for our lambda (in this case 0.8) and with the second function, we provide an estimate of G0 with the previous lambda value passed as input (considering a mean of the values of G0 within an interval around the best lambda).
 </div>
 
 ```{r G0 values function}
@@ -468,7 +485,7 @@ G0_value_estimation
 ```
 
 <div style="text-align: justify">
-In the following chunk we perform the estimation of G0 and after seeing the plots, we choose lambda = 0.8 because we saw that around it the graph has a constant mean value with little variability.
+In the following chunk we perform the estimation of G0 with the functions diescribed above; after seeing the plots, we choose lambda = 0.8 because we saw that around it the graph has a constant mean value with little variability.
 </div>
 
 ``` {r estimation of G0 and re-estimation of the values for each test}
@@ -509,7 +526,7 @@ dt %>% kbl() %>% kable_paper("hover", full_width = T)
 ## Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice
 
 <div style="text-align: justify">
-We chose edgeR for few reasons; first of all, edgeR test was built for data with negative binomial distribution, while the other tests do not take into account the characteristics of this particular distribution and, in this sense, this analysis can give more specific results. Then, it must also be said that it gives the lowest FN rate; while FP rate can be easily taken into account with a correction for multiple test, FN rate is not accounted for with this type of correction. In this sense, we are not able to reduce this rate with some corrections; since it is a 'bad' result, we have to minimize it. To conclude, we chose edgeR on the basis of the theory behind and also on the FP and FN rates.
+We chose edgeR for a few reasons; first of all, edgeR implements a test for data with negative binomial distribution, while the other tests do not take into account the characteristics of this particular distribution and, in this sense, this analysis can give more specific results. Then, it must also be said that it gives the lowest FN rate; while FP rate can be easily taken into account with a correction for multiple tests, FN rate is not accounted for with this type of correction. In this sense, we are not able to reduce this rate with some corrections; since ideally one should want a FN rate equal to zero, we have to minimize it. To conclude, we chose edgeR on the basis of the theory behind and also on the FP and FN rates.
 </div>
 
 ## Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%
@@ -547,7 +564,7 @@ alpha_est <- mean(lambda[intersect(alpha_index,alpha_index2)])
 ```
 
 <div style="text-align: justify">
-We finally select the genes with p-value lower than the estimated alpha.
+We finally select the genes with p-value given by edgeR lower than the estimated alpha.
 </div>
 
 ```{r extraction}
@@ -573,7 +590,7 @@ cat(number_genes_notselected)
 
 <div style="text-align: justify">
 We found out that some gene names were duplicated but not their ENSEMBL IDs; for this reason, we decided to use these IDs to get the annotation and extract the right GO terms associated with the genes. We also decided to take out those genes whose GOALL was NA: as a matter of fact, this NA value means that we don't have their associated term right now (the association is not complete in the DB).  To improve computation, we also took out all the IDs of genes annotated but not selected and their respective total numbers. 
-After the data extraction and the pre-processing, we built a matrix that has on rows the associated GO terms and on columns the type of GOterm and the values useful for the computation of the fisher test.
+After the data extraction and the pre-processing, we built a matrix that has on rows the associated GO terms and on columns the type of GOterm (BP, CC, MF) and the values useful for the computation of the fisher test.
 </div>
 
 ```{r extract GO terms}
@@ -621,6 +638,13 @@ matrixes<-matrixes[order(rownames(matrixes)),]
 ```
 
 ## Fisher test
+
+<div style="text-align: justify">
+These functions were implemeted to perform the fisher exact test.
+"fisher_test_matrixes" computes the actual test, returning the p-values of each test.
+"FDR_fisher" calculates the estimated alpha given a FDR equal to 0.05 in order to account for multiple testing in the selection of meaningful p-values (and subsequently meaningful annotations).
+"annotation_terms" return the annotated terms for the GOterms selected as meaningful; to do so it uses the GO.db databases. 
+</div>
 
 ```{r fisher functions}
 fisher_test_matrixes
@@ -671,7 +695,7 @@ annotation_terms_MF<-annotation_terms(vals, terms_MF)
 ## [Note] Correcting for length of genes before clustering
 
 <div style="text-align: justify">
-We correct our data for the length of genes to perform a better clustering analysis and to not have a bias in the results do to the lengths. To do it we extracted the gene lengths with the 'getGeneLengthAndGCContent' function and then divide each value for this length. We also decided to consider as one sample all those samples taken from the same subject in the same group, as we did for testing the DE genes.
+We correct our data for the length of genes to perform a better clustering analysis and to not have a bias in the results do to the lengths. To do it we extracted the gene lengths with the 'getGeneLengthAndGCContent' function and then divide each value for its length. We also decided to consider as one sample all those samples taken from the same subject in the same group, as we did for testing the DE genes.
 </div>
 
 ```{r init clustering}
@@ -696,7 +720,7 @@ dataNorm_clustering <- cbind(dataNorm_nodup_control,dataNorm_nodup_disease)
 <div style="text-align: justify">
 We defined a grid of possible values for the number of clusters and for each of them we implement the clustering, with the kmeans function of R. For THIS function, we used as parameters iter.max=100 to avoid a too long computation or an overfitting of the data and nstart=100 to have multiple startings that lead to better results trying to avoid local minimum of the cost function. 
 For the hierarchical cluster, we used the hclust function of R, with as parameter method="ward.D2": we chose ward.D2 as a method of clustering because it uses the euclidean distance and in this way we can perform a better comparison with k-means, which also uses euclidean distance. Once the entire hierarchical tree is build, we cut the tree in order to obtain different numbers of clusters (inside the for cycle).
-In each iteration on possible values of k, we calculate also the Silhouette value.
+In each iteration on possible values of k = number of clusters, we calculate also the Silhouette value.
 </div>
 
 ```{r values of K}
@@ -740,7 +764,7 @@ for (i in (1:length(K))){
 ## Cluster the samples in your dataset (considering only the genes you have selected in exercise 2) using k-means and hierarchical clustering and compare the results you obtain
 
 <div style="text-align: justify">
-All the implementation and the parameters are equal to the implementation above. We only had to consider the transpose of the initial data matrix to analyze the samples instead of the genes.
+All the implementation and the parameters are equal to the implementation above. We only had to consider the transpose of the initial data matrix to cluster the samples instead of the genes.
 </div>
 
 ```{r clustering sample with kmeans}
@@ -874,6 +898,9 @@ cat("\n\nHierarchical clustering over samples!\n")
 cat("The optimal number of clusters is:", kopt_samples_hier)
 ```
 
+<div style="text-align: justify">
+Plots of the clusterings are shown, for both kmeans and hieararchical clustering. 
+</div>
 
 ```{r plots of part4, HIERARCHICAL}
 # GENES, HIERARCHICAL CLUSTERING
@@ -923,6 +950,16 @@ fviz_cluster(cl_samples, data = t(dataNorm_clustering),
 
 ## Considering the two groups you have used for differential expression analysis split your data in training and test
 
+<div style="text-align: justify">
+For the selected genes, duplicates are removed as per the function implementd and explained above. This will the data to use for SVM classification; first of all, data is divided into training and test set randomly, saving the labels needed for the classification (the beloning to control or disease group). From both sets, genes selected but whose expression is zero both in disease and control group are taken out. When taking away said genes, it must be taken away also in the other set.They won't be of any use in the classification process; in fact, in the preprocessing of data, mean and standard deviations must be computed to be used for z-scoring said data; if a gene has always expression zero in all samples, its standard deviation will also be zero. Dividing by zero is not possibile, so NA will be inserted; the training will be stopped because NA will be found. For this reason, we implemented a function to remove those genes, in a similar fashion to the function for removing zeros explained above.
+</div>
+
+
+```{r function remove_zeros_onegroup}
+remove_zeros_onegroup 
+```
+
+
 ```{r data splitting}
 library(caret)
 library(e1071)
@@ -963,6 +1000,11 @@ data_train<-t(data_train)
 ```
 
 ## Standardize each feature in your dataset (so to have mean=0 and sd=1)
+
+<div style="text-align: justify">
+Z-scoring is implemented; to z-score the data set, mean and standard deviation of the training set is used. In this way, we are forcing that bot sets have the same distribution.
+</div>
+
 
 ```{r data preprocessing}
 dataNorm_test <- NULL
