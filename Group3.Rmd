@@ -97,7 +97,6 @@ producePlots(temp_samples, extracted_index, interval, folder = "Other")
 library(factoextra)
 library(FactoMineR)
 
-computePCA ## questa funzione è l'implementazione dell'SVD suggerita dalla prof, è da riguarare, ad ogni modo non mi convincono i grafici delle PCA già implementate
 
 # PCA for samples
 temp_pca <- PCA(t(temp_samples), scale.unit = FALSE, ncp = 5, graph = FALSE)
@@ -109,10 +108,7 @@ temp_pca <- PCA(temp_samples, scale.unit = FALSE, ncp = 5, graph = FALSE)
 summary(temp_pca)
 fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for genes')
 
-# temp_pca <- prcomp(temp_samples, scale = FALSE)
-# summary(temp_pca)
-# fviz_pca_var(temp_pca, col.var = 'cos2', label = 'none', geom = 'point')
-# fviz_pca_ind(temp_pca, col.var = 'cos2', label = 'none', geom = 'point')
+
 ```
 
 ## Implement the TMM and the quantile normalization
@@ -134,16 +130,22 @@ The quantile normalization return a matrix whose columns have all the same distr
 quantile_normalization
 ```
 
+
+
 ## Normalize the data using the method of your choice
 
+
 ```{r TMM Normalization}
+
 A <- matrix(0, nrow = genes_number, ncol = 0)
 M <- matrix(0, nrow = genes_number, ncol = 0)
 
 tmm_normed <- tmm_normalization(temp_samples, extracted_index, interval)
 ```
 
-```{r TMM plots}
+
+
+```{r TMM plot}
 par(mfrow=c(1,2)) 
 extracted <- tmm_normed$samples[,1]
 selected  <- tmm_normed$samples[,12]
@@ -152,6 +154,7 @@ plot(samples[,1], samples[,12], xlab="Sample 1", ylab="Sample 12", main = "Sampl
 
 plot(extracted, selected, xlab="Sample 1", ylab="Sample 12", main = "Samples plot - Normalized")
 ```
+
 
 ```{r Quantile normalization}
 A <- matrix(0, nrow = genes_number, ncol = 0)
@@ -211,7 +214,11 @@ produceMvA(tmm_normed$samples, extracted_index, interval,  folder = "MvA - TMM N
 # Quantile Normalization
 produceMvA(quantile_normed$samples, extracted_index, interval,  folder = "MvA - Quantile Normalization", graph_title = "MvA (Quantile Normalization)")
 }# HIDE
+
 ```
+
+
+
 
 <div style="text-align: justify">
 You can see MvA plots inside output/plots folder and in particular you can notice that in some of them it's clear what was explained above with reference sample vs. sample 12. For example in reference sample vs. sample 47 plot the same comments can be made: MvA plots clearly show a deviance from M=0 in TMM normalization while this deviance is not present in the analysis with the quantile normalization. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
@@ -220,7 +227,7 @@ You can see MvA plots inside output/plots folder and in particular you can notic
 
 ## TO DO - COMMENTARE PCA
 
-```{r compute normalized PCA}
+```{r Compute normalized PCA}
 library(factoextra)
 library(FactoMineR)
 
@@ -231,7 +238,7 @@ fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for sample
 
 temp_pca <- PCA(t(quantile_normed$samples), scale.unit = FALSE, ncp = 5, graph = FALSE)
 summary(temp_pca)
-fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for samples after quantile normalization')
+fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point' , title = 'PCA for samples after quantile normalization')
 
 # PCA for genes
 temp_pca <- PCA(tmm_normed$samples, scale.unit = FALSE, ncp = 5, graph = FALSE)
@@ -242,6 +249,8 @@ temp_pca <- PCA(quantile_normed$samples, scale.unit = FALSE, ncp = 5, graph = FA
 summary(temp_pca)
 fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for genes after quantile normalization')
 ```
+
+
 
 # Second Part
 
@@ -268,8 +277,7 @@ end.
 ```{r remove duplicates function}
 remove_duplicates
 ```
-
-```{r remove of the duplicates}
+```{r removal of the duplicates}
 # get the 'normal' and 'uninvolved mucosa' samples (samples of the control group) 
 normal <- LABELS[LABELS$sample_type == c("normal"),]            
 unimuc <- LABELS[LABELS$sample_type == c("uninvolved mucosa"),] 
@@ -285,6 +293,8 @@ disease <- LABELS[LABELS$sample_type == c("colon sessile serrated adenoma/polyp"
 control_nodup <- remove_duplicates(quantile_normed$samples, control)
 disease_nodup <- remove_duplicates(quantile_normed$samples, disease) 
 ```
+
+
 
 ```{r remove_duplicates outputs}
 {# HIDE
@@ -413,6 +423,7 @@ out[1:5,]
 
 <div style="text-align: justify">
 Boxplots of the p-values obtained by the three tests are shown.
+P-values from Wilcoxon test and p-values obtained by edgeR are very similar in their distributions, while the distribution of p-values obtained by t-test differ the most from the other two.
 </div>
 
 ```{r plot p-values}
@@ -463,7 +474,7 @@ expected_wilcoxontest <- expected_values(G, G0, alpha, num_sel_wilcox)
 expected_edger <- expected_values(G, G0, alpha, num_sel_edgeR)
 
 library(kableExtra)
-dt <- matrix(c(expected_ttest,expected_wilcoxontest,expected_edger),nrow=3)
+dt <- rbind(expected_ttest,expected_wilcoxontest,expected_edger)
 dt <- cbind(c(G0,G0,G0),dt)
 rownames(dt)<-c('t-test', 'Wilcoxon-test', 'edgeR')
 colnames(dt)<-c('G0 estimated','TP', 'FP', 'TN', 'FN')
@@ -485,7 +496,7 @@ G0_value_estimation
 ```
 
 <div style="text-align: justify">
-In the following chunk we perform the estimation of G0 with the functions diescribed above; after seeing the plots, we choose lambda = 0.8 because we saw that around it the graph has a constant mean value with little variability.
+In the following chunk we perform the estimation of G0 with the functions described above; after seeing the plots, we choose lambda = 0.8 because we saw that around it the graph has a constant mean value with little variability.
 </div>
 
 ``` {r estimation of G0 and re-estimation of the values for each test}
@@ -509,14 +520,14 @@ expected_wilcoxontest_est <- expected_values(G, G0_est_wilcoxontest, alpha, num_
 
 # edgeR analysis
 res <- G0values(lambda,out[,4], G0, "edgeR test")
-lambda_est_edger <- 0.8
+lambda_est_edger <- 0.65
 eps <- 0.03
 G0_est_edger <- G0_value_estimation(lambda_est_edger, eps, res)
 
 expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, num_sel_edgeR)
 
 # print results
-dt <- matrix(c(expected_ttest_est,expected_wilcoxontest_est,expected_edgeR_est),nrow=3)
+dt <- rbind(expected_ttest_est,expected_wilcoxontest_est,expected_edgeR_est)
 dt <- cbind(c(G0_est_ttest,G0_est_wilcoxontest,G0_est_edger),dt)
 rownames(dt)<-c('t-test', 'Wilcoxon-test', 'edgeR')
 colnames(dt)<-c('G0 estimated','TP', 'FP', 'TN', 'FN')
@@ -526,7 +537,7 @@ dt %>% kbl() %>% kable_paper("hover", full_width = T)
 ## Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice
 
 <div style="text-align: justify">
-We chose edgeR for a few reasons; first of all, edgeR implements a test for data with negative binomial distribution, while the other tests do not take into account the characteristics of this particular distribution and, in this sense, this analysis can give more specific results. Then, it must also be said that it gives the lowest FN rate; while FP rate can be easily taken into account with a correction for multiple tests, FN rate is not accounted for with this type of correction. In this sense, we are not able to reduce this rate with some corrections; since ideally one should want a FN rate equal to zero, we have to minimize it. To conclude, we chose edgeR on the basis of the theory behind and also on the FP and FN rates.
+We chose edgeR for few reasons; first of all, edgeR implements a test for data with negative binomial distribution, while the other tests do not take into account the characteristics of this particular distribution and, in this sense, this analysis can give more specific results. Then, it must also be said that it gives the lowest FN rate; while FP rate can be easily taken into account with a correction for multiple tests, FN rate is not accounted for with this type of correction. In this sense, we are not able to reduce this rate with some corrections; since ideally one should want a FN and FP rates equal to zero, we have to minimize them. To conclude, we chose edgeR on the basis of the theory behind it and also on the FP and FN rates.
 </div>
 
 ## Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%
@@ -1045,7 +1056,21 @@ test_pred<-predict(model,dataNorm_test)
 confusionMatrix(test_pred, factor(label_test))
 ```
 
+
 ```{r e1071}
+svmfit <- svm(Group ~ ., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE)
+print(svmfit)
+
+test_pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
+res <- confusionMatrix(test_pred, factor(label_test))
+print(res)
+```
+
+
+## Feature selection
+
+```{r e1071 rfe}
+
 svmfit <- svm(Group ~ ., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE)
 print(svmfit)
 
@@ -1056,14 +1081,19 @@ print(res)
 df <- dataNorm_train
 df_test <- dataNorm_test
 
-K <- 1050
+K <- 500
 R <- ncol(df)-1
 
 C <- res[["overall"]][["Accuracy"]]
+C_plot <- C
 num_par <- R
+num_par_plot <- R
+per_rem <- 0.30
+eps <- 0.05
 
-#manca da inserire un controllo su C nel while: non possiamo avere accuracy troppo basse
-while(R > K){
+while(R > K && C[length(C)]>C[1]*0.9){
+  
+  cat(R,"\n")
   w <- t(svmfit$coefs)%*% svmfit$SV
   b <- -1*svmfit$rho
   names <- as.vector(colnames(df[,-1]))
@@ -1073,16 +1103,21 @@ while(R > K){
   w_sort <- sort(w, decreasing = TRUE)
   names_sorted <- names[order(w, decreasing=TRUE)]
   
-  m <- as.integer(sqrt(R))
+  m <- ceiling(per_rem * R)
+  if(m == 1)  break
+    
   w <- w_sort[1:(length(w_sort)-m)] 
   names_sorted <- names_sorted[1:(length(names_sorted)-m)]
   
+  df_pre <- df
   df<-df[,names_sorted]
   df<-cbind(factor(label_train),df)
   colnames(df)[colnames(df) == 'factor(label_train)'] <- 'Group'
   
+  svmfit_pre <- svmfit
   svmfit <- svm(Group ~ ., data = df, kernel = "linear", type = 'C-classification', scale = FALSE)
   
+  df_test_pre <- df_test
   df_test<-df_test[,names_sorted]
   df_test<-cbind(factor(label_test),df_test)
   colnames(df_test)[colnames(df_test) == 'factor(label_test)'] <- 'Group'
@@ -1090,19 +1125,31 @@ while(R > K){
   test_pred <- predict(svmfit, newdata=df_test, decision.values = FALSE)
   res <- confusionMatrix(test_pred, factor(label_test))
   R <- ncol(df)-1
+  acc <- res[["overall"]][["Accuracy"]]
+  C_plot <- c(C_plot,acc)
+  num_par_plot <- c(num_par_plot,R)
   
-  C <- c(C,res[["overall"]][["Accuracy"]])
-  num_par <- c(num_par, R)
+  if (C[length(C)]>(acc+eps)){
+    svmfit <- svmfit_pre
+    df <- df_pre
+    df_test <- df_test_pre
+    per_rem <- per_rem/2
+  }
+  else {
+    C <- c(C,acc)
+    num_par <- c(num_par, R)
+  }
 }
 
-plot (x=num_par,y=C)
+plot (x=num_par_plot,y=C_plot)
 
-C0 <- C[length(C)]   # needed for first cicle
+R <- ncol(df)-1
+C0 <- C[length(C)]   # needed for first cycle
 
 num_par2 <- R # number of features without group
 C2 <- C0  # accuracy last iteration
 
-while(R > 950 ){
+while(R > 1){
   
   deltas <- NULL
   
@@ -1113,18 +1160,19 @@ while(R > 950 ){
   cat("R value: ", R, "\n")
   
   for(i in 2:ncol(df)) {
+
+    df2<-df[,-i]
+    #df<-cbind(factor(label_train),df)
+    #colnames(df)[colnames(df) == 'factor(label_train)'] <- 'Group'
+    #colnames(df)[1] <- 'Group'
     
-    # cat("\t cycle: ", i, "\n")
-    # name<-names[i]
-    df_train <- df[,-i]
-    df_test2  <- df_test[,-i]
+    svmfit <- svm(Group ~ ., data = df2, kernel = "linear", type = 'C-classification', scale = FALSE)
     
-    # df<-cbind(factor(label_train), df)
-    # colnames(df)[colnames(df) == 'factor(label_train)'] <- 'Group'
-    
-    svmfit <- svm(Group ~ ., data = df_train, kernel = "linear", type = 'C-classification', scale = FALSE)
-    #manca da capire qual Ã¨ quella migliore da togliere (nelle slide parla di C, che Ã¨ l'accuracy) e poi aggiornare i valori
-    
+    df_test2<-df_test[,-i]
+    #df_test<-cbind(factor(label_test),df_test)
+    # colnames(df_test)[colnames(df_test) == 'factor(label_test)'] <- 'Group'
+    # colnames(df_test)[colnames(df_test) == 'V1)'] <- 'Group'
+    #colnames(df_test)[1] <- 'Group'
     pred <- predict(svmfit, newdata=df_test2, decision.values = FALSE)
     res2 <- confusionMatrix(pred, factor(label_test))
     
@@ -1134,7 +1182,7 @@ while(R > 950 ){
   }
   
   idx <- which(deltas == min(deltas))
-  idx <- sample(idx, 1)
+  idx <- sample(idx, 1)+1
   
   # remove features
   df <- df[, -idx]
@@ -1148,8 +1196,10 @@ while(R > 950 ){
   num_par2 <- c(num_par2, R)
   
 }
-plot (x=num_par2,y=C2)
 ```
+
+## https://johanndejong.wordpress.com/2016/01/17/svm-with-recursive-feature-elimination/
+
 
 
 
