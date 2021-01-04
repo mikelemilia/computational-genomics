@@ -1088,7 +1088,7 @@ C <- res[["overall"]][["Accuracy"]]
 C_plot <- C
 num_par <- R
 num_par_plot <- R
-per_rem <- 0.30
+per_rem <- 0.15
 eps <- 0.05
 
 while(R > K && C[length(C)]>C[1]*0.9){
