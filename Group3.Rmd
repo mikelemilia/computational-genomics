@@ -1069,7 +1069,7 @@ print(res)
 
 ## Feature selection
 
-```{r e1071}
+```{r e1071 fs}
 svmfit <- svm(Group ~ ., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE)
 print(svmfit)
 
@@ -1149,27 +1149,27 @@ C2 <- C0  # accuracy last iteration
 
 while(R > 2){
   accs <- NULL
-  #svmfit_all <- vector (mode = 'list', length = R)
+  # svmfit_all <- vector (mode = 'list', length = R)
   
   w <- t(svmfit$coefs)%*% svmfit$SV
   b <- -1 * svmfit$rho
-  names <- colnames(df[,-1])
+  # names <- colnames(df[,-1])
   
   cat("R value: ", R, "\n")
   
   for(i in 2:ncol(df)) {
-    df2<-df[,-i]
-    df_test2<-df_test[,-i]
+    df2 <- df[,-i]
+    df_test2 <- df_test[,-i]
     
     svmfit2 <- svm(Group ~ ., data = df2, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
-    pred <- predict(svmfit2, newdata=df_test2, decision.values = FALSE)
-    res2 <- confusionMatrix(pred, factor(label_test))
+    pred2 <- predict(svmfit2, newdata=df_test2, decision.values = FALSE)
+    res2 <- confusionMatrix(pred2, factor(label_test))
     
     acc <- res2[["overall"]][["Accuracy"]]
-    accs <- c(accs, acc)
+    deltas <- c(accs, (C0-acc))
   }
   
-  deltas <- C0 - accs
+  # deltas <- C0 - accs
   idx <- which(deltas == min(deltas))
   idx <- sample(idx, 1)
   
@@ -1181,7 +1181,7 @@ while(R > 2){
   pred <- predict(svmfit2, newdata=df_test2, decision.values = FALSE)
   res2 <- confusionMatrix(pred, factor(label_test))
   
-  C0 <- accs[idx]
+  C0 <- res2[["overall"]][["Accuracy"]]
   R <- ncol(df)-1
   C2 <- c(C2, C0)
   num_par2 <- c(num_par2, R)
