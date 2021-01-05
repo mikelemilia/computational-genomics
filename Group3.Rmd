@@ -1166,7 +1166,7 @@ while(R > 2){
     res2 <- confusionMatrix(pred2, factor(label_test))
     
     acc <- res2[["overall"]][["Accuracy"]]
-    deltas <- c(accs, (C0-acc))
+    deltas <- c(deltas, (C0-acc))
   }
   
   # deltas <- C0 - accs
@@ -1178,7 +1178,7 @@ while(R > 2){
   df_test <- df_test[, -(idx+1)]
   
   svmfit <- svm(Group ~ ., data = df, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
-  pred <- predict(svmfit2, newdata=df_test2, decision.values = FALSE)
+  pred <- predict(svmfit, newdata=df_test, decision.values = FALSE)
   res2 <- confusionMatrix(pred, factor(label_test))
   
   C0 <- res2[["overall"]][["Accuracy"]]
