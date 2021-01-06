@@ -1090,6 +1090,10 @@ num_par_plot <- R
 per_rem <- 0.15
 eps <- 0.05
 
+bestSVM <- svmfit
+bestNames <- as.vector(colnames(df[,-1]))
+bestAcc <- C
+
 while(R > K && C[length(C)]>C[1]*0.9){
   
   cat(R,"\n")
@@ -1108,8 +1112,8 @@ while(R > K && C[length(C)]>C[1]*0.9){
   names_sorted <- names_sorted[1:(length(names_sorted)-m)]
   
   df_pre <- df
-  df<-df[,names_sorted]
-  df<-cbind(factor(label_train),df)
+  df <- df[,names_sorted]
+  df <- cbind(factor(label_train),df)
   colnames(df)[colnames(df) == 'factor(label_train)'] <- 'Group'
   
   svmfit_pre <- svmfit
@@ -1136,6 +1140,11 @@ while(R > K && C[length(C)]>C[1]*0.9){
   else {
     C <- c(C,acc)
     num_par <- c(num_par, R)
+    if (acc >= bestAcc && R < length(bestNames)){
+      bestSVM <- svmfit
+      bestNames <- as.vector(colnames(df[,-1]))
+      bestAcc <- acc
+    }
   }
 }
 
@@ -1147,8 +1156,11 @@ C0 <- C[length(C)]   # needed for first cycle
 num_par2 <- R # number of features without group
 C2 <- C0  # accuracy last iteration
 
-while(R > 2){
-  accs <- NULL
+bests <- list()
+bestsnames <- list()
+
+while(R >= 1){
+  deltas <- NULL
   # svmfit_all <- vector (mode = 'list', length = R)
   
   w <- t(svmfit$coefs)%*% svmfit$SV
@@ -1185,6 +1197,16 @@ while(R > 2){
   R <- ncol(df)-1
   C2 <- c(C2, C0)
   num_par2 <- c(num_par2, R)
+  names <- colnames(df[,-1])
+  
+  if (acc >= bestAcc && R < length(bestNames)){
+    bestSVM <- svmfit
+    bestNames <- as.vector(colnames(df[,-1]))
+    bestAcc <- acc
+  }
+  
+  bests <- append(bests,list(svmfit))
+  bestsnames<-c(bestsnames,list(names))
 }
 plot (x=num_par2,y=C2)
 ```
