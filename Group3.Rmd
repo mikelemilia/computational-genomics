@@ -1128,8 +1128,8 @@ while(R > K && C[length(C)]>C[1]*0.9){
   res <- confusionMatrix(test_pred, factor(label_test))
   R <- ncol(df)-1
   acc <- res[["overall"]][["Accuracy"]]
-  C_plot <- c(C_plot,acc)
-  num_par_plot <- c(num_par_plot,R)
+  C_plot <- c(acc,C_plot)
+  num_par_plot <- c(R,num_par_plot)
   
   if (C[length(C)]>(acc+eps)){
     svmfit <- svmfit_pre
@@ -1138,8 +1138,8 @@ while(R > K && C[length(C)]>C[1]*0.9){
     per_rem <- per_rem-0.001
   }
   else {
-    C <- c(C,acc)
-    num_par <- c(num_par, R)
+    C <- c(acc,C)
+    num_par <- c(R,num_par)
     if (acc >= bestAcc && R < length(bestNames)){
       bestSVM <- svmfit
       bestNames <- as.vector(colnames(df[,-1]))
@@ -1150,16 +1150,18 @@ while(R > K && C[length(C)]>C[1]*0.9){
 
 plot (x=num_par_plot,y=C_plot)
 
-R <- ncol(df)-1
-C0 <- C[length(C)]   # needed for first cycle
+R <- num_par[1]
+C0 <- C[1]   # needed for first cycle
 
 num_par2 <- R # number of features without group
 C2 <- C0  # accuracy last iteration
 
 bests <- list()
 bestsnames <- list()
+bests <- append(list(svmfit),bests)
+bestsnames <- c(list(colnames(df[,-1])),bestsnames)
 
-while(R >= 1){
+while(R >= 2){
   deltas <- NULL
   # svmfit_all <- vector (mode = 'list', length = R)
   
@@ -1195,8 +1197,8 @@ while(R >= 1){
   
   C0 <- res2[["overall"]][["Accuracy"]]
   R <- ncol(df)-1
-  C2 <- c(C2, C0)
-  num_par2 <- c(num_par2, R)
+  C2 <- c(C0,C2)
+  num_par2 <- c(R,num_par2)
   names <- colnames(df[,-1])
   
   if (acc >= bestAcc && R < length(bestNames)){
@@ -1205,14 +1207,39 @@ while(R >= 1){
     bestAcc <- acc
   }
   
-  bests <- append(bests,list(svmfit))
-  bestsnames<-c(bestsnames,list(names))
+  bests <- append(list(svmfit),bests)
+  bestsnames<-c(list(names),bestsnames)
 }
 plot (x=num_par2,y=C2)
 ```
-## https://johanndejong.wordpress.com/2016/01/17/svm-with-recursive-feature-elimination/
+```{r prove}
+for (i in (1:(length(C2)-1))){
+  names <- bestsnames[[i]]
+  df_prova <- dataNorm_train[,names]
+  df_prova <- cbind(factor(label_train),df_prova)
+  colnames(df_prova)[colnames(df_prova) == 'factor(label_train)'] <- 'Group'
+  
+  df_test_prova <- dataNorm_test[,names]
+  df_test_prova <- cbind(factor(label_test),df_test_prova)
+  colnames(df_test_prova)[colnames(df_test_prova) == 'factor(label_train)'] <- 'Group'
+    
+  svmfit_prova <- svm(Group ~ ., data = df_prova, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+  pred_prova <- predict(svmfit_prova, newdata=df_test_prova, decision.values = FALSE)
+  res_prova <- confusionMatrix(pred_prova, factor(label_test))
+  
+  g1 <- res_prova[["overall"]][["Accuracy"]]
+  
+  svmfit_prova <- bests[[i]]
+  pred_prova <- predict(svmfit_prova, newdata=df_test_prova, decision.values = FALSE)
+  res_prova <- confusionMatrix(pred_prova, factor(label_test))
+  
+  g2 <- res_prova[["overall"]][["Accuracy"]]
+  
+  g3 <- C2[i]
+  
+  cat("\ni:",i," --- g1:",g1," g2:",g2," g3:",g3)
+}
 
-
-
+```
 
 
