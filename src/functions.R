@@ -399,7 +399,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
   
   bestSVM <- model.svm
   bestNames <- as.vector(colnames(X_train[,-1]))
-  bestAcc <- C
+  bestAcc <- accuracy
   
   cat("Removing lot of unuseful features\n")
   
@@ -416,8 +416,8 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     
     m <- ceiling(per_rem * R)
     if(m == 1) break
-    w <- w_sort[1:(length(w_sort)-m)] 
-    names_sorted <- names_sorted[1:(length(names_sorted)-m)]
+    w <- w_sort[1:(length(w_sort) - m)] 
+    names_sorted <- names_sorted[1:(length(names_sorted) - m)]
     
     tmp_train <- X_train
     X_train <- X_train[,names_sorted]
@@ -441,7 +441,6 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
       
       model.svm <- tmp_svm
       X_train   <- tmp_train
-      # x_test <- df_test_pre
       per_rem <- per_rem - 0.001
       
     } else {
@@ -517,8 +516,9 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     bestsnames<-c(list(names), bestsnames)
   }
   
-  return(list("features" = features_retained, "accuracy" = accuracy, "bests" = bests, "bestsnames" = bestsnames))
   plot (x = features_retained, y = accuracy)
+  
+  return(list("features" = features_retained, "accuracy" = accuracy, "bests" = bests, "bestsnames" = bestsnames))
   
   
 }
