@@ -459,9 +459,6 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
   
   cat("\nRemoving one feature in each iteration\n")
   
-  # R <- first(features_retained)
-  C0 <- first(accuracy)   # needed for first cycle
-  
   bests <- list()
   bestsnames <- list()
   bests <- append(list(model.svm), bests)
@@ -492,7 +489,10 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     # remove features
     X_train <- X_train[, -(idx+1)]
     
+    # train the model
     model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+    
+    # predict
     prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
     result <- confusionMatrix(prediction, factor(Y_test))
     
