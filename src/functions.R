@@ -378,3 +378,147 @@ silhouette <- function(points, cluster, k){
   return(sum(s))
 }
 
+
+recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500){
+  
+  model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE)
+  print(model.svm)
+  
+  prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
+  result <- confusionMatrix(prediction, factor(Y_test))
+  print(result)
+  
+  # initialization
+  
+  R <- ncol(X_train)-1  # number of features
+  
+  accuracy <- res[["overall"]][["Accuracy"]] # accuracy
+  features_retained <- R
+  per_rem <- 0.15
+  eps <- 0.05
+  
+  bestSVM <- model.svm
+  bestNames <- as.vector(colnames(X_train[,-1]))
+  bestAcc <- C
+  
+  cat("Removing lot of unuseful features\n")
+  
+  while(R > K && last(accuracy) > first(accuracy)*0.9){
+    
+    w <- t(model.svm$coefs) %*% model.svm$SV
+    b <- -1 * model.svm$rho
+    names <- as.vector(colnames(X_train[,-1]))
+    
+    # absolute value
+    w <- abs(w)
+    w_sort <- sort(w, decreasing = TRUE)
+    names_sorted <- names[order(w, decreasing=TRUE)]
+    
+    m <- ceiling(per_rem * R)
+    if(m == 1) break
+    w <- w_sort[1:(length(w_sort)-m)] 
+    names_sorted <- names_sorted[1:(length(names_sorted)-m)]
+    
+    tmp_train <- X_train
+    X_train <- X_train[,names_sorted]
+    X_train <- cbind(factor(Y_train), X_train)
+    colnames(X_train)[colnames(X_train) == 'factor(Y_train)'] <- 'Group'
+    
+    # train the model
+    tmp_svm <- model.svm
+    model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE,na.action = na.omit)
+    
+    # make prediction on the above model
+    prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
+    result <- confusionMatrix(prediction, factor(Y_test))
+    
+    cat(R, "\t~", result[["overall"]][["Accuracy"]], "\n")
+    
+    R <- ncol(X_train)-1
+    current_accuracy <- result[["overall"]][["Accuracy"]]
+    
+    if (last(accuracy) > (current_accuracy + eps)){
+      
+      model.svm <- tmp_svm
+      X_train   <- tmp_train
+      # x_test <- df_test_pre
+      per_rem <- per_rem - 0.001
+      
+    } else {
+      
+      accuracy <- c(current_accuracy, accuracy)
+      features_retained <- c(R, features_retained)
+      
+      if (current_accuracy >= bestAcc && R < length(bestNames)){
+        bestSVM <- model.svm
+        bestNames <- as.vector(colnames(X_train[,-1]))
+        bestAcc <- current_accuracy
+      }
+      
+    }
+  }
+  
+  cat("\nRemoving one feature in each iteration\n")
+  
+  # R <- first(features_retained)
+  C0 <- first(accuracy)   # needed for first cycle
+  
+  bests <- list()
+  bestsnames <- list()
+  bests <- append(list(model.svm), bests)
+  bestsnames <- c(list(colnames(X_train[,-1])), bestsnames)
+  
+  while(R >= 2){
+    deltas <- NULL
+    
+    w <- t(model.svm$coefs) %*% model.svm$SV
+    b <- -1 * model.svm$rho
+    
+    # find the worst feature
+    for(i in 2:ncol(X_train)) {
+      
+      tmp_model.svm <- svm(Group ~ ., data = X_train[,-i], kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+      tmp_prediction <- predict(tmp_model.svm, newdata = X_test, decision.values = FALSE)
+      tmp_result <- confusionMatrix(tmp_prediction, factor(Y_test))
+      
+      tmp_accuracy <- tmp_result[["overall"]][["Accuracy"]]
+      deltas <- c(deltas, (first(accuracy) - tmp_accuracy))
+      
+    }
+    
+    # select the worst feature
+    idx <- which(deltas == min(deltas))
+    idx <- sample(idx, 1)
+    
+    # remove features
+    X_train <- X_train[, -(idx+1)]
+    
+    model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+    prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
+    result <- confusionMatrix(prediction, factor(Y_test))
+    
+    cat(R, "\t~", result[["overall"]][["Accuracy"]], "\n")
+    
+    current_accuracy <- result[["overall"]][["Accuracy"]]
+    R <- ncol(X_train)-1
+    
+    accuracy <- c(current_accuracy, accuracy)
+    features_retained <- c(R, features_retained)
+    
+    names <- colnames(X_train[,-1])
+    
+    if (current_accuracy >= bestAcc && R < length(bestNames)){
+      bestSVM <- model.svm
+      bestNames <- as.vector(colnames(X_train[,-1]))
+      bestAcc <- current_accuracy
+    }
+    
+    bests <- append(list(model.svm), bests)
+    bestsnames<-c(list(names), bestsnames)
+  }
+  
+  return(list("features" = features_retained, "accuracy" = accuracy, "bests" = bests, "bestsnames" = bestsnames))
+  plot (x = features_retained, y = accuracy)
+  
+  
+}

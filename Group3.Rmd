@@ -1021,11 +1021,11 @@ Z-scoring is implemented; to z-score the data set, mean and standard deviation o
 dataNorm_test <- NULL
 dataNorm_train <- scale(data_train)
 
-mean_train <- apply(data_train,2,mean)
-sd_train <- apply(data_train,2,sd)
-dataNorm_test <- scale(data_test, center = mean_train, scale = sd_train)
+# mean_train <- apply(data_train,2,mean)
+# sd_train <- apply(data_train,2,sd)
+# dataNorm_test <- scale(data_test, center = mean_train, scale = sd_train)
 
-#dataNorm_test <- scale(data_test)
+dataNorm_test <- scale(data_test)
 
 # create data.frames in which in the first element we have the factor element (and rename it)
 dataNorm_train<-as.data.frame(dataNorm_train)
@@ -1070,6 +1070,7 @@ print(res)
 ## Feature selection
 
 ```{r e1071 fs}
+
 svmfit <- svm(Group ~ ., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE)
 print(svmfit)
 
@@ -1081,6 +1082,9 @@ df <- dataNorm_train
 df_test <- dataNorm_test
 
 K <- 500
+
+cat("Removing lot of unuseful features\n")
+
 R <- ncol(df)-1
 
 C <- res[["overall"]][["Accuracy"]]
@@ -1094,9 +1098,9 @@ bestSVM <- svmfit
 bestNames <- as.vector(colnames(df[,-1]))
 bestAcc <- C
 
+
 while(R > K && C[length(C)]>C[1]*0.9){
   
-  cat(R,"\n")
   w <- t(svmfit$coefs)%*% svmfit$SV
   b <- -1*svmfit$rho
   names <- as.vector(colnames(df[,-1]))
@@ -1124,8 +1128,10 @@ while(R > K && C[length(C)]>C[1]*0.9){
   df_test<-cbind(factor(label_test),df_test)
   colnames(df_test)[colnames(df_test) == 'factor(label_test)'] <- 'Group'
   
-  test_pred <- predict(svmfit, newdata=df_test, decision.values = FALSE)
+  test_pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
   res <- confusionMatrix(test_pred, factor(label_test))
+  
+  cat(R, "\t~", res[["overall"]][["Accuracy"]], "\n")
   R <- ncol(df)-1
   acc <- res[["overall"]][["Accuracy"]]
   C_plot <- c(acc,C_plot)
@@ -1150,6 +1156,8 @@ while(R > K && C[length(C)]>C[1]*0.9){
 
 plot (x=num_par_plot,y=C_plot)
 
+cat("\nRemoving one feature in each iteration\n")
+
 R <- num_par[1]
 C0 <- C[1]   # needed for first cycle
 
@@ -1169,14 +1177,14 @@ while(R >= 2){
   b <- -1 * svmfit$rho
   # names <- colnames(df[,-1])
   
-  cat("R value: ", R, "\n")
+  # cat("R value: ", R, "\n")
   
   for(i in 2:ncol(df)) {
     df2 <- df[,-i]
     df_test2 <- df_test[,-i]
     
     svmfit2 <- svm(Group ~ ., data = df2, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
-    pred2 <- predict(svmfit2, newdata=df_test2, decision.values = FALSE)
+    pred2 <- predict(svmfit2, newdata=dataNorm_test, decision.values = FALSE)
     res2 <- confusionMatrix(pred2, factor(label_test))
     
     acc <- res2[["overall"]][["Accuracy"]]
@@ -1192,9 +1200,11 @@ while(R >= 2){
   df_test <- df_test[, -(idx+1)]
   
   svmfit <- svm(Group ~ ., data = df, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
-  pred <- predict(svmfit, newdata=df_test, decision.values = FALSE)
+  pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
   res2 <- confusionMatrix(pred, factor(label_test))
   
+  cat(R, "\t~", res2[["overall"]][["Accuracy"]], "\n")
+
   C0 <- res2[["overall"]][["Accuracy"]]
   R <- ncol(df)-1
   C2 <- c(C0,C2)
@@ -1210,8 +1220,9 @@ while(R >= 2){
   bests <- append(list(svmfit),bests)
   bestsnames<-c(list(names),bestsnames)
 }
-plot (x=num_par2,y=C2)
+plot(x=num_par2,y=C2)
 ```
+
 ```{r prove}
 for (i in (1:(length(C2)-1))){
   names <- bestsnames[[i]]
@@ -1242,4 +1253,8 @@ for (i in (1:(length(C2)-1))){
 
 ```
 
+```{r fun}
+rfe <- recursiveFeatureExtraction(dataNorm_train, label_train, dataNorm_test, label_test, 500)
 
+# do some plot or analize some datas, the function return a list
+```
