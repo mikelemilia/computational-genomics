@@ -392,7 +392,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
   
   R <- ncol(X_train)-1  # number of features
   
-  accuracy <- res[["overall"]][["Accuracy"]] # accuracy
+  accuracy <- result[["overall"]][["Accuracy"]] # accuracy
   features_retained <- R
   per_rem <- 0.15
   eps <- 0.05
