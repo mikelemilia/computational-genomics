@@ -518,7 +518,16 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
   
   plot (x = features_retained, y = accuracy)
   
-  return(list("features" = features_retained, "accuracy" = accuracy, "bests" = bests, "bestsnames" = bestsnames))
+  return(list("features" = features_retained, 
+              "accuracy" = accuracy, 
+              "bests" = bests, 
+              "bestsnames" = bestsnames,
+              "bestmodel" = list("svm" = bestSVM,
+                                 "names" = bestNames,
+                                 "accuracy" = bestAcc
+                                 )
+              )
+         )
   
   
 }
