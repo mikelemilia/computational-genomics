@@ -382,10 +382,10 @@ silhouette <- function(points, cluster, k){
 recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500){
   
   model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE)
-
+  
   prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
   result <- confusionMatrix(prediction, factor(Y_test))
-
+  
   # initialization
   
   R <- ncol(X_train)-1  # number of features
@@ -423,7 +423,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     if(m == 1) break
     w <- w_sort[1:(length(w_sort) - m)] 
     names_sorted <- names_sorted[1:(length(names_sorted) - m)]
-  
+    
     tmp_train <- X_train
     X_train <- X_train[,names_sorted]
     X_train <- cbind(factor(Y_train), X_train)
@@ -460,14 +460,14 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
         bestNames <- as.vector(colnames(X_train[,-1]))
         bestAcc <- current_accuracy
       }
-    
+      
     }
   }
   
   cat("\nRemoving one feature in each iteration\n")
   
   R <- first(features_retained)  # number of features
-
+  
   bests <- list()
   bestsnames <- list()
   bests <- append(list(model.svm), bests)
@@ -505,7 +505,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     cat(R, "\t~", result[["overall"]][["Accuracy"]], "\n")
     
     current_accuracy <- result[["overall"]][["Accuracy"]]
-  
+    
     
     accuracy <- c(current_accuracy, accuracy)
     features_retained <- c(R, features_retained)
@@ -533,9 +533,9 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
               "bestmodel" = list("svm" = bestSVM,
                                  "names" = bestNames,
                                  "accuracy" = bestAcc
-                                 )
               )
-         )
+  )
+  )
   
   
 }

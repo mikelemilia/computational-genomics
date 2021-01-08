@@ -1021,11 +1021,11 @@ Z-scoring is implemented; to z-score the data set, mean and standard deviation o
 dataNorm_test <- NULL
 dataNorm_train <- scale(data_train)
 
-# mean_train <- apply(data_train,2,mean)
-# sd_train <- apply(data_train,2,sd)
-# dataNorm_test <- scale(data_test, center = mean_train, scale = sd_train)
+mean_train <- apply(data_train,2,mean)
+sd_train <- apply(data_train,2,sd)
+dataNorm_test <- scale(data_test, center = mean_train, scale = sd_train)
 
-dataNorm_test <- scale(data_test)
+# dataNorm_test <- scale(data_test)
 
 # create data.frames in which in the first element we have the factor element (and rename it)
 dataNorm_train<-as.data.frame(dataNorm_train)
@@ -1101,6 +1101,8 @@ bestAcc <- C
 
 while(R > K && C[length(C)]>C[1]*0.9){
   
+  cat("Number of features:", R, "\n")
+  
   w <- t(svmfit$coefs)%*% svmfit$SV
   b <- -1*svmfit$rho
   names <- as.vector(colnames(df[,-1]))
@@ -1134,6 +1136,9 @@ while(R > K && C[length(C)]>C[1]*0.9){
   cat(R, "\t~", res[["overall"]][["Accuracy"]], "\n")
   R <- ncol(df)-1
   acc <- res[["overall"]][["Accuracy"]]
+  
+      cat("Accuracy obrained:", acc, ", features removed:", m, "\n")
+
   C_plot <- c(acc,C_plot)
   num_par_plot <- c(R,num_par_plot)
   
