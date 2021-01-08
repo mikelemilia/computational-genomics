@@ -381,7 +381,7 @@ silhouette <- function(points, cluster, k){
 
 recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500){
   
-  model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE)
+  model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
   
   prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
   result <- confusionMatrix(prediction, factor(Y_test))
@@ -420,7 +420,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     names_sorted <- names[order(w, decreasing=TRUE)]
     
     m <- ceiling(per_rem * R)
-    if(m == 1) break
+    if(m <= 1) break
     w <- w_sort[1:(length(w_sort) - m)] 
     names_sorted <- names_sorted[1:(length(names_sorted) - m)]
     
@@ -448,7 +448,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
       
       model.svm <- tmp_svm
       X_train   <- tmp_train
-      per_rem <- per_rem - 0.001
+      per_rem <- per_rem - 0.002
       
     } else {
       
@@ -502,10 +502,11 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
     result <- confusionMatrix(prediction, factor(Y_test))
     
-    cat(R, "\t~", result[["overall"]][["Accuracy"]], "\n")
-    
+    R <- ncol(X_train)-1
     current_accuracy <- result[["overall"]][["Accuracy"]]
     
+    cat("Number of features:", R, ", features removed:", 1,"\n")
+    cat("Accuracy obtained:", current_accuracy, "\n")
     
     accuracy <- c(current_accuracy, accuracy)
     features_retained <- c(R, features_retained)
@@ -518,15 +519,13 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
       bestAcc <- current_accuracy
     }
     
-    R <- ncol(X_train)-1
-    
     bests <- append(list(model.svm), bests)
-    bestsnames<-c(list(names), bestsnames)
+    bestsnames <- c(list(names), bestsnames)
   }
   
   plot (x = features_retained, y = accuracy)
   
-  return(list("features" = features_retained, 
+  return(list("number_features" = features_retained, 
               "accuracy" = accuracy, 
               "bests" = bests, 
               "bestsnames" = bestsnames,
