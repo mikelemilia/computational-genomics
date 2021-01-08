@@ -459,6 +459,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
   
   cat("\nRemoving one feature in each iteration\n")
   
+  R <- ncol(X_train)-1
   bests <- list()
   bestsnames <- list()
   bests <- append(list(model.svm), bests)
@@ -467,8 +468,8 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
   while(R >= 2){
     deltas <- NULL
     
-    w <- t(model.svm$coefs) %*% model.svm$SV
-    b <- -1 * model.svm$rho
+    # w <- t(model.svm$coefs) %*% model.svm$SV
+    # b <- -1 * model.svm$rho
     
     # find the worst feature
     for(i in 2:ncol(X_train)) {
