@@ -351,7 +351,6 @@ silhouette <- function(points, cluster, k){
     
     else {
       # the cluster contains more points
-      indmin <- 0
       minb <- Inf
       
       # scan each possible cluster
@@ -365,9 +364,7 @@ silhouette <- function(points, cluster, k){
           # with a different cluster, we calculate the value 'b' and we maintain always the max(b)
           distances_topoint <- distances[clusters[[c]]]
           x <- sum(distances_topoint)/length(distances_topoint)
-          if (minb > sum(distances_topoint)){
-            minb <- x
-          }
+          minb <- min(minb, x)
         }
       }
       # calculate the final silhouette for the point
