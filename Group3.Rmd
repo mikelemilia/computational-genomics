@@ -342,7 +342,7 @@ cat("\nThe compression ratio for control has been of:", ratio)
 ## Calculate p-values of DE analysis (not corrected for multiple testing) between the two groups using t-test, Wilcoxon test and edgeR
 
 <div style="text-align: justify">
-For the t-test and the Wilcoxon tests, we use the functions of the Stats library.
+For the t-test and the Wilcoxon tests, we use functions of the Stats library.
 </div>
 
 ```{r p-values}
@@ -359,7 +359,7 @@ for(i in (1:Nc)){
 ```
 
 <div style="text-align: justify">
-For edgeR, we have to do a preprocessing of data and then we use functions of the edgeR library. We have to rebuild the control and disease matrixes with data not normalized because edgeR was created to work with data whose distribution is a negative binomial: the initial data matrix has this type of distribution, while normalized data does not comply to negative binomial distribution. To correctly use the functions we have to label samples in control and disease groups with 'control_1', 'control_2', ..., 'disease_1', and so on. 
+For edgeR, we have to do a preprocessing of data and then we use functions of the edgeR library. We have to rebuild the control and disease matrixes with data not normalized because edgeR was created to work with data whose distribution is a negative binomial: the initial data matrix has this type of distribution, while normalized data does not comply to negative binomial distribution. To correctly use the functions we have to label samples in control and disease groups with 'control_1', 'control_2', ..., 'disease_1', and so on. This is done by the utility function rename_columns.
 </div>
 
 ```{r rename column function}
@@ -399,7 +399,7 @@ group <- factor(group_all)
 design <- model.matrix(~0+group) 
 rownames(design) <- colnames(mat)
 
-# fit values of phi (we need this step to fit our GLM model)
+# fit values of phi (step to fit our GLM model)
 y <- DGEList(counts=mat, remove.zeros = TRUE)    
 y <- calcNormFactors(y)   # scaling factors with TMM approach
 SF <- y$samples
@@ -433,7 +433,7 @@ boxplot(c_ttest_pvalue, c_wilcoxon_pvalue, out$PValue, names = c('t-test','Wilco
 ## Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha = 0.05 and consider G0 = N with N being the number of genes
 
 <div style="text-align: justify">
-For each test, we extracted the genes that have p-value lower than a fixed alpha. With the following function we calculate the expected values of true positives, false positives, true negatives and false negatives implementing their definition. We then applied the function with G0 (number of selected genes) equal to the total number of genes.
+For each test, we extracted the genes that have p-value lower than a fixed alpha. With the following function "expected_values" we calculate the expected values of true positives, false positives, true negatives and false negatives implementing their definition. We then applied the function considering G0 (number of selected genes) being equal to G, the total number of genes.
 </div>
 
 ```{r selection for alpha 0.05}
@@ -462,8 +462,6 @@ cat("\nNumber of selected genes with edgeR:",num_sel_edgeR)
 expected_values
 ```
 
-
-
 ```{r calculation of expected values}
 G <- nrow(control_nodup_nozero)
 G0 <- G
@@ -484,7 +482,7 @@ dt %>% kbl() %>% kable_paper("hover", full_width = T)
 ## Estimate the number of not differentially expressed genes G0 and re-estimate the expected number of false positives and false negatives
 
 <div style="text-align: justify">
-The first function calculates the values of G0 for a given set of lambda values. It's used to estimate the correct value of G0 rather than assuming that G0 is equal to the total number of genes. It receives in input also the p-values for which the computation must be done, the total number of genes G and the filename in which the plot of "G0 VS lambda" should be saved. From the plot we choose by hand the best value for our lambda (in this case 0.8) and with the second function, we provide an estimate of G0 with the previous lambda value passed as input (considering a mean of the values of G0 within an interval around the best lambda).
+The first function calculates the values of G0 for a given set of lambda values. It's used to estimate the correct value of G0 rather than assuming that G0 is equal to the total number of genes. It receives in input also the p-values for which the computation must be done, the total number of genes G and the filename in which the plot of "G0 VS lambda" should be saved. From the plot we choose by hand the best value for our lambda (in the case of edgeR, 0.65) and with the second function, we provide an estimate of G0 with the previous lambda value passed as input (considering a mean of the values of G0 within an interval around the best lambda).  
 </div>
 
 ```{r G0 values function}
@@ -496,7 +494,7 @@ G0_value_estimation
 ```
 
 <div style="text-align: justify">
-In the following chunk we perform the estimation of G0 with the functions described above; after seeing the plots, we choose lambda = 0.8 because we saw that around it the graph has a constant mean value with little variability.
+In the following chunk we perform the estimation of G0 with the functions described above; after seeing the plots, we choose our lambdas in the three cases (the three tests); those lambdas were chosen because we saw that around them the respective graphs had a constant mean value with little variability.
 </div>
 
 ``` {r estimation of G0 and re-estimation of the values for each test}
@@ -543,7 +541,7 @@ We chose edgeR for few reasons; first of all, edgeR implements a test for data w
 ## Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%
 
 <div style="text-align: justify">
-First of all, we compute the lambda values choosing an interval within min and max of edgeR's p-values and for each of them we compute FDR value by definition. Moreover we estimate the alpha value as the mean of alphas which have FDR close to 0.05 by a certain epsilon (0.0001).
+First of all, we compute the lambda values choosing an interval within min and max of edgeR's p-values and for each of them we compute FDR value by definition. Then, we estimate the alpha value as the mean of alphas which have FDR close to 0.05 by a certain epsilon (0.0001).
 </div>
 
 ```{r choose alpha}
@@ -1258,8 +1256,30 @@ for (i in (1:(length(C2)-1))){
 
 ```
 
+
+
 ```{r fun}
 rfe <- recursiveFeatureExtraction(dataNorm_train, label_train, dataNorm_test, label_test, 500)
 
 # do some plot or analize some datas, the function return a list
+```
+```{r tests of fun}
+# model_best<-rfe[[5]][[1]]
+# test<-predict(model_best, newdata=dataNorm_test, decision.values = FALSE)
+# confusionMatrix(test, factor(label_test))
+
+
+##--- prova 2----------------------------------------------------------
+n<-rfe[[5]][[2]]
+matrix_train<-dataNorm_train[, n]
+matrix_train <- cbind(factor(label_train),matrix_train)
+colnames(matrix_train)[colnames(matrix_train) == 'factor(label_train)'] <- 'Group'
+
+svmfit_prova <- svm(Group ~ ., data = matrix_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+  pred_prova <- predict(svmfit_prova, newdata=dataNorm_test, decision.values = FALSE)
+  res_prova <- confusionMatrix(pred_prova, factor(label_test))
+  
+  g1 <- res_prova[["overall"]][["Accuracy"]]
+  
+
 ```
