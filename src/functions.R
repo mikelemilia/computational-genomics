@@ -321,6 +321,7 @@ annotation_terms<-function(vals, terms){
 }
 
 silhouette <- function(points, cluster, k){
+  
   # particular case of only one cluster
   if(k == 1){return(-1)}
   
@@ -367,12 +368,15 @@ silhouette <- function(points, cluster, k){
           minb <- min(minb, x)
         }
       }
+      
       # calculate the final silhouette for the point
       s <- c(s,(minb-a)/max(minb,a))
     }
   }
+  
   # the output is the sum of the silhouettes for all the points in the dataset
-  return(sum(s))
+  return(sum(s)/nrow(points))
+  
 }
 
 
