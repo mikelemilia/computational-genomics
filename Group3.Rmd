@@ -522,13 +522,31 @@ eps <- 0.03
 G0_est_edger <- G0_value_estimation(lambda_est_edger, eps, res)
 
 expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, num_sel_edgeR)
+```
 
-# print results
+```{r parameters}
+sensitivity <- c((expected_ttest_est$TP/(expected_ttest_est$TP+expected_ttest_est$FN)),
+                 (expected_wilcoxontest_est$TP/(expected_wilcoxontest_est$TP+expected_wilcoxontest_est$FN)),
+                 (expected_edgeR_est$TP/(expected_edgeR_est$TP+expected_edgeR_est$FN)))
+
+specificity <- c((expected_ttest_est$TN/(expected_ttest_est$TN+expected_ttest_est$FP)),
+                 (expected_wilcoxontest_est$TN/(expected_wilcoxontest_est$TN+expected_wilcoxontest_est$FP)),
+                 (expected_edgeR_est$TN/(expected_edgeR_est$TN+expected_edgeR_est$FP)))
+
+accuracy <- c(((expected_ttest_est$TN+expected_ttest_est$TP)/(expected_ttest_est$TP+expected_ttest_est$TN+expected_ttest_est$FP+expected_ttest_est$FN)),
+              ((expected_wilcoxontest_est$TN+expected_wilcoxontest_est$TP)/(expected_wilcoxontest_est$TP+expected_wilcoxontest_est$TN+expected_wilcoxontest_est$FP+expected_wilcoxontest_est$FN)),
+              ((expected_edgeR_est$TN+expected_edgeR_est$TP)/(expected_edgeR_est$TP+expected_edgeR_est$TN+expected_edgeR_est$FP+expected_edgeR_est$FN)))
+```
+
+```{r results, echo=FALSE}
+library(kableExtra)
 dt <- rbind(expected_ttest_est,expected_wilcoxontest_est,expected_edgeR_est)
-dt <- cbind(c(G0_est_ttest,G0_est_wilcoxontest,G0_est_edger),dt)
+dt <- cbind(c(G0_est_ttest,G0_est_wilcoxontest,G0_est_edger),dt,sensitivity,specificity,accuracy)
 rownames(dt)<-c('t-test', 'Wilcoxon-test', 'edgeR')
-colnames(dt)<-c('G0 estimated','TP', 'FP', 'TN', 'FN')
-dt %>% kbl() %>% kable_paper("hover", full_width = T)
+colnames(dt)<-c('G0 estimated','TP', 'FP', 'TN', 'FN','Sensitivity','Specificity', 'Accuracy')
+kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+#knitr::kable(dt, align = "lccccrrr", table.attr = "style='width:30%;'")
 ```
 
 ## Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice
@@ -959,14 +977,13 @@ fviz_cluster(cl_samples, data = t(dataNorm_clustering),
 ## Considering the two groups you have used for differential expression analysis split your data in training and test
 
 <div style="text-align: justify">
-For the selected genes, duplicates are removed as per the function implementd and explained above. This will the data to use for SVM classification; first of all, data is divided into training and test set randomly, saving the labels needed for the classification (the beloning to control or disease group). From both sets, genes selected but whose expression is zero both in disease and control group are taken out. When taking away said genes, it must be taken away also in the other set.They won't be of any use in the classification process; in fact, in the preprocessing of data, mean and standard deviations must be computed to be used for z-scoring said data; if a gene has always expression zero in all samples, its standard deviation will also be zero. Dividing by zero is not possibile, so NA will be inserted; the training will be stopped because NA will be found. For this reason, we implemented a function to remove those genes, in a similar fashion to the function for removing zeros explained above.
+To build the dataset for the SVM analysis, we considered the selected genes and the two groups (control and disease seen above) and we did some pre-processing: first of all, duplicates in samples are removed with the function implemented and explained above. We then removed also the genes for which the expression values are always zero in both the groups. This will determine the data to use for SVM classification, divided then into training and test set randomly, saving the labels needed for the classification (the belonging to the control or to the disease group of each sample). 
+For the subsequent implementation, we had to remove also the genes for which the expression is zero in all samples in control or all samples in disease. When taking away said genes, they must be taken away also in the other set. They won't be of any use in the classification process; in fact, in the pre-processing of data, mean and standard deviations must be computed to be used for z-scoring said data; if a gene has always expression zero in all samples, its standard deviation will also be zero. Dividing by zero is not possible, so NA will be inserted in that column; the training will then be stopped because NA will be found. For this reason, we implemented a function to remove those genes, in a very similar fashion to the function for removing zeros explained above.
 </div>
-
 
 ```{r function remove_zeros_onegroup}
 remove_zeros_onegroup 
 ```
-
 
 ```{r data splitting}
 library(caret)
@@ -994,25 +1011,25 @@ label_train <- namegroup[trainIndex]
 label_test <- namegroup[-trainIndex]
 
 # we can still have genes in data_train and data_test for which all values are 0: we remove these genes (if in one group it generates this problem, we have to remove that gene also from the other group). If we do the other "normalization" we can eliminate the second three lines.
-prova<-remove_zeros_onegroup(data_train)
-data_train<-prova$group
-data_test<-data_test[-prova$removedindexes,]
+train_removed <- remove_zeros_onegroup(data_train)
+data_train <- train_removed$group
+data_test <- data_test[-train_removed$removedindexes,]
 
-prova<-remove_zeros_onegroup(data_test)
-data_test<-prova$group
-data_train<-data_train[-prova$removedindexes,]
+test_removed <-remove_zeros_onegroup(data_test)
+data_test <- test_removed$group
+data_train <- data_train[-test_removed$removedindexes,]
 
 # finally, take the transpose to have samples on the rows
 data_test<-t(data_test)
 data_train<-t(data_train)
 ```
 
-## Standardize each feature in your dataset (so to have mean=0 and sd=1)
+## Standardize each feature in your dataset 
 
 <div style="text-align: justify">
-Z-scoring is implemented; to z-score the data set, mean and standard deviation of the training set is used. In this way, we are forcing that bot sets have the same distribution.
+To standardize each features in the dataset (so to have mean=0 and sd=1), we used the scale function. Z-scoring is implemented: to z-score the data set, mean and standard deviation of the training set is used. We can perform two different normalizations: in the first, we standardize training and test sets with their own mean and standard deviation; in the second, we standardize both of them with the values of the training set. In this second way, we are forcing that bot sets have the same distribution.
+In the second part, we add at the top of the dataframes containing the training set and the test set the label of each sample, inserting them as a factor variable.
 </div>
-
 
 ```{r data preprocessing}
 dataNorm_test <- NULL
@@ -1024,20 +1041,19 @@ dataNorm_test <- scale(data_test, center = mean_train, scale = sd_train)
 
 # dataNorm_test <- scale(data_test)
 
-# create data.frames in which in the first element we have the factor element (and rename it)
+# create data.frames in which in the first element we have the factor element
 dataNorm_train<-as.data.frame(dataNorm_train)
-dataNorm_train<-cbind(factor(label_train),dataNorm_train)
-
-colnames(dataNorm_train)[colnames(dataNorm_train) == 'factor(label_train)'] <- 'Group'
+dataNorm_train<-cbind('Group'=factor(label_train),dataNorm_train)
 
 dataNorm_test<-as.data.frame(dataNorm_test)
-dataNorm_test<-cbind(factor(label_test),dataNorm_test)
-
-colnames(dataNorm_test)[colnames(dataNorm_test) == 'factor(label_test)'] <- 'Group'
-
+dataNorm_test<-cbind('Group'=factor(label_test),dataNorm_test)
 ```
 
 ## Use linear support vector machines to learn classifying your subjects in the two classes 
+
+<div style="text-align: justify">
+We implemented the SVM procedure with both Caret and e1071 packages and we printed some results. We can see that the results for the two methods are equal.
+</div>
 
 ```{r caret}
 # train the model
@@ -1045,223 +1061,34 @@ model <- train(Group~., data=dataNorm_train, method = "svmLinear", scale = FALSE
 summary(model)
 
 # only some stupid results
-train_pred<-predict(model,dataNorm_train)
+cat("Prediction for the training set:\n")
+train_pred <- predict(model,dataNorm_train)
 confusionMatrix(train_pred, factor(label_train))
 
 # test the model on the test set
-test_pred<-predict(model,dataNorm_test)
+cat("Prediction for the test set:\n")
+test_pred <- predict(model,dataNorm_test)
 confusionMatrix(test_pred, factor(label_test))
 ```
-
 
 ```{r e1071}
 svmfit <- svm(Group ~ ., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE)
 print(svmfit)
 
+cat("Prediction for the test set:\n")
 test_pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
 res <- confusionMatrix(test_pred, factor(label_test))
 print(res)
 ```
-
 
 ## Feature selection
-
-```{r e1071 fs}
-
-svmfit <- svm(Group ~ ., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE)
-print(svmfit)
-
-test_pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
-res <- confusionMatrix(test_pred, factor(label_test))
-print(res)
-
-df <- dataNorm_train
-df_test <- dataNorm_test
-
-K <- 500
-
-cat("Removing lot of unuseful features\n")
-
-R <- ncol(df)-1
-
-C <- res[["overall"]][["Accuracy"]]
-C_plot <- C
-num_par <- R
-num_par_plot <- R
-per_rem <- 0.15
-eps <- 0.05
-
-bestSVM <- svmfit
-bestNames <- as.vector(colnames(df[,-1]))
-bestAcc <- C
-
-
-while(R > K && C[length(C)]>C[1]*0.9){
-  
-  cat("Number of features:", R, "\n")
-  
-  w <- t(svmfit$coefs)%*% svmfit$SV
-  b <- -1*svmfit$rho
-  names <- as.vector(colnames(df[,-1]))
-  
-  # absolute value
-  w <- abs(w)
-  w_sort <- sort(w, decreasing = TRUE)
-  names_sorted <- names[order(w, decreasing=TRUE)]
-  
-  m <- ceiling(per_rem * R)
-  if(m == 1) break
-  w <- w_sort[1:(length(w_sort)-m)] 
-  names_sorted <- names_sorted[1:(length(names_sorted)-m)]
-  
-  df_pre <- df
-  df <- df[,names_sorted]
-  df <- cbind(factor(label_train),df)
-  colnames(df)[colnames(df) == 'factor(label_train)'] <- 'Group'
-  
-  svmfit_pre <- svmfit
-  svmfit <- svm(Group ~ ., data = df, kernel = "linear", type = 'C-classification', scale = FALSE,na.action = na.omit)
-  
-  df_test_pre <- df_test
-  df_test<-df_test[,names_sorted]
-  df_test<-cbind(factor(label_test),df_test)
-  colnames(df_test)[colnames(df_test) == 'factor(label_test)'] <- 'Group'
-  
-  test_pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
-  res <- confusionMatrix(test_pred, factor(label_test))
-  
-  cat(R, "\t~", res[["overall"]][["Accuracy"]], "\n")
-  R <- ncol(df)-1
-  acc <- res[["overall"]][["Accuracy"]]
-  
-      cat("Accuracy obrained:", acc, ", features removed:", m, "\n")
-
-  C_plot <- c(acc,C_plot)
-  num_par_plot <- c(R,num_par_plot)
-  
-  if (C[length(C)]>(acc+eps)){
-    svmfit <- svmfit_pre
-    df <- df_pre
-    df_test <- df_test_pre
-    per_rem <- per_rem-0.001
-  }
-  else {
-    C <- c(acc,C)
-    num_par <- c(R,num_par)
-    if (acc >= bestAcc && R < length(bestNames)){
-      bestSVM <- svmfit
-      bestNames <- as.vector(colnames(df[,-1]))
-      bestAcc <- acc
-    }
-  }
-}
-
-plot (x=num_par_plot,y=C_plot)
-
-cat("\nRemoving one feature in each iteration\n")
-
-R <- num_par[1]
-C0 <- C[1]   # needed for first cycle
-
-num_par2 <- R # number of features without group
-C2 <- C0  # accuracy last iteration
-
-bests <- list()
-bestsnames <- list()
-bests <- append(list(svmfit),bests)
-bestsnames <- c(list(colnames(df[,-1])),bestsnames)
-
-while(R >= 2){
-  deltas <- NULL
-  # svmfit_all <- vector (mode = 'list', length = R)
-  
-  w <- t(svmfit$coefs)%*% svmfit$SV
-  b <- -1 * svmfit$rho
-  # names <- colnames(df[,-1])
-  
-  # cat("R value: ", R, "\n")
-  
-  for(i in 2:ncol(df)) {
-    df2 <- df[,-i]
-    df_test2 <- df_test[,-i]
-    
-    svmfit2 <- svm(Group ~ ., data = df2, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
-    pred2 <- predict(svmfit2, newdata=dataNorm_test, decision.values = FALSE)
-    res2 <- confusionMatrix(pred2, factor(label_test))
-    
-    acc <- res2[["overall"]][["Accuracy"]]
-    deltas <- c(deltas, (C0-acc))
-  }
-  
-  # deltas <- C0 - accs
-  idx <- which(deltas == min(deltas))
-  idx <- sample(idx, 1)
-  
-  # remove features
-  df <- df[, -(idx+1)]
-  df_test <- df_test[, -(idx+1)]
-  
-  svmfit <- svm(Group ~ ., data = df, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
-  pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
-  res2 <- confusionMatrix(pred, factor(label_test))
-  
-  cat(R, "\t~", res2[["overall"]][["Accuracy"]], "\n")
-
-  C0 <- res2[["overall"]][["Accuracy"]]
-  R <- ncol(df)-1
-  C2 <- c(C0,C2)
-  num_par2 <- c(R,num_par2)
-  names <- colnames(df[,-1])
-  
-  if (acc >= bestAcc && R < length(bestNames)){
-    bestSVM <- svmfit
-    bestNames <- as.vector(colnames(df[,-1]))
-    bestAcc <- acc
-  }
-  
-  bests <- append(list(svmfit),bests)
-  bestsnames<-c(list(names),bestsnames)
-}
-plot(x=num_par2,y=C2)
-```
-
-```{r prove}
-for (i in (1:(length(C2)-1))){
-  names <- bestsnames[[i]]
-  df_prova <- dataNorm_train[,names]
-  df_prova <- cbind(factor(label_train),df_prova)
-  colnames(df_prova)[colnames(df_prova) == 'factor(label_train)'] <- 'Group'
-  
-  df_test_prova <- dataNorm_test[,names]
-  df_test_prova <- cbind(factor(label_test),df_test_prova)
-  colnames(df_test_prova)[colnames(df_test_prova) == 'factor(label_train)'] <- 'Group'
-    
-  svmfit_prova <- svm(Group ~ ., data = df_prova, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
-  pred_prova <- predict(svmfit_prova, newdata=df_test_prova, decision.values = FALSE)
-  res_prova <- confusionMatrix(pred_prova, factor(label_test))
-  
-  g1 <- res_prova[["overall"]][["Accuracy"]]
-  
-  svmfit_prova <- bests[[i]]
-  pred_prova <- predict(svmfit_prova, newdata=df_test_prova, decision.values = FALSE)
-  res_prova <- confusionMatrix(pred_prova, factor(label_test))
-  
-  g2 <- res_prova[["overall"]][["Accuracy"]]
-  
-  g3 <- C2[i]
-  
-  cat("\ni:",i," --- g1:",g1," g2:",g2," g3:",g3)
-}
-
-```
-
-
 
 ```{r fun}
 rfe <- recursiveFeatureExtraction(dataNorm_train, label_train, dataNorm_test, label_test, 500)
 
-# do some plot or analize some datas, the function return a list
+# do some plot or analyze some datas, the function return a list
 ```
+
 ```{r tests of fun}
 # model_best<-rfe[[5]][[1]]
 # test<-predict(model_best, newdata=dataNorm_test, decision.values = FALSE)
@@ -1275,10 +1102,8 @@ matrix_train <- cbind(factor(label_train),matrix_train)
 colnames(matrix_train)[colnames(matrix_train) == 'factor(label_train)'] <- 'Group'
 
 svmfit_prova <- svm(Group ~ ., data = matrix_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
-  pred_prova <- predict(svmfit_prova, newdata=dataNorm_test, decision.values = FALSE)
-  res_prova <- confusionMatrix(pred_prova, factor(label_test))
+pred_prova <- predict(svmfit_prova, newdata=dataNorm_test, decision.values = FALSE)
+res_prova <- confusionMatrix(pred_prova, factor(label_test))
   
-  g1 <- res_prova[["overall"]][["Accuracy"]]
-  
-
+g1 <- res_prova[["overall"]][["Accuracy"]]
 ```
