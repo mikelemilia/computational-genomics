@@ -252,9 +252,7 @@ expected_values <- function(G,G0,alpha,selected_genes){
   expected_TN <- G0 - expected_FP
   expected_FN <- max(0,G-selected_genes-expected_TN)
   
-  return (c(expected_TP,expected_FP,expected_TN,expected_FN))
-  
-  #return (list('TP'=expected_TP,'FP'=expected_FP,'TN'=expected_TN,'FN'=expected_FN))
+  return (list('TP'=expected_TP,'FP'=expected_FP,'TN'=expected_TN,'FN'=expected_FN))
 }
 
 fisher_test_matrixes <- function(matrixes){
