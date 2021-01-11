@@ -442,7 +442,15 @@ boxplot(c_ttest_pvalue, c_wilcoxon_pvalue, out$PValue, names = c('t-test','Wilco
 ## Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha = 0.05 and consider G0 = N with N being the number of genes
 
 <div style="text-align: justify">
-For each test, we extracted the genes that have p-value lower than a fixed alpha. With the following function "expected_values" we calculate the expected values of true positives, false positives, true negatives and false negatives implementing their definition. We then applied the function considering G0 (number of selected genes) being equal to G, the total number of genes.
+For each test, we extracted the genes that have p-value lower than a fixed alpha. These are the selcted genes.
+With the following function "expected_values" we calculate the expected values of true positives, false positives, true negatives and false negatives implementing their definition. In order of calculation:
+<ul>
+<li>False positives are calculated as the minimum between G0*alpha and the number of selected genes,</li>
+<li>True positives are calculated as the maximum between zero and the number of selected genes minus the number of expected positives,</li>
+<li>True negatives as G0 minus the number of expected false positives,</li>
+<li>and lastly, False negatives as the maximum between zero and the total number of genes minus the selected ones and minus the number of expected true negatives; in this case, the maximum is applied as not to have deviant values for FN, meaning negative values.</li>
+</ul>
+We then applied the function considering G0 (number of selected genes) being equal to G, the total number of genes.
 </div>
 
 ```{r selection for alpha 0.05}
@@ -485,14 +493,14 @@ expected_edger <- expected_values(G, G0, alpha, num_sel_edgeR)
 dt <- rbind(expected_ttest,expected_wilcoxontest,expected_edger)
 dt <- cbind(c(G0,G0,G0),dt)
 rownames(dt)<-c('t-test', 'Wilcoxon-test', 'edgeR')
-colnames(dt)<-c('G0 estimated','TP', 'FP', 'TN', 'FN')
+colnames(dt)<-c('G0 = G','TP', 'FP', 'TN', 'FN')
 dt %>% kbl() %>% kable_paper("hover", full_width = T)
 ```
 
 ## Estimate the number of not differentially expressed genes G0 and re-estimate the expected number of false positives and false negatives
 
 <div style="text-align: justify">
-The first function calculates the values of G0 for a given set of lambda values. It's used to estimate the correct value of G0 rather than assuming that G0 is equal to the total number of genes. It receives in input also the p-values for which the computation must be done, the total number of genes G and the filename in which the plot of "G0 VS lambda" should be saved. From the plot we choose by hand the best value for our lambda (in the case of edgeR, 0.65) and with the second function, we provide an estimate of G0 with the previous lambda value passed as input (considering a mean of the values of G0 within an interval around the best lambda).  
+The first function calculates the values of G0 for a given set of lambda values. It's used to estimate the correct value of G0 rather than assuming that G0 is equal to the total number of genes. It receives in input also the p-values for which the computation must be done, the total number of genes G and the filename in which the plot of "G0 VS lambda" should be saved. From the plot of G0/G VS lambda we choose by hand the best value for our lambda (for instance, in the case of edgeR, 0.65) and with the second function, we provide an estimate of G0 with the previous lambda value passed as input (considering a mean of the values of G0 within an interval around the best lambda; the interval is chosen by epsilon).  
 </div>
 
 ```{r G0 values function}
@@ -535,7 +543,13 @@ G0_est_edger <- G0_value_estimation(lambda_est_edger, eps, res)
 expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, num_sel_edgeR)
 ```
 
-```{r parameters}
+<div style="text-align: justify">
+In the table below, we provide the results of the three tests in terms of FP, FN, TP, TN rates; moreover, we address sensitivity, specificity and accuracy of these tests. For better understanding, this ananlysis is done ultimately only for the results obtained by estimating G0.
+From the table we can see that although having slightly different FP, FN, TP, TN rates, the three tests have the same specificity, defined as TN/(TN+FP). This is not true for sensitivity: edgeR is the best test in terms of sensitivity defined as TP/(TP+FN). The same can be said about accuracy, calculated as (TP+TN)/(TP+TN+FP+FN); edgeR is still the best performing test.
+</div>
+
+
+```{r TP,TN,FP,FN, sensitivity, specificity, accuracy}
 sensitivity <- c((expected_ttest_est$TP/(expected_ttest_est$TP+expected_ttest_est$FN)),
                  (expected_wilcoxontest_est$TP/(expected_wilcoxontest_est$TP+expected_wilcoxontest_est$FN)),
                  (expected_edgeR_est$TP/(expected_edgeR_est$TP+expected_edgeR_est$FN)))
@@ -548,6 +562,10 @@ accuracy <- c(((expected_ttest_est$TN+expected_ttest_est$TP)/(expected_ttest_est
               ((expected_wilcoxontest_est$TN+expected_wilcoxontest_est$TP)/(expected_wilcoxontest_est$TP+expected_wilcoxontest_est$TN+expected_wilcoxontest_est$FP+expected_wilcoxontest_est$FN)),
               ((expected_edgeR_est$TN+expected_edgeR_est$TP)/(expected_edgeR_est$TP+expected_edgeR_est$TN+expected_edgeR_est$FP+expected_edgeR_est$FN)))
 ```
+
+<div style="text-align: justify">
+The table of results.
+</div>
 
 ```{r results, echo=FALSE}
 dt <- rbind(expected_ttest_est,expected_wilcoxontest_est,expected_edgeR_est)
@@ -562,13 +580,15 @@ kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed",
 ## Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice
 
 <div style="text-align: justify">
-We chose edgeR for few reasons; first of all, edgeR implements a test for data with negative binomial distribution, while the other tests do not take into account the characteristics of this particular distribution and, in this sense, this analysis can give more specific results. Then, it must also be said that it gives the lowest FN rate; while FP rate can be easily taken into account with a correction for multiple tests, FN rate is not accounted for with this type of correction. In this sense, we are not able to reduce this rate with some corrections; since ideally one should want a FN and FP rates equal to zero, we have to minimize them. To conclude, we chose edgeR on the basis of the theory behind it and also on the FP and FN rates.
+We chose edgeR for few reasons; first of all, edgeR implements a test for data with negative binomial distribution, while the other tests do not take into account the characteristics of this particular distribution and, in this sense, this analysis can give more specific results. Then, it must also be said that it gives the lowest FN rate; while FP rate can be easily taken into account with a correction for multiple tests, FN rate is not accounted for with this type of correction. In this sense, we are not able to reduce this rate with some corrections; since ideally one should want a FN and FP rates equal to zero, we have to minimize them. Finally, edgeR performs better than the other two tests in terms of both sensitivity and accuracy. 
+To conclude, we chose edgeR on the basis of the theory behind it and also on the calculated FP and FN rates, sensitivity and accuracy.
 </div>
 
 ## Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%
 
 <div style="text-align: justify">
-First of all, we compute the lambda values choosing an interval within min and max of edgeR's p-values and for each of them we compute FDR value by definition. Then, we estimate the alpha value as the mean of alphas which have FDR close to 0.05 by a certain epsilon (0.0001).
+The next chunk performs the FDR estimation to correct for multimuple testing.
+First of all, we compute the lambda values choosing an interval within the minimum and maximum values of edgeR's p-values;for each of them we compute FDR value by definition as the expected number of false positives divided by the number of selected for said value of lambda. Then, we estimate the alpha value as the mean of alphas which have FDR close to 0.05 by a certain epsilon (0.0001).
 </div>
 
 ```{r choose alpha}
