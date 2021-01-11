@@ -259,19 +259,18 @@ fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for genes 
 <div style="text-align: justify">
 We decided to take care of this issue by simply using a mean approach: the samples coming from the same subject and present in the same group (for instance subject 1 is measured two times as a control subject) are mediated. To do this task we decided to implement the remove_duplicates function. 
 The function:
-- first of all, we find all subjects duplicated in the group (in our case the group can be "control" or "disease"). To do so, we use the column of the group "individuals"; this column has the identifier for the subjects. If a sample comes from the same subject (i.e, the subject has benn sampled twice or more, so it is a duplicate), the identifier will be the same.
-- We save all these dupes in a temporary matrix called "duplicate_group"
-- we initialize a new matrix which will contain all subjects without any of them being duplicated (i.e., sampled twice)
-- for each identifier in "duplicate_group"
-    - find the indexes of this duplicate individual
-    - get their SRR code (the code with which samples are identified in the matrix of raw data).         NB: in the matrix of raw data, all samples are identified with different SRR codes, but
-      SRR codes can point to the same subject.
-    - get all the the samples coming from this particular subject that we know is duplicated
-    - apply the mean by row to all samples identified in the previous step and save this new             "mediated-samples subject" in the matrix initialized above
-- then, find all subjects in the group that are not duplicated (i.e., there's a 1 to 1 correspondance of subject to sample for these individuals)
-- put all these subjects not duplicated into the matrix initialized above
-- remove from the matrix any columns not used (we initialized the matrix having the same columns as the group but obviously in the end it will have less columns because some samples will not be present anymore)
+<ul>
+<li>first of all, we find all subjects duplicated in the group (in our case the group can be "control" or "disease"). To do so, we use the column of the group "individuals"; this column has the identifier for the subjects. If a sample comes from the same subject (i.e, the subject has benn sampled twice or more, so it is a duplicate), the identifier will be the same.</li>
+<li>We save all these dupes in a temporary matrix called "duplicate_group"</li>
+<li>we initialize a new matrix which will contain all subjects without any of them being duplicated (i.e., sampled twice)</li>
+<li>for each identifier in "duplicate_group", we find the indexes of this duplicate individual and get their SRR code (the code with which samples are identified in the matrix of raw data). NB: in the matrix of raw data, all samples are identified with different SRR codes, but SRR codes can point to the same subject.</li>
+<li>get all the the samples coming from this particular subject that we know is duplicated</li>
+<li>apply the mean by row to all samples identified in the previous step and save this new "mediated-samples subject" in the matrix initialized above</li>
+<li>then, find all subjects in the group that are not duplicated (i.e., there's a 1 to 1 correspondance of subject to sample for these individuals)</li>
+<li>put all these subjects not duplicated into the matrix initialized above</li>
+<li>remove from the matrix any columns not used (we initialized the matrix having the same columns as the group but obviously in the end it will have less columns because some samples will not be present anymore)</li>
 end.
+</ul>
 </div>
 
 ```{r remove duplicates function}
