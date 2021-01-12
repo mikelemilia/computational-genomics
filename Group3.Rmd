@@ -26,13 +26,12 @@ library(AnnotationDbi)
 library(GO.db)
 library(org.Hs.eg.db)
 
-library (EDASeq)
+library(EDASeq)
 
 library(cluster)
 
 library(caret)
 library(e1071)
-
 ```
 
 ```{r load functions, echo=FALSE}
@@ -145,10 +144,7 @@ The quantile normalization return a matrix whose columns have all the same distr
 quantile_normalization
 ```
 
-
-
 ## Normalize the data using the method of your choice
-
 
 ```{r TMM Normalization}
 
@@ -157,8 +153,6 @@ M <- matrix(0, nrow = genes_number, ncol = 0)
 
 tmm_normed <- tmm_normalization(temp_samples, extracted_index, interval)
 ```
-
-
 
 ```{r TMM plot}
 par(mfrow=c(1,2)) 
@@ -169,7 +163,6 @@ plot(samples[,1], samples[,12], xlab="Sample 1", ylab="Sample 12", main = "Sampl
 
 plot(extracted, selected, xlab="Sample 1", ylab="Sample 12", main = "Samples plot - Normalized")
 ```
-
 
 ```{r Quantile normalization}
 A <- matrix(0, nrow = genes_number, ncol = 0)
@@ -232,9 +225,6 @@ produceMvA(quantile_normed$samples, extracted_index, interval,  folder = "MvA - 
 
 ```
 
-
-
-
 <div style="text-align: justify">
 You can see MvA plots inside output/plots folder and in particular you can notice that in some of them it's clear what was explained above with reference sample vs. sample 12. For example in reference sample vs. sample 47 plot the same comments can be made: MvA plots clearly show a deviance from M=0 in TMM normalization while this deviance is not present in the analysis with the quantile normalization. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
 </div>
@@ -261,8 +251,6 @@ temp_pca <- PCA(quantile_normed$samples, scale.unit = FALSE, ncp = 5, graph = FA
 summary(temp_pca)
 fviz_pca_ind(temp_pca, col.var = 'cos2', geom = 'point', title = 'PCA for genes after quantile normalization')
 ```
-
-
 
 # Second Part
 
@@ -291,7 +279,6 @@ remove_duplicates
 ```{r removal of the duplicates}
 ```
 
-
 ```{r removal of the duplicates}
 # get the 'normal' and 'uninvolved mucosa' samples (samples of the control group) 
 normal <- LABELS[LABELS$sample_type == c("normal"),]            
@@ -308,8 +295,6 @@ disease <- LABELS[LABELS$sample_type == c("colon sessile serrated adenoma/polyp"
 control_nodup <- remove_duplicates(quantile_normed$samples, control)
 disease_nodup <- remove_duplicates(quantile_normed$samples, disease) 
 ```
-
-
 
 ```{r remove_duplicates outputs}
 {# HIDE
@@ -394,7 +379,6 @@ disease_nodup <- renameColumns(disease_nodup, "disease")
 <div style="text-align: justify">
 The next chunk implements edgeR in order to get the pvalues of this test. It is to be noted that the test uses a generalized linear regression approach.
 </div>
-
 
 ```{r edgeR}
 # merge the two tables of disease and control 
@@ -552,8 +536,7 @@ In the table below, we provide the results of the three tests in terms of FP, FN
 From the table we can see that although having slightly different FP, FN, TP, TN rates, the three tests have the same specificity, defined as TN/(TN+FP). This is not true for sensitivity: edgeR is the best test in terms of sensitivity defined as TP/(TP+FN). The same can be said about accuracy, calculated as (TP+TN)/(TP+TN+FP+FN); edgeR is still the best performing test.
 </div>
 
-
-```{r TP,TN,FP,FN, sensitivity, specificity, accuracy}
+```{r sensitivity, specificity, accuracy}
 sensitivity <- c((expected_ttest_est$TP/(expected_ttest_est$TP+expected_ttest_est$FN)),
                  (expected_wilcoxontest_est$TP/(expected_wilcoxontest_est$TP+expected_wilcoxontest_est$FN)),
                  (expected_edgeR_est$TP/(expected_edgeR_est$TP+expected_edgeR_est$FN)))
@@ -757,9 +740,7 @@ Just some outputs of the annotation process; these annotated terms are some of t
 
 ```{r extract_tumor_terms function}
 extract_tumor_terms
-
 ```
-
 
 ```{r annotation outputs}
 to_viewBP<-extract_tumor_terms(annotation_terms_BP)
@@ -771,10 +752,7 @@ dt <- cbind(to_viewBP[1:minimum],to_viewMF[1:minimum], to_viewCC[1:minimum] )
 #rownames(dt)<-c('BP', 'MF', 'CC')
 colnames(dt)<-c('BP','MF', 'CC')
 kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
-
-
 ```
-
 
 # Fourth Part 
 
@@ -785,7 +763,6 @@ We correct our data for the length of genes to perform a better clustering analy
 </div>
 
 ```{r init clustering}
-
 d <- getGeneLengthAndGCContent(ID_genes_selected, "hsa")
 #d[[1]] has the length of all genes selected
 
@@ -1004,7 +981,6 @@ plot(cut(hcd, h=400)$lower[[2]], nodePar = nodePar, leaflab = "none",
 # SAMPLES, HIERARCHICAL CLUSTERING
 hcd_S <- as.dendrogram(cl_hclust_ward_S)
 plot(hcd_S, type = "rectangle", horiz = TRUE, xlab = "Height", nodePar = nodePar, leaflab = "none", main="Hierarchical clustering of samples")
-
 ```
 
 ```{r plot of part 4, kmeans}
@@ -1082,7 +1058,7 @@ data_train<-t(data_train)
 ## Standardize each feature in your dataset 
 
 <div style="text-align: justify">
-To standardize each features in the dataset (so to have mean=0 and sd=1), we used the scale function. Z-scoring is implemented: to z-score the data set, mean and standard deviation of the training set is used. We can perform two different normalizations: in the first, we standardize training and test sets with their own mean and standard deviation; in the second, we standardize both of them with the values of the training set. In this second way, we are forcing that bot sets have the same distribution.
+The dataset contains all data of the control and disease groups only for the genes selected with the differential expression analysis. To standardize each features in the dataset (so to have mean=0 and sd=1), we used the scale function. Z-scoring is implemented: to z-score the data set, mean and standard deviation of the training set is used. We can perform two different normalizations: in the first, we standardize training and test sets with their own mean and standard deviation; in the second, we standardize both of them with the values of the training set. In this second way, we are forcing that bot sets have the same distribution.
 In the second part, we add at the top of the dataframes containing the training set and the test set the label of each sample, inserting them as a factor variable.
 </div>
 
@@ -1107,7 +1083,7 @@ dataNorm_test<-cbind('Group'=factor(label_test),dataNorm_test)
 ## Use linear support vector machines to learn classifying your subjects in the two classes 
 
 <div style="text-align: justify">
-We implemented the SVM procedure with both Caret and e1071 packages and we printed some results. We can see that the results for the two methods are equal.
+We implemented the SVM procedure with both Caret and e1071 packages and we printed some results. We can see that the results for the two methods are equal. With caret, we set the model to predict the Group variable in the normalized dataset with a linear SVM, without performing any scaling (it has been already performed) and trying to maximize the accuracy of the model thanks to a repeated cross validation procedure. With e1071, we set at most the same parameters to fit a linear model for classification.
 </div>
 
 ```{r caret}
@@ -1127,7 +1103,7 @@ confusionMatrix(test_pred, factor(label_test))
 ```
 
 ```{r e1071}
-svmfit <- svm(Group ~ ., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE)
+svmfit <- svm(Group~., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE)
 print(svmfit)
 {# HIDE
 cat("Prediction for the test set:\n")
@@ -1141,7 +1117,6 @@ print(res)
 
 ```{r fun}
 rfe <- recursiveFeatureExtraction(dataNorm_train, label_train, dataNorm_test, label_test, 500)
-
 # do some plot or analyze some datas, the function return a list
 ```
 
