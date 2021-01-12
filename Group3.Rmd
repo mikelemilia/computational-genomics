@@ -289,6 +289,10 @@ end.
 remove_duplicates
 ```
 ```{r removal of the duplicates}
+```
+
+
+```{r removal of the duplicates}
 # get the 'normal' and 'uninvolved mucosa' samples (samples of the control group) 
 normal <- LABELS[LABELS$sample_type == c("normal"),]            
 unimuc <- LABELS[LABELS$sample_type == c("uninvolved mucosa"),] 
@@ -649,9 +653,6 @@ We found out that some gene names were duplicated but not their ENSEMBL IDs; for
 After the data extraction and the pre-processing, we built a matrix that has on rows the associated GO terms and on columns the type of GOterm (BP, CC, MF) and the values useful for the computation of the fisher test.
 </div>
 
-## TODO
-- [ ] mostrare i primi output degli annotation
-
 ```{r extract GO terms}
 # extraction of the associated terms in function of the ENSEMBL ID 
 alldata <- select(org.Hs.eg.db, ID_genes_selected, columns = c("SYMBOL","ENTREZID", "ENSEMBL","GOALL"), keytype="ENSEMBL")
@@ -742,10 +743,32 @@ number_terms_annotatedMF<-length(fisher_analysis_MF[[1]])
 # ATTENIONE: NON BISOGNA AVERE DPLYR IN LIBRERIA! (SOVRASCRIVE SELECT)
 vals = select(GO.db, keys(GO.db, "GOID"), c("TERM", "ONTOLOGY"))
 
-annotation_terms_BP<-annotation_terms(vals, terms_BP)
-annotation_terms_CC<-annotation_terms(vals, terms_CC)
-annotation_terms_MF<-annotation_terms(vals, terms_MF)
+annotation_terms_BP<-as.data.frame(annotation_terms(vals, terms_BP))
+colnames(annotation_terms_BP)<-"terms"
+annotation_terms_CC<-as.data.frame(annotation_terms(vals, terms_CC))
+colnames(annotation_terms_CC)<-"terms"
+annotation_terms_MF<-as.data.frame(annotation_terms(vals, terms_MF))
+colnames(annotation_terms_MF)<-"terms"
 ```
+
+<div style="text-align: justify">
+Just some outputs of the annotation process; these annotated terms are some of the terms linked to tumor growth.
+</div>
+
+```{r annotation outputs}
+to_viewBP<-extract_tumor_terms(annotation_terms_BP)
+to_viewCC<-extract_tumor_terms(annotation_terms_CC)
+to_viewMF<-extract_tumor_terms(annotation_terms_MF)
+minimum<-min(length(to_viewBP), length(to_viewCC), length(to_viewMF))
+
+dt <- cbind(to_viewBP[1:minimum],to_viewMF[1:minimum], to_viewCC[1:minimum] )
+#rownames(dt)<-c('BP', 'MF', 'CC')
+colnames(dt)<-c('BP','MF', 'CC')
+kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+```
+
 
 # Fourth Part 
 

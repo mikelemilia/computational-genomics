@@ -318,6 +318,17 @@ annotation_terms<-function(vals, terms){
   return(ann)
 }
 
+
+extract_tumor_terms<-function(list_terms)
+{sent<-list_terms$terms
+ind<-grepl(" tumor ", sent)
+ind<-which(ind==TRUE)
+
+to_view<-list_terms[ind,]
+return(to_view)
+}
+
+
 silhouette <- function(points, cluster, k){
   
   # particular case of only one cluster
