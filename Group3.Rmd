@@ -1131,7 +1131,11 @@ rfe <- recursiveFeatureExtraction(dataNorm_train, label_train, dataNorm_test, la
 # test<-predict(model_best, newdata=dataNorm_test, decision.values = FALSE)
 # confusionMatrix(test, factor(label_test))
 
+plot (x =rfe[[1]] , y = rfe[[2]], xlab = "features retained", ylab = "accuracy")
+```
 
+
+```{r tests of fun 2}
 ##--- prova 2----------------------------------------------------------
 n<-rfe[[5]][[2]]
 matrix_train<-dataNorm_train[, n]
