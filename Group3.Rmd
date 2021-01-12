@@ -276,8 +276,6 @@ end.
 ```{r remove duplicates function}
 remove_duplicates
 ```
-```{r removal of the duplicates}
-```
 
 ```{r removal of the duplicates}
 # get the 'normal' and 'uninvolved mucosa' samples (samples of the control group) 
@@ -1115,6 +1113,14 @@ print(res)
 
 ## Feature selection
 
+```{r implemented rfe function  }
+recursiveFeatureExtraction
+
+```
+
+
+
+
 ```{r fun}
 rfe <- recursiveFeatureExtraction(dataNorm_train, label_train, dataNorm_test, label_test, 500)
 # do some plot or analyze some datas, the function return a list
@@ -1137,4 +1143,7 @@ pred_prova <- predict(svmfit_prova, newdata=dataNorm_test, decision.values = FAL
 res_prova <- confusionMatrix(pred_prova, factor(label_test))
   
 g1 <- res_prova[["overall"]][["Accuracy"]]
+
+confusionMatrix(pred_prova, factor(label_test))
+
 ```
