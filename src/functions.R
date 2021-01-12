@@ -388,10 +388,9 @@ silhouette <- function(points, cluster, k){
   
 }
 
-
 recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500){
   
-  model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+  model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit, cross = 5)
   
   prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
   result <- confusionMatrix(prediction, factor(Y_test))
@@ -404,8 +403,8 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
   accuracy <- result[["overall"]][["Accuracy"]]
   features_retained <- R
   
-  cat("Number of features:", R, "\n")
-  cat("Accuracy obtained:", accuracy, "\n")
+  cat("Number of features:", R)
+  cat("\taccuracy obtained:", accuracy, "\n")
   
   per_rem <- 0.15
   eps <- 0.05
@@ -414,7 +413,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
   bestNames <- as.vector(colnames(X_train[,-1]))
   bestAcc <- accuracy
   
-  cat("Removing lot of unuseful features\n")
+  cat("\nRemoving lot of unuseful features\n\n")
   
   while(R > K && last(accuracy) > first(accuracy)*0.9){
     
@@ -440,11 +439,10 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     colnames(X_train)[colnames(X_train) == 'factor(Y_train)'] <- 'Group'
     
     R <- ncol(X_train)-1  # number of current features
-    cat("Number of features:", R, ", features removed:", m,"\n")
     
     # train the model
     tmp_svm <- model.svm
-    model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE,na.action = na.omit)
+    model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit, cross = 5)
     
     # make prediction on the above model
     prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
@@ -452,15 +450,19 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     
     current_accuracy <- result[["overall"]][["Accuracy"]]
     
-    cat("Accuracy obtained:", current_accuracy, "\n")
-    
     if (last(accuracy) > (current_accuracy + eps)){
+      
+      cat("Number of features:", R, "\taccuracy obtained:", current_accuracy)
+      cat("\tfeatures removed:", m, "\t[x]\n")
       
       model.svm <- tmp_svm
       X_train   <- tmp_train
       per_rem <- per_rem - 0.002
       
     } else {
+      
+      cat("Number of features:", R, "\taccuracy obtained:", current_accuracy)
+      cat("\tfeatures removed:", m, "\n")
       
       accuracy <- c(current_accuracy, accuracy)
       features_retained <- c(R, features_retained)
@@ -474,7 +476,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     }
   }
   
-  cat("\nRemoving one feature in each iteration\n")
+  cat("\nRemoving one feature in each iteration\n\n")
   
   R <- first(features_retained)  # number of features
   
@@ -489,7 +491,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     # find the worst feature
     for(i in 2:ncol(X_train)) {
       
-      tmp_model.svm <- svm(Group ~ ., data = X_train[,-i], kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+      tmp_model.svm <- svm(Group ~ ., data = X_train[,-i], kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit, cross = 5)
       tmp_prediction <- predict(tmp_model.svm, newdata = X_test, decision.values = FALSE)
       tmp_result <- confusionMatrix(tmp_prediction, factor(Y_test))
       
@@ -506,7 +508,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     X_train <- X_train[, -(idx+1)]
     
     # train the model
-    model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+    model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit, cross = 5)
     
     # predict
     prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
@@ -515,8 +517,8 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     R <- ncol(X_train)-1
     current_accuracy <- result[["overall"]][["Accuracy"]]
     
-    cat("Number of features:", R, ", features removed:", 1,"\n")
-    cat("Accuracy obtained:", current_accuracy, "\n")
+    cat("Number of features:", R, "\taccuracy obtained:", current_accuracy)
+    cat("\tfeatures removed:", 1, "\n")
     
     accuracy <- c(current_accuracy, accuracy)
     features_retained <- c(R, features_retained)
