@@ -755,6 +755,12 @@ colnames(annotation_terms_MF)<-"terms"
 Just some outputs of the annotation process; these annotated terms are some of the terms linked to tumor growth.
 </div>
 
+```{r extract_tumor_terms function}
+extract_tumor_terms
+
+```
+
+
 ```{r annotation outputs}
 to_viewBP<-extract_tumor_terms(annotation_terms_BP)
 to_viewCC<-extract_tumor_terms(annotation_terms_CC)
