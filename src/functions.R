@@ -550,7 +550,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
   # initialization
   
   R <- ncol(X)-1  # number of features
-  accuracy <- (model.svm$tot.accuracy)/100
+  accuracy <- model.svm$tot.accuracy
   features_retained <- R
   
   cat("Number of features:", R, "\n")
@@ -584,7 +584,6 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
     X <- cbind('Group' =factor(Y), X)
     
     R <- ncol(X)-1  # number of current features
-    cat("Number of features:", R, ", features removed:", m,"\n")
     
     # train the model
     tmp_svm <- model.svm
@@ -592,9 +591,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
                      type = 'C-classification', scale = FALSE, 
                      na.action = na.omit, cross = c)
     
-    current_accuracy <- (model.svm$tot.accuracy)/100
-    
-    cat("Accuracy obtained:", current_accuracy, "\n")
+    current_accuracy <- model.svm$tot.accuracy
     
     if (last(accuracy) > (current_accuracy + eps)){
       cat("Number of features:", R, "\taccuracy obtained:", current_accuracy)
@@ -640,7 +637,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
                            type = 'C-classification', scale = FALSE, 
                            na.action = na.omit, cross = c)
       
-      tmp_accuracy <- (model.svm$tot.accuracy)/100
+      tmp_accuracy <- model.svm$tot.accuracy
       deltas <- c(deltas, (first(accuracy) - tmp_accuracy))
       
     }
@@ -658,7 +655,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
                      na.action = na.omit, cross = c)
     
     R <- ncol(X)-1
-    current_accuracy <- (model.svm$tot.accuracy)/100
+    current_accuracy <- model.svm$tot.accuracy
     
     cat("Number of features:", R, "\taccuracy obtained:", current_accuracy)
     cat("\tfeatures removed:", 1, "\n")

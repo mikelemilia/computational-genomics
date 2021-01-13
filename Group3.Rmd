@@ -1108,7 +1108,8 @@ print(res)
 
 ## Feature selection
 
-RFE without k-fold cross validation
+--- RFE without k-fold cross validation
+
 ```{r implemented rfe function}
 recursiveFeatureExtraction
 ```
@@ -1117,13 +1118,15 @@ recursiveFeatureExtraction
 rfe <- recursiveFeatureExtraction(dataNorm_train, label_train, dataNorm_test, label_test, 500)
 ```
 
-RFE with k-fold cross validation
+--- RFE with k-fold cross validation
+
 ```{r implemented rfe function CV}
 recursiveFeatureExtractionCV
 ```
 
 ```{r funCV}
 rfe <- recursiveFeatureExtractionCV(dataNorm_train, label_train, 500, 5)
+plot(rfe$number_features, rfe$accuracy)
 ```
 
 ```{r tests of rfe}
