@@ -786,8 +786,6 @@ dt <- cbind(to_viewBP_sorted,to_viewMF_sorted, to_viewCC_sorted )
 #rownames(dt)<-c('BP', 'MF', 'CC')
 colnames(dt)<-c('BP','MF', 'CC')
 kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
-
-
 ```
 
 # Fourth Part 
@@ -909,20 +907,20 @@ silhouette
 # results for silhouette
 {# HIDE
 cat("K-Means over genes!\n")
-#cat(s_genes_kmeans)
-cat("The maximum silhouette is", max(s_genes_kmeans), ", obtained for the optimal number of clusters:", K[which(s_genes_kmeans == max(s_genes_kmeans))])
+kopt_gkmeans_sil <- K[which(s_genes_kmeans == max(s_genes_kmeans))]
+cat("The maximum silhouette is", s_genes_kmeans[kopt_gkmeans_sil], ", obtained for the optimal number of clusters:", kopt_gkmeans_sil)
 
 cat("\n\nHierarchical clustering over genes!\n")
-#cat(s_genes_hierar)
-cat("The maximum silhouette is", max(s_genes_hierar), ", obtained for the optimal number of clusters:", K[which(s_genes_hierar == max(s_genes_hierar))])
+kopt_ghier_sil <- K[which(s_genes_hierar == max(s_genes_hierar))]
+cat("The maximum silhouette is", s_genes_hierar[kopt_ghier_sil], ", obtained for the optimal number of clusters:", kopt_ghier_sil)
 
 cat("\n\nK-Means over samples!\n")
-#cat(s_samples_kmeans)
-cat("The maximum silhouette is", max(s_samples_kmeans), ", obtained for the optimal number of clusters:", K[which(s_samples_kmeans == max(s_samples_kmeans))])
+kopt_skmeans_sil <- K[which(s_samples_kmeans == max(s_samples_kmeans))]
+cat("The maximum silhouette is", s_samples_kmeans[kopt_skmeans_sil], ", obtained for the optimal number of clusters:", kopt_skmeans_sil)
 
 cat("\n\nHierarchical clustering over samples!\n")
-#cat(s_samples_hierar)
-cat("The maximum silhouette is", max(s_samples_hierar), ", obtained for the optimal number of clusters:", K[which(s_samples_hierar == max(s_samples_hierar))])
+kopt_shier_sil <- K[which(s_samples_hierar == max(s_samples_hierar))]
+cat("The maximum silhouette is", s_samples_hierar[kopt_shier_sil], ", obtained for the optimal number of clusters:", kopt_shier_sil)
 }# HIDE
 ```
 
@@ -943,57 +941,57 @@ test_kmeans <- function(x, k) (kmeans(x=x,centers=k,iter.max=100,nstart=100))
 
 gap_res<-clusGap(dataNorm_clustering, test_kmeans, length(K), B=20)
 
-for (i in (2:(nrow(gap_res[[1]])-1))){
-  if ((gap_res[[1]][i,3])>(gap_res[[1]][i+1,3]+gap_res[[1]][i+1,4]))
+for (i in (2:(nrow(gap_res$Tab)-1))){
+  if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
     break;
 }
-kopt_genes_kmeans <- i
+kopt_gkmeans_gap <- i
 
 # K-Means - samples
 
 gap_res<-clusGap(t(dataNorm_clustering), test_kmeans, length(K), B=20)
 
-for (i in (2:(nrow(gap_res[[1]])-1))){
-  if ((gap_res[[1]][i,3])>(gap_res[[1]][i+1,3]+gap_res[[1]][i+1,4]))
+for (i in (2:(nrow(gap_res$Tab)-1))){
+  if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
     break;
 }
-kopt_samples_kmeans <- i
+kopt_s_kmeans_gap <- i
 
 # Hierarchical - genes
 
 gap_res<-clusGap(dataNorm_clustering, test_hclust, length(K), B=20)
 
-for (i in (2:(nrow(gap_res[[1]])-1))){
-  if (gap_res[[1]][i,3]>gap_res[[1]][i+1,3]+gap_res[[1]][i+1,4])
+for (i in (2:(nrow(gap_res$Tab)-1))){
+  if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
     break;
 }
-kopt_genes_hier <- i
+kopt_g_hier_gap <- i
 
 # Hierarchical - samples
 
 gap_res <-clusGap(t(dataNorm_clustering), test_hclust, length(K), B=20)
 
-for (i in (2:(nrow(gap_res[[1]])-1))){
-  if (gap_res[[1]][i,3]>gap_res[[1]][i+1,3]+gap_res[[1]][i+1,4])
+for (i in (2:(nrow(gap_res$Tab)-1))){
+  if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
     break;
 }
-kopt_samples_hier <- i
+kopt_s_hier_gap <- i
 ```
 
 ```{r results of the gap statistic}
 {# HIDE
 # results for gap statistic
 cat("K-Means over genes!\n")
-cat("The optimal number of clusters is:", kopt_genes_kmeans)
+cat("The optimal number of clusters is:", kopt_gkmeans_gap)
 
 cat("\n\nHierarchical clustering over genes!\n")
-cat("The optimal number of clusters is:", kopt_samples_kmeans)
+cat("The optimal number of clusters is:", kopt_s_kmeans_gap)
 
 cat("\n\nK-Means over samples!\n")
-cat("The optimal number of clusters is:", kopt_genes_hier)
+cat("The optimal number of clusters is:", kopt_g_hier_gap)
 
 cat("\n\nHierarchical clustering over samples!\n")
-cat("The optimal number of clusters is:", kopt_samples_hier)
+cat("The optimal number of clusters is:", kopt_s_hier_gap)
 }# HIDE
 ```
 
@@ -1021,7 +1019,7 @@ plot(hcd_S, type = "rectangle", horiz = TRUE, xlab = "Height", nodePar = nodePar
 
 ```{r plot of part 4, kmeans}
 #GENES, KMEANS
-cl_genes<-kmeans(x=dataNorm_clustering, centers = kopt_genes_kmeans, iter.max = 100, nstart = 100)
+cl_genes<-kmeans(x=dataNorm_clustering, centers = kopt_skmeans_sil, iter.max = 100, nstart = 100)
 fviz_cluster(cl_genes, data = dataNorm_clustering,
              palette = c("#2E9FDF", "#00AFBB"), 
              geom = "point",
@@ -1031,7 +1029,7 @@ fviz_cluster(cl_genes, data = dataNorm_clustering,
 )
 
 #SAMPLES, KMEANS
-cl_samples<-kmeans(x=t(dataNorm_clustering), centers = kopt_samples_kmeans, iter.max = 100, nstart = 100)
+cl_samples<-kmeans(x=t(dataNorm_clustering), centers = kopt_skmeans_sil, iter.max = 100, nstart = 100)
 fviz_cluster(cl_samples, data = t(dataNorm_clustering),
              palette = c("#2E9FDF", "#00AFBB", "#E7B800"), 
              geom = "point",
