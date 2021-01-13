@@ -1125,14 +1125,14 @@ recursiveFeatureExtractionCV
 ```
 
 ```{r funCV}
-rfe <- recursiveFeatureExtractionCV(dataNorm_train, label_train, 500, 5)
+rfe <- recursiveFeatureExtractionCV(dataNorm_train, label_train, 500, 10)
 plot(rfe$number_features, rfe$accuracy)
 ```
 
 ```{r tests of rfe}
 best_genes <- (rfe$bestmodel)$names
 best_model <- (rfe$bestmodel)$svm
-matrix_train <- dataNorm_train[,n]
+matrix_train <- dataNorm_train[,best_genes]
 matrix_train <- cbind('Group'=factor(label_train),matrix_train)
 
 # Performances on the test set 
@@ -1141,16 +1141,17 @@ res_prova <- confusionMatrix(pred_prova, factor(label_test))
 print(res_prova)
 
 # Check the performances
-# svmfit_prova <- svm(Group ~ ., data = matrix_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
-# pred_prova <- predict(svmfit_prova, newdata=dataNorm_test, decision.values = FALSE)
-# res_prova <- confusionMatrix(pred_prova, factor(label_test))  
-# g1 <- res_prova[["overall"]][["Accuracy"]]
+svmfit_prova <- svm(Group ~ ., data = matrix_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+pred_prova <- predict(svmfit_prova, newdata=matrix_train, decision.values = FALSE)
+res_prova <- confusionMatrix(pred_prova, factor(label_train))  
 ```
 
 ```{r svm graph}
 w <- t(best_model$coefs) %*% best_model$SV
 w<-abs(w)
 names_sorted <- best_genes[order(w, decreasing=TRUE)]
+print(names_sorted)
 
-plot(best_model, dataNorm_test, ENSG00000105464 ~ ENSG00000236533)
+# come geni mettere i primi due tornati dalla riga precedente 
+plot(best_model, dataNorm_test, ENSG00000159784 ~ ENSG00000261572)
 ```
