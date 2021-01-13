@@ -390,7 +390,7 @@ silhouette <- function(points, cluster, k){
 
 recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500){
   
-  model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit, cross = 5)
+  model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
   
   prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
   result <- confusionMatrix(prediction, factor(Y_test))
@@ -435,7 +435,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     
     # train the model
     tmp_svm <- model.svm
-    model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit, cross = 5)
+    model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
     
     # make prediction on the above model
     prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
@@ -483,7 +483,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     
     # find the worst feature
     for(i in 2:ncol(X_train)) {
-      tmp_model.svm <- svm(Group ~ ., data = X_train[,-i], kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit, cross = 5)
+      tmp_model.svm <- svm(Group ~ ., data = X_train[,-i], kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
       tmp_prediction <- predict(tmp_model.svm, newdata = X_test, decision.values = FALSE)
       tmp_result <- confusionMatrix(tmp_prediction, factor(Y_test))
       
@@ -499,7 +499,7 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
     X_train <- X_train[, -(idx+1)]
     
     # train the model
-    model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit, cross = 5)
+    model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
     
     # predict
     prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
@@ -541,11 +541,11 @@ recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500
 }
 
 
-recursiveFeatureExtractionCV <- function(X, Y, K = 500){
+recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
   
   model.svm <- svm(Group ~ ., data = X, kernel = "linear", 
                    type = 'C-classification', scale = FALSE, 
-                   na.action = na.omit, cross = 5)
+                   na.action = na.omit, cross = c)
   
   # initialization
   
@@ -590,7 +590,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500){
     tmp_svm <- model.svm
     model.svm <- svm(Group ~ ., data = X, kernel = "linear", 
                      type = 'C-classification', scale = FALSE, 
-                     na.action = na.omit, cross = 5)
+                     na.action = na.omit, cross = c)
     
     current_accuracy <- (model.svm$tot.accuracy)/100
     
@@ -638,7 +638,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500){
       
       tmp_model.svm <- svm(Group ~ ., data = X[,-i], kernel = "linear", 
                            type = 'C-classification', scale = FALSE, 
-                           na.action = na.omit, cross = 5)
+                           na.action = na.omit, cross = c)
       
       tmp_accuracy <- (model.svm$tot.accuracy)/100
       deltas <- c(deltas, (first(accuracy) - tmp_accuracy))
@@ -655,7 +655,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500){
     # train the model
     model.svm <- svm(Group ~ ., data = X, kernel = "linear", 
                      type = 'C-classification', scale = FALSE, 
-                     na.action = na.omit, cross = 5)
+                     na.action = na.omit, cross = c)
     
     R <- ncol(X_train)-1
     current_accuracy <- (model.svm$tot.accuracy)/100
