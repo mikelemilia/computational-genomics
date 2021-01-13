@@ -302,7 +302,7 @@ FDR_fisher<-function(pval_fisher, terms){
   indexes_annotated <- which(pval_fisher<alpha_est) 
   terms_annotated<-terms[indexes_annotated]
   
-  return (list(indexes_annotated,terms_annotated))
+  return (list(indexes_annotated,terms_annotated, alpha_est))
   
 }
 

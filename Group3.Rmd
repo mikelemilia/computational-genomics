@@ -708,7 +708,7 @@ pval_fisherCC<-fisher_test_matrixes(matrixesCC)
 pval_fisherBP<-fisher_test_matrixes(matrixesBP)
 pval_fisherMF<-fisher_test_matrixes(matrixesMF)
 
-# correction for multiple testing in fisher per BP
+# correction for multiple testing in fisher
 
 fisher_analysis_BP<-FDR_fisher(pval_fisherBP,terms_BP)
 number_terms_annotatedBP<-length(fisher_analysis_BP[[1]])
@@ -722,11 +722,11 @@ number_terms_annotatedMF<-length(fisher_analysis_MF[[1]])
 # ATTENIONE: NON BISOGNA AVERE DPLYR IN LIBRERIA! (SOVRASCRIVE SELECT)
 vals = select(GO.db, keys(GO.db, "GOID"), c("TERM", "ONTOLOGY"))
 
-annotation_terms_BP<-as.data.frame(annotation_terms(vals, terms_BP))
+annotation_terms_BP<-as.data.frame(annotation_terms(vals, fisher_analysis_BP[[2]]))
 colnames(annotation_terms_BP)<-"terms"
-annotation_terms_CC<-as.data.frame(annotation_terms(vals, terms_CC))
+annotation_terms_CC<-as.data.frame(annotation_terms(vals, fisher_analysis_CC[[2]]))
 colnames(annotation_terms_CC)<-"terms"
-annotation_terms_MF<-as.data.frame(annotation_terms(vals, terms_MF))
+annotation_terms_MF<-as.data.frame(annotation_terms(vals, fisher_analysis_MF[[2]]))
 colnames(annotation_terms_MF)<-"terms"
 ```
 
@@ -748,6 +748,46 @@ dt <- cbind(to_viewBP[1:minimum],to_viewMF[1:minimum], to_viewCC[1:minimum] )
 #rownames(dt)<-c('BP', 'MF', 'CC')
 colnames(dt)<-c('BP','MF', 'CC')
 kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+
+
+```{r fisher - most important terms (by lowest pval)}
+#most important == lowest pval
+
+pval_fisherCC_sorted<-sort(fisher_test_matrixes(matrixesCC))
+pval_fisherBP_sorted<-sort(fisher_test_matrixes(matrixesBP))
+pval_fisherMF_sorted<-sort(fisher_test_matrixes(matrixesMF))
+
+# correction for multiple testing in fisher 
+
+fisher_analysis_BP_sorted<-FDR_fisher(pval_fisherBP_sorted,terms_BP)
+fisher_analysis_CC_sorted<-FDR_fisher(pval_fisherCC_sorted,terms_CC)
+fisher_analysis_MF_sorted<-FDR_fisher(pval_fisherMF_sorted,terms_MF)
+
+
+annotation_terms_BP_sorted<-as.data.frame(annotation_terms(vals, fisher_analysis_BP_sorted[[2]]))
+colnames(annotation_terms_BP_sorted)<-"terms"
+annotation_terms_CC_sorted<-as.data.frame(annotation_terms(vals, fisher_analysis_CC_sorted[[2]]))
+colnames(annotation_terms_CC_sorted)<-"terms"
+annotation_terms_MF_sorted<-as.data.frame(annotation_terms(vals, fisher_analysis_MF_sorted[[2]]))
+colnames(annotation_terms_MF_sorted)<-"terms"
+
+#the most important annotated terms are at the end of the list - we show the 10 more important ones
+tot_BP<-dim(annotation_terms_BP_sorted)[1]
+to_viewBP_sorted<-annotation_terms_BP_sorted[(tot_BP-10):tot_BP,]
+tot_CC<-dim(annotation_terms_CC_sorted)[1]
+to_viewCC_sorted<-annotation_terms_CC_sorted[(tot_CC-10):tot_CC,]
+tot_MF<-dim(annotation_terms_MF_sorted)[1]
+to_viewMF_sorted<-annotation_terms_MF_sorted[(tot_MF-10):tot_MF,]
+
+dt <- cbind(to_viewBP_sorted,to_viewMF_sorted, to_viewCC_sorted )
+#rownames(dt)<-c('BP', 'MF', 'CC')
+colnames(dt)<-c('BP','MF', 'CC')
+kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
 ```
 
 # Fourth Part 
