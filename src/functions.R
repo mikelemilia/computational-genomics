@@ -549,7 +549,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
   
   # initialization
   
-  R <- ncol(X_train)-1  # number of features
+  R <- ncol(X)-1  # number of features
   accuracy <- (model.svm$tot.accuracy)/100
   features_retained <- R
   
@@ -560,7 +560,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
   eps <- 0.05
   
   bestSVM <- model.svm
-  bestNames <- as.vector(colnames(X_train[,-1]))
+  bestNames <- as.vector(colnames(X[,-1]))
   bestAcc <- accuracy
   
   cat("Removing lot of unuseful features\n")
@@ -583,7 +583,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
     X <- X[,names_sorted]
     X <- cbind('Group' =factor(Y), X)
     
-    R <- ncol(X_train)-1  # number of current features
+    R <- ncol(X)-1  # number of current features
     cat("Number of features:", R, ", features removed:", m,"\n")
     
     # train the model
@@ -657,7 +657,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
                      type = 'C-classification', scale = FALSE, 
                      na.action = na.omit, cross = c)
     
-    R <- ncol(X_train)-1
+    R <- ncol(X)-1
     current_accuracy <- (model.svm$tot.accuracy)/100
     
     cat("Number of features:", R, "\taccuracy obtained:", current_accuracy)
