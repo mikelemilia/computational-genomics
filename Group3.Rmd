@@ -1092,7 +1092,7 @@ data_train<-t(data_train)
 ## Standardize each feature in your dataset 
 
 <div style="text-align: justify">
-The dataset contains all data of the control and disease groups only for the genes selected with the differential expression analysis. To standardize each features in the dataset (so to have mean=0 and sd=1), we used the scale function. Z-scoring is implemented: to z-score the data set, mean and standard deviation of the training set is used. We can perform two different normalizations: in the first, we standardize training and test sets with their own mean and standard deviation; in the second, we standardize both of them with the values of the training set. In this second way, we are forcing that bot sets have the same distribution.
+The dataset contains all data of the control and disease groups only for the genes selected with the differential expression analysis. To standardize each features in the dataset (so to have mean=0 and sd=1), we used the scale function. Z-scoring is implemented: to z-score the data set, mean and standard deviation of the training set is used. We can perform the standardization of both of sets with the values of the training set. This is done because in the reality, when a single new vector from a subject needs to be classified, it is not possible to use its mean and stardard deviation (for each gene, we would have only one value) and it is so scaled with the already known information. 
 In the second part, we add at the top of the dataframes containing the training set and the test set the label of each sample, inserting them as a factor variable.
 </div>
 
@@ -1158,6 +1158,11 @@ rfe <- recursiveFeatureExtraction(dataNorm_train, label_train, dataNorm_test, la
 
 --- RFE with k-fold cross validation
 
+<div style="text-align: justify">
+A recursive feature elimination algorithm is implemented in the function below. First of all, the SVM model is built for the entire dataset passed in input using a c-fold cross validation (with c in input, or by default c = 5 - it will be used also in all the SVM computations inside the function). Then, recursively, a certain percentage (at the beginning of 15%) of features are removed: in the first while cycle, are removed the features with lower weight in the previous model. The model according to the new dataset is built and if we obtain a worst result in terms of accuracy, the current iteration is aborted and restarting from the previous model and dataset, a lower percentage of features is removed. If the model is instead with the same or greater accuracy, it is saved as the best model found until that iteration (because of the less number of features needed and the higher accuracy). This cycle continues until one single feature should be removed, until it remains with less then K (passed in input, 500 by default) or until a too low accuracy (0.9*the initial one) is obtained. In the subsequent while cycle, one feature at iteration is removed: it chooses the one that less affects the model accuracy. The whole cycle continues until a single feature remains. 
+The function returns the numbers of features used in each iteration and the correspondent accuracy, the best model (higher accuracy and lower number of features) with the correspondent accuracy and genes ID used. It returns also all the model obtained in the second while cycle (with corresponding genes ID).
+</div>
+
 ```{r implemented rfe function CV}
 recursiveFeatureExtractionCV
 ```
@@ -1166,6 +1171,10 @@ recursiveFeatureExtractionCV
 rfe <- recursiveFeatureExtractionCV(dataNorm_train, label_train, 500, 10)
 plot(rfe$number_features, rfe$accuracy)
 ```
+
+<div style="text-align: justify">
+With the best model returned by recursiveFeatureExtractionCV, we now evaluate its performances with the test set.
+</div>
 
 ```{r tests of rfe}
 best_genes <- (rfe$bestmodel)$names
