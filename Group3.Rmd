@@ -331,8 +331,13 @@ cat("The number of initial genes is:",nrow(control_nodup))
 cat("\nThe number of genes after zeros removal for control is:",nrow(control_nodup_nozero))
 
 ratio <- 1-(nrow(control_nodup_nozero)/nrow(control_nodup))
-cat("\nThe compression ratio for control has been of:", ratio)
+cat("\nThe compression ratio is:", ratio)
 }# HIDE
+
+
+
+
+
 ```
 
 ## Calculate p-values of DE analysis (not corrected for multiple testing) between the two groups using t-test, Wilcoxon test and edgeR
@@ -570,7 +575,7 @@ To conclude, we chose edgeR on the basis of the theory behind it and also on the
 ## Select the final list of DE genes using the test chosen at point 4 and a false discovery rate threshold of 5%
 
 <div style="text-align: justify">
-The next chunk performs the FDR estimation to correct for multimuple testing.
+The next chunk performs the FDR estimation to correct for multiple testing.
 First of all, we compute the lambda values choosing an interval within the minimum and maximum values of edgeR's p-values;for each of them we compute FDR value by definition as the expected number of false positives divided by the number of selected for said value of lambda. Then, we estimate the alpha value as the mean of alphas which have FDR close to 0.05 by a certain epsilon (0.0001).
 </div>
 
@@ -592,7 +597,7 @@ for (i in (1:length(lambda))) {
   
 }
 
-plot(lambda, FDR_values, main = 'FDR values for different alpha')
+plot(lambda, FDR_values, main = 'FDR values for different alpha', xlab="alpha", ylab= "FDR")
 
 # choose the values that are in [0.05-epsilon;0.05 + espilon]
 epsilon <- 0.0001
