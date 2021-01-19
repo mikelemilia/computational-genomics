@@ -1094,6 +1094,13 @@ data_test<-t(data_test)
 data_train<-t(data_train)
 ```
 
+```{r final sets}
+{#HIDE
+cat("The training set contains",nrow(data_train),"samples, each one with",ncol(data_train),"genes. It contains",length(which(label_train=="control")),"samples of the control group and", length(which(label_train=="disease")), "samples of the disease group.")
+cat("\nThe test set contains",nrow(data_test),"samples, each one with",ncol(data_test),"genes. It contains",length(which(label_test=="control")),"samples of the control group and", length(which(label_test=="disease")), "samples of the disease group.")
+}#HIDE
+```
+
 ## Standardize each feature in your dataset 
 
 <div style="text-align: justify">
@@ -1139,13 +1146,19 @@ confusionMatrix(test_pred, factor(label_test))
 ```
 
 ```{r e1071}
-svmfit <- svm(Group~., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE, cross = 5)
+svmfit <- svm(Group~., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE, cross = 10)
 print(svmfit)
 {# HIDE
 cat("Prediction for the test set:\n")
 test_pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
 res <- confusionMatrix(test_pred, factor(label_test))
 print(res)
+
+w <- t(svmfit$coefs) %*% svmfit$SV
+w <- abs(w)
+names_sorted <- colnames(dataNorm_test)[order(w, decreasing=TRUE)]
+#print(names_sorted)
+plot(svmfit, dataNorm_test, ENSG00000075673 ~ ENSG00000183665)
 }# HIDE
 ```
 
