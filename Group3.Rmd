@@ -1187,7 +1187,7 @@ recursiveFeatureExtractionCV
 
 ```{r funCV}
 rfe <- recursiveFeatureExtractionCV(dataNorm_train, label_train, 500, 10)
-plot(rfe$number_features, rfe$accuracy)
+#plot(rfe$number_features, rfe$accuracy)
 ```
 
 <div style="text-align: justify">
@@ -1209,6 +1209,17 @@ print(res_prova)
 svmfit_prova <- svm(Group ~ ., data = matrix_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
 pred_prova <- predict(svmfit_prova, newdata=matrix_train, decision.values = FALSE)
 res_prova <- confusionMatrix(pred_prova, factor(label_train))  
+
+accuracy_test <- NULL
+par <- NULL
+for (i in (1:100)){
+  svmfit_prova <- rfe$bests[[i]]
+  pred_prova <- predict(svmfit_prova, newdata=dataNorm_test, decision.values = FALSE)
+  res_prova <- confusionMatrix(pred_prova, factor(label_test)) 
+  accuracy_test <- c(accuracy_test,res_prova[["overall"]][["Accuracy"]])
+  par <- c(par,rfe$number_features[i])
+}
+plot(par,accuracy_test)
 ```
 
 ```{r svm graph}
@@ -1216,7 +1227,11 @@ w <- t(best_model$coefs) %*% best_model$SV
 w<-abs(w)
 names_sorted <- best_genes[order(w, decreasing=TRUE)]
 print(names_sorted)
+x <- dataNorm_train[,best_genes]
 
 # come geni mettere i primi due tornati dalla riga precedente 
-plot(best_model, dataNorm_test, ENSG00000159784 ~ ENSG00000261572)
+#plot(dataNorm_train[,"ENSG00000112212"],dataNorm_train[,"ENSG00000162006"],pch=19)
+#dat = dataNorm_train[,"ENSG00000112212"],dataNorm_train[,"ENSG00000162006"])
+plot(best_model, dataNorm_train, ENSG00000104722~ENSG00000162723, pch = 19)
 ```
+
