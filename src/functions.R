@@ -644,7 +644,11 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
     
     # select the worst feature
     idx <- which(deltas == min(deltas))
-    idx <- sample(idx, 1)
+    if (length(idx)!=1){
+      w <- model.svm$finalModel@coef[[1]] %*% model.svm$finalModel@xmatrix[[1]]
+      w <- w[idx] 
+      idx <- which(w == min(w))
+    }
     
     # remove features
     X <- X[, -(idx+1)]
@@ -790,9 +794,7 @@ recursiveFeatureExtractionCVCARET <- function(X, Y, K = 500, c = 5){
     
     # find the worst feature
     for(i in 2:ncol(X)) {
-      
       cat(i, " - ")
-      
       tmp_model.svm <- train(Group~., data= X,
                              method = "svmLinear",
                              scale = FALSE,  
@@ -808,7 +810,11 @@ recursiveFeatureExtractionCVCARET <- function(X, Y, K = 500, c = 5){
     
     # select the worst feature
     idx <- which(deltas == min(deltas))
-    idx <- sample(idx, 1)
+    if (length(idx)!=1){
+      w <- model.svm$finalModel@coef[[1]] %*% model.svm$finalModel@xmatrix[[1]]
+      w <- w[idx] 
+      idx <- which(w == min(w))
+    }
     
     # remove features
     X <- X[, -(idx+1)]

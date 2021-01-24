@@ -1085,10 +1085,6 @@ train_removed <- remove_zeros_onegroup(data_train)
 data_train <- train_removed$group
 data_test <- data_test[-train_removed$removedindexes,]
 
-test_removed <-remove_zeros_onegroup(data_test)
-data_test <- test_removed$group
-data_train <- data_train[-test_removed$removedindexes,]
-
 # finally, take the transpose to have samples on the rows
 data_test<-t(data_test)
 data_train<-t(data_train)
@@ -1104,7 +1100,7 @@ cat("\nThe test set contains",nrow(data_test),"samples, each one with",ncol(data
 ## Standardize each feature in your dataset 
 
 <div style="text-align: justify">
-The dataset contains all data of the control and disease groups only for the genes selected with the differential expression analysis. To standardize each features in the dataset (so to have mean=0 and sd=1), we used the scale function. Z-scoring is implemented: to z-score the data set, mean and standard deviation of the training set is used. We can perform the standardization of both of sets with the values of the training set. This is done because in the reality, when a single new vector from a subject needs to be classified, it is not possible to use its mean and stardard deviation (for each gene, we would have only one value) and it is so scaled with the already known information. 
+The dataset contains all data of the control and disease groups only for the genes selected with the differential expression analysis. To standardize each features in the dataset (so to have mean=0 and sd=1), we used the scale function. Z-scoring is implemented: to z-score the data set, mean and standard deviation of the training set is used. We can perform the standardization of both of sets with the values of the training set. This is done because in the reality, when a single new vector from a subject needs to be classified, it is not possible to use its mean and standard deviation (for each gene, we would have only one value) and it is so scaled with the already known information. 
 In the second part, we add at the top of the dataframes containing the training set and the test set the label of each sample, inserting them as a factor variable.
 </div>
 
@@ -1157,8 +1153,8 @@ print(res)
 w <- t(svmfit$coefs) %*% svmfit$SV
 w <- abs(w)
 names_sorted <- colnames(dataNorm_test)[order(w, decreasing=TRUE)]
-#print(names_sorted)
-plot(svmfit, dataNorm_test, ENSG00000075673 ~ ENSG00000183665)
+# print(names_sorted)
+plot(svmfit, dataNorm_train, ENSG00000101680 ~ ENSG00000255836, fill=TRUE, svSymbol = "v",grid=20)
 }# HIDE
 ```
 
@@ -1187,7 +1183,7 @@ recursiveFeatureExtractionCV
 
 ```{r funCV}
 rfe <- recursiveFeatureExtractionCV(dataNorm_train, label_train, 500, 10)
-#plot(rfe$number_features, rfe$accuracy)
+plot(rfe$number_features, rfe$accuracy, xlab = "Features retained", ylab = "Accuracy")
 ```
 
 <div style="text-align: justify">
@@ -1219,7 +1215,7 @@ for (i in (1:100)){
   accuracy_test <- c(accuracy_test,res_prova[["overall"]][["Accuracy"]])
   par <- c(par,rfe$number_features[i])
 }
-plot(par,accuracy_test)
+plot(par,accuracy_test, xlab = "Number of parameters", ylab = "Accuracy over test set")
 ```
 
 ```{r svm graph}
@@ -1230,8 +1226,7 @@ print(names_sorted)
 x <- dataNorm_train[,best_genes]
 
 # come geni mettere i primi due tornati dalla riga precedente 
-#plot(dataNorm_train[,"ENSG00000112212"],dataNorm_train[,"ENSG00000162006"],pch=19)
 #dat = dataNorm_train[,"ENSG00000112212"],dataNorm_train[,"ENSG00000162006"])
-plot(best_model, dataNorm_train, ENSG00000104722~ENSG00000162723, pch = 19)
+plot(best_model, dataNorm_train, ENSG00000277559~ENSG00000165507, svSymbol = "v")
 ```
 
