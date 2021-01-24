@@ -647,6 +647,161 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
     idx <- sample(idx, 1)
     
     # remove features
+    X_train <- X_train[, -(idx+1)]
+    
+    # train the model
+    model.svm <- svm(Group ~ ., data = X_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+    
+    # predict
+    prediction <- predict(model.svm, newdata = X_test, decision.values = FALSE)
+    result <- confusionMatrix(prediction, factor(Y_test))
+    
+    R <- ncol(X_train)-1
+    current_accuracy <- result[["overall"]][["Accuracy"]]
+    
+    cat("Number of features:", R, "\taccuracy obtained:", current_accuracy)
+    cat("\tfeatures removed:", 1, "\n")
+    
+    accuracy <- c(current_accuracy, accuracy)
+    features_retained <- c(R, features_retained)
+    
+    names <- colnames(X_train[,-1])
+    
+    if (current_accuracy >= bestAcc && R < length(bestNames)){
+      bestSVM <- model.svm
+      bestNames <- as.vector(colnames(X_train[,-1]))
+      bestAcc <- current_accuracy
+    }
+    
+    bests <- append(list(model.svm), bests)
+    bestsnames <- c(list(names), bestsnames)
+  }
+  
+  plot (x = features_retained, y = accuracy)
+  
+  return(list("number_features" = features_retained, 
+              "accuracy" = accuracy, 
+              "bests" = bests, 
+              "bestsnames" = bestsnames,
+              "bestmodel" = list("svm" = bestSVM,
+                                 "names" = bestNames,
+                                 "accuracy" = bestAcc
+              )
+  )
+  )
+}
+
+
+recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
+  
+  model.svm <- svm(Group ~ ., data = X, kernel = "linear", 
+                   type = 'C-classification', scale = FALSE, 
+                   na.action = na.omit, cross = c)
+  
+  # initialization
+  
+  R <- ncol(X)-1  # number of features
+  accuracy <- model.svm$tot.accuracy
+  features_retained <- R
+  
+  cat("Number of features:", R, "\n")
+  cat("Accuracy obtained:", accuracy, "\n")
+  
+  per_rem <- 0.15
+  eps <- 0.05
+  
+  bestSVM <- model.svm
+  bestNames <- as.vector(colnames(X[,-1]))
+  bestAcc <- accuracy
+  
+  cat("Removing lot of unuseful features\n")
+  
+  while(R > K && last(accuracy) > first(accuracy)*0.9){
+    
+    w <- t(model.svm$coefs) %*% model.svm$SV
+    names <- as.vector(colnames(X[,-1]))
+    
+    w <- abs(w)
+    w_sort <- sort(w, decreasing = TRUE)
+    names_sorted <- names[order(w, decreasing=TRUE)]
+    
+    m <- ceiling(per_rem * R)
+    if(m <= 1) break
+    w <- w_sort[1:(length(w_sort) - m)] 
+    names_sorted <- names_sorted[1:(length(names_sorted) - m)]
+    
+    tmp_train <- X
+    X <- X[,names_sorted]
+    X <- cbind('Group' =factor(Y), X)
+    
+    R <- ncol(X)-1  # number of current features
+    
+    # train the model
+    tmp_svm <- model.svm
+    model.svm <- svm(Group ~ ., data = X, kernel = "linear", 
+                     type = 'C-classification', scale = FALSE, 
+                     na.action = na.omit, cross = c)
+    
+    current_accuracy <- model.svm$tot.accuracy
+    
+    if (last(accuracy) > (current_accuracy + eps)){
+      cat("Number of features:", R, "\taccuracy obtained:", current_accuracy)
+      cat("\tfeatures removed:", m, "\t[x]\n")
+      
+      model.svm <- tmp_svm
+      X <- tmp_train
+      per_rem <- per_rem - 0.002
+      
+    } else {
+      
+      cat("Number of features:", R, "\taccuracy obtained:", current_accuracy)
+      cat("\tfeatures removed:", m, "\n")
+      
+      accuracy <- c(current_accuracy, accuracy)
+      features_retained <- c(R, features_retained)
+      
+      if (current_accuracy >= bestAcc && R < length(bestNames)){
+        bestSVM <- model.svm
+        bestNames <- as.vector(colnames(X[,-1]))
+        bestAcc <- current_accuracy
+      }
+      
+    }
+  }
+  
+  cat("\nRemoving one feature in each iteration\n")
+  
+  R <- first(features_retained)  # number of features
+  
+  bests <- list()
+  bestsnames <- list()
+  bests <- append(list(model.svm), bests)
+  bestsnames <- c(list(colnames(X[,-1])), bestsnames)
+  
+  while(R >= 2){
+    deltas <- NULL
+    
+    # find the worst feature
+    for(i in 2:ncol(X)) {
+      
+      tmp_model.svm <- svm(Group ~ ., data = X[,-i], kernel = "linear", 
+                           type = 'C-classification', scale = FALSE, 
+                           na.action = na.omit, cross = c)
+      
+      tmp_accuracy <- model.svm$tot.accuracy
+      deltas <- c(deltas, (first(accuracy) - tmp_accuracy))
+      
+    }
+    
+    # select the worst feature
+    idx <- which(deltas == min(deltas))
+    if (length(idx)!=1){
+      w <- model.svm$finalModel@coef[[1]] %*% model.svm$finalModel@xmatrix[[1]]
+      w <- w[idx] 
+      idx <- which(w == min(w))
+    }
+    
+    # remove features
     X <- X[, -(idx+1)]
     
     # train the model
@@ -790,9 +945,7 @@ recursiveFeatureExtractionCVCARET <- function(X, Y, K = 500, c = 5){
     
     # find the worst feature
     for(i in 2:ncol(X)) {
-      
       cat(i, " - ")
-      
       tmp_model.svm <- train(Group~., data= X,
                              method = "svmLinear",
                              scale = FALSE,  
@@ -808,7 +961,11 @@ recursiveFeatureExtractionCVCARET <- function(X, Y, K = 500, c = 5){
     
     # select the worst feature
     idx <- which(deltas == min(deltas))
-    idx <- sample(idx, 1)
+    if (length(idx)!=1){
+      w <- model.svm$finalModel@coef[[1]] %*% model.svm$finalModel@xmatrix[[1]]
+      w <- w[idx] 
+      idx <- which(w == min(w))
+    }
     
     # remove features
     X <- X[, -(idx+1)]
@@ -843,7 +1000,7 @@ recursiveFeatureExtractionCVCARET <- function(X, Y, K = 500, c = 5){
     bestsnames <- c(list(names), bestsnames)
   }
   
-  plot (x = features_retained, y = accuracy)
+  plot (x = features_retained, y = accuracy, xlab = "Features retained", ylab = "Accuracy")
   
   return(list("number_features" = features_retained, 
               "accuracy" = accuracy, 
