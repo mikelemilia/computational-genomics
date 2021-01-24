@@ -1080,7 +1080,7 @@ data_test <- data_SVM[,-trainIndex]
 label_train <- namegroup[trainIndex]
 label_test <- namegroup[-trainIndex]
 
-# we can still have genes in data_train and data_test for which all values are 0: we remove these genes (if in one group it generates this problem, we have to remove that gene also from the other group). If we do the other "normalization" we can eliminate the second three lines.
+# we can still have genes in data_train and data_test for which all values are 0: we remove these genes (if in one group it generates this problem, we have to remove that gene also from the other group).
 train_removed <- remove_zeros_onegroup(data_train)
 data_train <- train_removed$group
 data_test <- data_test[-train_removed$removedindexes,]
