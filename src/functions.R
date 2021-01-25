@@ -6,38 +6,6 @@ MA <- function(x, y){
   return(list('M' = M, 'A' = A))
 }
 
-computePCA <- function(x) {
-  
-  n = nrow(x) # number of samples
-  m = ncol(x) # number of variables (genes)
-  
-  # gene_means = apply(X,2,mean)
-  # gene_sd = apply(X,2,sd)
-  # 
-  # Zt = (t(X)-gene_means)/gene_sd
-  
-  z = scale(x)
-
-  if(n > m) {
-    SVD = svd(z)  # Singular Value Decomposition
-    PCs = SVD$v   # PCs
-  } else {
-    SVD = svd(t(z))
-    PCs = t(z) %*% SVD$v
-  }
-  
-  d = SVD$d #diagonal of D
-  
-  L = length(d)
-  
-  var=d^2
-  var_cum = rep(0,L)
-  
-  for(i in 1:length(d)) var_cum[i] <- sum(var[1:i])/var
-  
-  return(list('z'= z, var=var,var_cum=var_cum, 'PC' = PCs))
-}
-
 produceMvA <- function(x, index, interval, folder, graph_title){
   
   extracted <- x[,index] # extract the sample i
