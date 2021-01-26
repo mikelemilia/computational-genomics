@@ -1002,25 +1002,21 @@ Plots of the clusterings are shown, for both kmeans and hieararchical clustering
 </div>
 
 ```{r plots of part4, HIERARCHICAL}
-# GENES, HIERARCHICAL CLUSTERING
 hcd_G <- as.dendrogram(cl_hclust_ward)
-
-fviz_dend(cut(hcd_G, h=400)$lower[[1]], k = kopt_g_hier_sil, cex = 0.5, k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+fviz_dend(cut(hcd_G, h=400)$lower[[1]], k = kopt_g_hier_gap, cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"),
              color_labels_by_k = T, rect = F, show_labels = T, horiz = T)  
-
-fviz_dend(cut(hcd_G, h=400)$lower[[2]], k = 2, cex = 0.5, k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+fviz_dend(cut(hcd_G, h=400)$lower[[2]], k = kopt_g_hier_gap , cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"),
              color_labels_by_k = T, rect = T, show_labels = F, horiz = T)  
-
 # SAMPLES, HIERARCHICAL CLUSTERING
-hcd_S <- as.dendogram(cl_hclust_ward_S)
-fviz_dend(hcd_S, k = kopt_s_hier_sil, cex = 0.5, k_colors = c( "#E7B800", "#FC4E07", "#2E9FDF", "#00AFBB"), 
+hcd_S <- as.dendrogram(cl_hclust_ward_S)
+fviz_dend(hcd_S, k = kopt_s_hier_gap, cex = 0.5, k_colors = c( "#E7B800",  "#00AFBB"), 
           color_labels_by_k = T, rect = T, rect_fill = T, show_labels = T)  
 ```
 
-```{r plot of part 4, kmeans}
+```{r plot of part 4, kmeans, fig.width=7, fig.height=7}
 #GENES, KMEANS
-cl_genes<-kmeans(x=dataNorm_clustering, centers = kopt_g_kmeans_sil, iter.max = 100, nstart = 100)
-fviz_cluster(cl_genes, data = dataNorm_clustering,
+cl_genes<-kmeans(x=dataNorm_clustering, centers = kopt_g_kmeans_gap, iter.max = 100, nstart = 100)
+p1<-fviz_cluster(cl_genes, data = dataNorm_clustering,
              palette = c("#2E9FDF", "#00AFBB"), 
              geom = "point",
              ellipse.type = "convex", 
@@ -1029,14 +1025,18 @@ fviz_cluster(cl_genes, data = dataNorm_clustering,
 )
 
 #SAMPLES, KMEANS
-cl_samples<-kmeans(x=t(dataNorm_clustering), centers = kopt_s_kmeans_sil, iter.max = 100, nstart = 100)
-fviz_cluster(cl_samples, data = t(dataNorm_clustering),
+dataNorm_clustering_plot<-dataNorm_clustering
+colnames(dataNorm_clustering_plot)<-NULL
+cl_samples<-kmeans(x=t(dataNorm_clustering_plot), centers = kopt_s_kmeans_gap, iter.max = 100, nstart = 100)
+p2<-fviz_cluster(cl_samples, data = t(dataNorm_clustering_plot),
              palette = c("#2E9FDF", "#00AFBB", "#E7B800"), 
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
              main="Kmeans clustering of samples"
 )
+
+grid.arrange(p1, p2, p3, p4, ncol = 2)
 ```
 
 # Fifth Part
