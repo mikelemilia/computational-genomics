@@ -130,10 +130,10 @@ remove_duplicates <- function (data, group){
     #find samples of duplicated subjects and get the SRR code
     indexes <- which(d %in% duplicate_group[i])
     seq_sample <- group[indexes,]$seq.sample
-
+    
     #mean of duplicated samples
     group_nodup[,i] <- apply(data[, seq_sample], 1, mean)
-    names[i] <- group[indexes, ]$individual
+    names[i] <- unique(group[indexes, ]$individual)
     count <- count+1;
   }
   
@@ -146,16 +146,16 @@ remove_duplicates <- function (data, group){
     seq_sample <- group[ind[i],]$seq.sample
     #mean of duplicated samples
     group_nodup[,length(duplicate_group)+i] <- data[,seq_sample]
-    names[length(duplicate_group)+i] <- group[ind[i], ]$individual
+    names[length(duplicate_group)+i] <- unique(group[ind[i], ]$individual)
     count <- count+1;
   }
-
+  
   group_nodup<-group_nodup[,1:count]
   
   names <- names[1:count]
-
+  
   colnames(group_nodup) <- names
-
+  
   return(group_nodup)
 }
 
