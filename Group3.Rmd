@@ -109,9 +109,8 @@ producePlots(temp_samples, extracted_index, interval, folder = "Other")
 ```
 
 
-### CHECK SUL COMMENTO
 <div style="text-align: justify">
-In the following chunks, thanks to the PCA(...) function we extract the first 10 PCs from the data w.r.t. samples and genes, using the "cos2" coloration to highlight the importance of the PC on a given observation. We can also see thanks to the Scree plot that the maximum variation in the data is captured within the first component, as we expected.
+In the following chunks, thanks to the PCA function we extract the first 10 PCs from the data with respect to samples and genes; the "cos2" coloration  is used to highlight the importance of a certain observation on the calculation of the given PC. We can also see thanks to the Scree plot that the maximum variation in the data is captured within the first component, as we expected.
 </div>
 
 
