@@ -1,330 +1,204 @@
-# 1 - Loading data
+# Loading all the useful libraries
 
-DATA<-read.table(getRawPath("E-GEOD-76987-raw-counts.tsv"), sep = "\t", row.names = 1, header = TRUE)
-LABELS <- read.delim(getRawPath("labels.txt"), sep = "\t", header = TRUE)
+library(FactoMineR)
+library(edgeR)
+library(AnnotationDbi)
+library(GO.db)
+library(org.Hs.eg.db)
+library(EDASeq)
+library(cluster)
+library(caret)
+library(e1071)
 
-# 2 - Calculate the sequencing depth of each sample 
+# Load all the function used
 
-depth <- apply(DATA[-1], 2, sum)
+source(paste(getwd(), 'utilities.R', sep = ""))
+source(paste(getwd(), 'functions.R', sep = ""))
 
-# 3 - Produce the MvA plots of each sample vs. sample 1
+# Part 1
 
-indsample <- 2;
-sample <- DATA[,indsample] + 1 # extract the sample 1
+DATA   <- read.table("E-GEOD-76987-raw-counts.tsv", sep = "\t", row.names = 1, header = TRUE)
+LABELS <- read.delim("labels.txt", sep = "\t", header = TRUE)
 
-cols <- ncol(DATA[-1]) # get number of columns
-rows <- length(sample) # get number of rows
+genes <- DATA[,1]                
+samples <- DATA[,2:ncol(DATA)]
+genes_number <- length(genes)         
+samples_number <- length(samples)  
 
-A <- matrix(0, nrow = rows, ncol = 0)
-M <- matrix(0, nrow = rows, ncol = 0)
+# Part 2
 
-for(i in 3:cols){
-  png(file = paste(getPlotPath(i-2, "MvA"), ".png", sep = ""))
-  
-  # select the i-th element
-  selected <- DATA[,i] + 1
-  
-  result <- ma(sample, selected)
-  
-  M <- cbind(M, result[[1]])
-  A <- cbind(A, result[[2]])
-  
-  plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA Plot", i-2, sep =" "))
-  abline(0,0)
-  
-  dev.off()
-}
+# get the 'normal' and 'uninvolved mucosa' samples (samples of the control group) 
+normal <- LABELS[LABELS$sample_type == c("normal"),]            
+unimuc <- LABELS[LABELS$sample_type == c("uninvolved mucosa"),] 
 
-# 4 - Produce the normalization of data with TMM and print MvA plots
+# concatenate and sort samples
+control <- rbind(normal, unimuc)                               
+control <- control[order(as.numeric(control$individual)),]    
 
-normed <- tmm_normalization(DATA[-1],indsample)
-dataNorm <- normed[[3]]
+# get the 'colon sessile serrated adenoma/polyp' samples (samples of the disease group)
+disease <- LABELS[LABELS$sample_type == c("colon sessile serrated adenoma/polyp"),]
 
-for(i in 3:cols) {
-  png(file = paste(getPlotPath(i-2, "MvA - TMM Normalization"), ".png", sep = ""))
-  
-  plot(normed[[2]][,i], normed[[1]][,i], ylab="M",xlab="A",main=paste("MvA - TMM Plot", i-2, sep =" "))
-  abline(0,0)
-  
-  dev.off()
-}
+# remove duplicates in the groups
+control_nodup <- remove_duplicates(quantile_normed$samples, control)
+disease_nodup <- remove_duplicates(quantile_normed$samples, disease) 
 
-# 5 - Produce the normalization of data with Quantiles, calculate new M and A and print MvA plots 
+groups_nozero <- remove_zeros(control_nodup, disease_nodup)
+control_nodup_nozero<-groups_nozero$control
+disease_nodup_nozero<-groups_nozero$disease
 
-dataNorm <- quantile_normalization(DATA[-1])
-
-for(i in 3:cols){
-  png(file = paste(getPlotPath(i-2, "MvA - Quantile Normalization"), ".png", sep = ""))
-  
-  # select the i-th element
-  selected <- dataNorm[,i] + 1
-  
-  result <- ma(sample, selected)
-  
-  M <- cbind(M, result[[1]])
-  A <- cbind(A, result[[2]])
-  
-  plot(result[[2]], result[[1]], ylab="M", xlab="A", main=paste("MvA - Quantile Plot", i-2, sep =" "))
-  abline(0,0)
-  
-  dev.off()
-}
-
-#give names to dataNorm
-colnames(dataNorm)<-names((DATA[-1])[1,])
-
-# 6 - Remove the duplicated individuals
-
-normal <- LABELS[LABELS$sample_type == c("normal"),] # get all the normal samples
-unimuc <- LABELS[LABELS$sample_type == c("uninvolved mucosa"),] # get all the uninvolved mucosa samples
-control <- rbind(normal, unimuc) # concatenate them 
-control<-control[order(as.numeric(control$individual)),] #sort in function of 'individual' value
-
-disease <- LABELS[LABELS$sample_type == c("colon sessile serrated adenoma/polyp"),] # get all the disease samples
-
-control_nodup<-remove_duplicates(dataNorm,control) #Remove duplicates in control
-disease_nodup<-remove_duplicates(dataNorm,disease) #Remove duplicates in disease
-
-# 7 - Taking care of zeros in controls and diseased
-
-groups_nozero <- remove_zeros(control_nodup,disease_nodup)
-control_nodup_nozero<-groups_nozero[[1]]
-disease_nodup_nozero<-groups_nozero[[2]]
-
-# 8 - t-test and Wilcoxon test
-
-Nc<-nrow(control_nodup_nozero)
+Nc <- nrow(control_nodup_nozero)
 c_ttest_pvalue <- NULL
 c_wilcoxon_pvalue <- NULL
 
-selected_ttest<-0
-selected_wilcox<-0
+# use of the t.test and wilcoxon.test functions for each gene
 for(i in (1:Nc)){ 
-  c_ttest_pvalue <- c(c_ttest_pvalue,t.test(control_nodup_nozero[i,], disease_nodup_nozero[i,], var.equal = FALSE)[[3]])
-  c_wilcoxon_pvalue <- c(c_wilcoxon_pvalue,wilcox.test(control_nodup_nozero[i,],disease_nodup_nozero[i,], exact=FALSE)[[3]])
+  c_ttest_pvalue <- c(c_ttest_pvalue,t.test(control_nodup_nozero[i,], disease_nodup_nozero[i,], var.equal = FALSE)$p.value)
+  c_wilcoxon_pvalue <- c(c_wilcoxon_pvalue,wilcox.test(control_nodup_nozero[i,],disease_nodup_nozero[i,], exact=FALSE)$p.value)
 }
 
-# 9 - Pre-processing and EdgeR
+# rebuilt control matrix and label with the proper name
+control_nodup <- remove_duplicates(DATA, control)
+control_nodup <- renameColumns(control_nodup, "control")
 
-#Rebuilt control matrix with initial data (not normalized)
-control_nodup<-remove_duplicates(DATA,control)
+# rebuilt disease matrix and label with the proper name 
+disease_nodup <- remove_duplicates(DATA, disease)
+disease_nodup <- renameColumns(disease_nodup, "disease")
 
-count<-ncol(control_nodup)
-nomi<-rep("", count)
-for (i in (1:count))
-{
-  x<-paste("control",as.character(i),sep='_')
-  nomi[i]<-x
-}
-colnames(control_nodup)<-nomi
-
-#Rebuilt disease matrix with initial data (not normalized)
-
-disease_nodup<-remove_duplicates(DATA,disease)
-
-count<-ncol(disease_nodup)
-nomi<-rep("", count)
-for (i in (1:count))
-{
-  x<-paste("disease",as.character(i),sep='_')
-  nomi[i]<-x
-}
-colnames(disease_nodup)<-nomi
-
-#------------------------- edgeR-----------------------------------
-
-#unisco le due tabelle
+# merge the two tables of disease and control 
 mat <- cbind(disease_nodup, control_nodup)
-library(edgeR)
 
-# creo i gruppi che poi mi serviranno per definire "group"; di base mi serve solo che mi separino
-#ciò che c'è in tabella in control e disease
-#sono due vettori
-gruppo_controllo <- rep("control",dim(control_nodup)[2])
-gruppo_malato <- rep("disease",dim(disease_nodup)[2])
+# create groups and merge them
+control_group <- rep("control",dim(control_nodup)[2])
+disease_group <- rep("disease",dim(disease_nodup)[2])
+group_all <- cbind(t(as.data.frame(disease_group)),t(as.data.frame(control_group)))
 
-#li unisco, mi serve vettore unico per usare factor
-gruppo <- cbind(t(as.data.frame(gruppo_malato)),t(as.data.frame(gruppo_controllo)))
+# with factor() we get an object divided in two levels (control and disease)
+group <- factor(group_all)
 
-#uso factor(), ottengo un oggetto diviso in due livelli (contorl e disease), come ci serve
-group <- factor(gruppo)
-
-#matrice di design
+# design matrix
 design <- model.matrix(~0+group) 
-rownames(design) <- colnames(mat)  
-print(design)
+rownames(design) <- colnames(mat)
 
-# fit values of phi (we need this step to fit our GLM model)
-y <- DGEList(counts=mat, remove.zeros = TRUE)    # y is an object of type DGE
-y <- calcNormFactors(y)   # This calculates the SF using the TMM normalization !!!
-SF<-y$samples
+# fit values of phi (step to fit our GLM model)
+y <- DGEList(counts=mat, remove.zeros = TRUE)    
+y <- calcNormFactors(y)   # scaling factors with TMM approach
+SF <- y$samples
 
-y <- estimateGLMCommonDisp(y,design, verbose=TRUE) #phi common to the entire dataset
-y <- estimateGLMTrendedDisp(y,design) #phi depends on mu
-y <- estimateGLMTagwiseDisp(y,design) #phi is gene specific
-fit <- glmFit(y,design) #finally the model fit (that accounts for raw NB data and scaling factors and seq. depth) 
-summary(fit)
+y <- estimateGLMCommonDisp(y,design, verbose=TRUE) # phi common to the entire dataset
+y <- estimateGLMTrendedDisp(y,design) # phi depends on mu
+y <- estimateGLMTagwiseDisp(y,design) # phi is gene specific
+fit <- glmFit(y,design) # the model fit 
 
-#il test
-Confronti<-makeContrasts(Treatment=groupdisease-groupcontrol,levels=design)
-RES<-glmLRT(fit,contrast=Confronti[,"Treatment"])
+# the test
+Confr <- makeContrasts(Treatment=groupdisease-groupcontrol,levels=design)
+RES <- glmLRT(fit,contrast=Confr[,"Treatment"])
 
-#alcuni output
-
-# The first column of RES reports the log_Fold_Change, i.e.: 
-# log2(Normalized_data_average_groupProvadisease / Normalized_data_average_groupProvacontrol)
+# some outputs to give an idea of the test's results
 RES$table[1:5,]
 
+# final values
 out <- topTags(RES, n = "Inf")$table
-out[1:5,]
-
-# 10 - Selection of the genes for alpha = 0.05
 
 alpha<-0.05
 
-minori<-(c_ttest_pvalue<alpha)
-selected_ttest<-which(minori==TRUE)
-num_sel_ttest<-length(selected_ttest)
+# selected values for t-test
+lower <- (c_ttest_pvalue<alpha)
+selected_ttest <- which(lower==TRUE)
+num_sel_ttest <- length(selected_ttest)
 
-minori<-(c_wilcoxon_pvalue<alpha)
-selected_wilcox<-which(minori==TRUE)
-num_sel_wilcox<-length(selected_wilcox)
+# selected values for Wilcoxon test
+lower <- (c_wilcoxon_pvalue<alpha)
+selected_wilcox <- which(lower==TRUE)
+num_sel_wilcox <- length(selected_wilcox)
 
-#selected usando edgeR 
-indSELedgeR<-length(which(out$PValue<alpha)) #i selected
+#selected values for edgeR
+num_sel_edgeR <- length(which(out$PValue<alpha)) #i selected
 
-# 11 - E[FP] and E[FN] for t-test and Wilcoxon test with G0 = G
-
-G<-nrow(control_nodup_nozero)
-G0<-G
+G <- nrow(control_nodup_nozero)
+G0 <- G
 
 #function that returns a vector with, in order, TP FP TN FN
 expected_ttest <- expected_values(G, G0, alpha, num_sel_ttest)
 expected_wilcoxontest <- expected_values(G, G0, alpha, num_sel_wilcox)
-expected_edger <- expected_values(G, G0, alpha, indSELedgeR)
+expected_edger <- expected_values(G, G0, alpha, num_sel_edgeR)
 
-# 12 - Estimate G0 and re-estimate FP and FN
+lambda<-seq(0, 0.99, 0.01)
 
-res <- estimateG0(c_ttest_pvalue, G0, "T test")
+# t-test analysis
+res <- G0values(lambda,c_ttest_pvalue, G0, "T test")
 lambda_est_ttest <- 0.8
-eps<-0.1
-G0_est_ttest<-G0_value_estimation(lambda_est_ttest, eps, res)
+eps <- 0.03
+G0_est_ttest <- G0_value_estimation(lambda_est_ttest, eps, res)
 
 expected_ttest_est <- expected_values(G, G0_est_ttest, alpha, num_sel_ttest)
 
-res <- estimateG0(c_wilcoxon_pvalue, G0, "Wilcoxon test")
+# Wilcoxon analysis
+res <- G0values(lambda,c_wilcoxon_pvalue, G0, "Wilcoxon test")
 lambda_est_wilcoxon <- 0.8
-eps<-0.1
-G0_est_wilcoxontest<-G0_value_estimation(lambda_est_wilcoxon, eps, res)
+eps <- 0.03
+G0_est_wilcoxontest <- G0_value_estimation(lambda_est_wilcoxon, eps, res)
 
 expected_wilcoxontest_est <- expected_values(G, G0_est_wilcoxontest, alpha, num_sel_wilcox)
 
-res <- estimateG0(out[,4], G0, "edgeR test")
-lambda_est_edger <- 0.8
-eps<-0.1
-G0_est_edger<-G0_value_estimation(lambda_est_edger, eps, res)
+# edgeR analysis
+res <- G0values(lambda,out[,4], G0, "edgeR test")
+lambda_est_edger <- 0.65
+eps <- 0.03
+G0_est_edger <- G0_value_estimation(lambda_est_edger, eps, res)
 
-expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, indSELedgeR)
-
-# 13 - Select the final list of DE genes and FDR = 5%
+expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, num_sel_edgeR)
 
 FDR <- 0.05
-#values observed as p-value in edgeR (test scelto)
-lambda<-seq(min(out[,4]), max(out[,4]), (max(out[,4])-min(out[,4]))/nrow(out))
-FDR_values<-NULL
+# values in the range observed as p-value in edgeR
+lambda <- seq(min(out[,4]), max(out[,4]), (max(out[,4])-min(out[,4]))/nrow(out))
+FDR_values <- NULL
 
+# compute FDR for every lambda
 for (i in (1:length(lambda))) {
-  #compute FDR for every lambda
-  minori<-(out[,4]<lambda[i])
-  num_sel<-length(which(minori==TRUE))
+  less <- (out[,4]<lambda[i])
+  num_sel <- length(which(less==TRUE))
   
   expected_val <- expected_values(G, G0_est_edger, lambda[i], num_sel)
   
-  if (num_sel==0){
-    FDR_values<-c(FDR_values,0)} 
-  else {
-    FDR_values<-c(FDR_values,(expected_val[2]/num_sel))}
+  if (num_sel==0) FDR_values <- c(FDR_values, 0)
+  else FDR_values <- c(FDR_values, (expected_val$FP/num_sel))
+  
 }
 
-plot(lambda,FDR_values)
-
-#choose the values that are in [0.05-epsilon;0.05+espilon]
-#non possiamo usare = 0.05 perchè nessuno lo ritorna esattamente
+# choose the values that are in [0.05-epsilon;0.05 + espilon]
 epsilon <- 0.0001
-alpha_index <- which(FDR_values>=0.05-epsilon)
-alpha_index2 <- which(FDR_values<=0.05+epsilon)
-alpha_est <- mean(lambda[intersect(alpha_index,alpha_index2)])
+alpha_idx_lower <- which(FDR_values >= FDR - epsilon)
+alpha_idx_upper <- which(FDR_values <= FDR + epsilon)
+alpha_est <- mean(lambda[intersect(alpha_idx_lower, alpha_idx_upper)])
 
-indexes<-which(out$PValue<alpha_est) #i selected
-index_genes_selected<-sort(as.numeric(rownames(out[indexes,])))
+indexes <- which(out$PValue<alpha_est) 
+index_genes_selected <- sort(as.numeric(rownames(out[indexes,])))
 
-#TODO: ho tolto le istruzioni 'unique' nella selezione dei nomi dei geni 
-#ma bisogna capire come gestire i nomi doppi con geneID differenti!!!!!
-
-ID_genes_selected<-rownames(DATA[index_genes_selected,])
-number_genes_selected<-length(ID_genes_selected)
+ID_genes_selected <- rownames(DATA[index_genes_selected,])
+number_genes_selected <- length(ID_genes_selected)
 ID_genes_notselected <- setdiff(rownames(DATA),ID_genes_selected)
-number_genes_notselected<-length(ID_genes_notselected)
+number_genes_notselected <- length(ID_genes_notselected)
 
+# Part 3
 
-## ----- GESTIONE DEI NOMI DOPPI CON GENEID DIFFERENTI  --------------
-#può andare bene?? NB: I NOMI SONO ANCHE DOPPI, MA GLI ENSEMBL (ENSG...) NON LO SONO
-# 14 - estrazione di tutti i GOterm associati ai geni selezionati e creazione delle tabelle associate  
-
-library(AnnotationDbi)
-library(GO.db)
-library(org.Hs.eg.db)
-
+# extraction of the associated terms in function of the ENSEMBL ID 
 alldata <- select(org.Hs.eg.db, ID_genes_selected, columns = c("SYMBOL","ENTREZID", "ENSEMBL","GOALL"), keytype="ENSEMBL")
-GOALL_NA<-which(is.na(alldata$GOALL))
-#which(!(GOALL_NA==alldata$ONTOLOGYALL)) --> si nota che se NA su GOALL allora NA anche su ONTOLOGYALL 
-ID_goall_na<-alldata$ENSEMBL[GOALL_NA]
-GOALL_NA<-unique(GOALL_NA)
 
-terms <- unique(alldata[,4])
-terms <- terms[!is.na(terms)]
+# remove the genes for which we have the NA term associated 
+GOALL_NA <- which(is.na(alldata$GOALL))
+ID_goall_na <- alldata$ENSEMBL[GOALL_NA]
 
-#QUESTO SOSTITUISCE I DUE CICLI FOR SUCCESSIVI, DA CAPIRE COSA TOGLIERE
 ID_genes_selected_notna <- setdiff(ID_genes_selected,ID_goall_na)
 number_genes_selected_notna <- length(ID_genes_selected_notna)
 ID_genes_notselected_notna <- setdiff(ID_genes_notselected,ID_goall_na)
 number_genes_notselected_notna <- length(ID_genes_notselected_notna)
 
-#for(i in (1:length(GOALL_NA))){
-#  term<-names_goall_na[i]
-#  j<-0
-#  l<-length(names_genes_selected)
-#  while(l>0 && j<length(names_genes_selected))
-#  {
-#    j<-j+1
-#    name_sel<-names_genes_selected[j]
-#    if (term==name_sel)
-#    {
-#      names_genes_selected<-names_genes_selected[-j]
-#      number_genes_selected<-number_genes_selected-1
-#    }
-#    l<-l-1
-#  }
-#}
-#for(i in (1:length(GOALL_NA))){
-#  term<-names_goall_na[i]
-#  j<-0
-#  l<-length(names_genes_notselected)
-#  while(l>0 && j<length(names_genes_notselected))
-#  {
-#    j<-j+1
-#    name_sel<-names_genes_notselected[j]
-#    if (term==name_sel)
-#    {
-#      names_genes_notselected<-names_genes_notselected[-j]
-#      number_genes_notselected<-number_genes_notselected-1
-#    }
-#    l<-l-1
-#  }
-#}
+# remove the duplicates in the extracted terms 
+terms <- unique(alldata[,4])
+terms <- terms[!is.na(terms)]
 
+#creation of the matrix for the Fisher test, one row for each GOterm
 matrixes <- NULL
-
 for (i in (1:length(terms))){
   GOterm <- terms[i]
   GOterm_indexes <- which(alldata$GOALL==GOterm)
@@ -333,7 +207,7 @@ for (i in (1:length(terms))){
   c <- length(GOterm_indexes) - a
   d <- length(ID_genes_notselected_notna)- c
   type<-alldata[(which(alldata[,4]==GOterm))[1],6]
-  #matrice che ha nelle righe i GOterms associati e nelle colonne il tipo di GOterm e i valori di a,b,c,d per il fisher test 
+  
   matrixes <- rbind(matrixes,c(type,a,b,c,d))
 }
 
@@ -341,224 +215,251 @@ colnames(matrixes)<-c("type","a","b","c","d")
 rownames(matrixes)<-terms
 matrixes<-matrixes[order(rownames(matrixes)),]
 
-# 15 - divisione delle tabelle per type e computazione del fisher test
-
+# creation of three sub-matrices in function of the GOterm's type  
 matrixesCC <- matrixes[which(matrixes[,1]=="CC"),]
+indexCC<-which(matrixes[,1]=="CC")
+terms_CC<-terms[indexCC]
 colnames(matrixesCC)<-c("type","a","b","c","d")
 matrixesBP <- matrixes[which(matrixes[,1]=="BP"),]
+indexBP<-which(matrixes[,1]=="BP")
+terms_BP<-terms[indexBP]
 colnames(matrixesBP)<-c("type","a","b","c","d")
 matrixesMF <- matrixes[which(matrixes[,1]=="MF"),]
+indexMF<-which(matrixes[,1]=="MF")
+terms_MF<-terms[indexMF]
 colnames(matrixesMF)<-c("type","a","b","c","d")
 
 pval_fisherCC<-fisher_test_matrixes(matrixesCC)
 pval_fisherBP<-fisher_test_matrixes(matrixesBP)
 pval_fisherMF<-fisher_test_matrixes(matrixesMF)
 
-# 16 - lunghezza geni e clustering
+# correction for multiple testing in fisher
 
-#library(goseq)
-#lengths_genes_selected<-getlength(ID_genes_selected, 'hg19', 'ensGene')
-#l<-as.matrix(lengths_genes_selected)
+fisher_analysis_BP<-FDR_fisher(pval_fisherBP,terms_BP)
+number_terms_annotatedBP<-length(fisher_analysis_BP[[1]])
 
-library (EDASeq)
-ensembl_list <- ID_genes_selected
-d<-getGeneLengthAndGCContent(ensembl_list, "hsa")
-#d[[1]] contiene le lunghezz dei geni
+fisher_analysis_CC<-FDR_fisher(pval_fisherCC,terms_CC)
+number_terms_annotatedCC<-length(fisher_analysis_CC[[1]])
 
-data_normalized<-DATA[,-1]
-data_normalized<-data_normalized[index_genes_selected,]
-data_normalized<-t(t(data_normalized)/d[[1]])
+fisher_analysis_MF<-FDR_fisher(pval_fisherMF,terms_MF)
+number_terms_annotatedMF<-length(fisher_analysis_MF[[1]])
 
-# da qui in avanti non ci sono gli oggetti nel dataset salvato
+# ATTENIONE: NON BISOGNA AVERE DPLYR IN LIBRERIA! (SOVRASCRIVE SELECT)
+vals = select(GO.db, keys(GO.db, "GOID"), c("TERM", "ONTOLOGY"))
 
-# 17 - clustering
+annotation_terms_BP<-as.data.frame(annotation_terms(vals, fisher_analysis_BP[[2]]))
+colnames(annotation_terms_BP)<-"terms"
+annotation_terms_CC<-as.data.frame(annotation_terms(vals, fisher_analysis_CC[[2]]))
+colnames(annotation_terms_CC)<-"terms"
+annotation_terms_MF<-as.data.frame(annotation_terms(vals, fisher_analysis_MF[[2]]))
+colnames(annotation_terms_MF)<-"terms"
 
-## IDEA
-# FACENDO CLUSTERING DEI GENES MI ASPETTO CHE IL CLUSTER SIA 1 O COMUNQUE POCHI CLUSTERS.... SE SONO TUTTI 
-# I SELEZIONATI NON DOVREI VEDERE DIFFERENZE TRA LORO, SONO TUTTI ASSOCIATI ALLA MALATTIA
+#most important == lowest pval
 
-# FACENDO CLUSTERING DEI SAMPLES, DOVREI VEDERE CHE SI DIVIDONO IN DUE CLASSI, MALATI E SANI
-# BISOGNA RICONSIDERARE I SAMPLES CAMPIONATI DUE VOLTE?
+pval_fisherCC_sorted<-sort(fisher_test_matrixes(matrixesCC))
+pval_fisherBP_sorted<-sort(fisher_test_matrixes(matrixesBP))
+pval_fisherMF_sorted<-sort(fisher_test_matrixes(matrixesMF))
 
+# correction for multiple testing in fisher 
 
-dataNorm_nodup_control<-remove_duplicates(data_normalized,control) 
-dataNorm_nodup_disease<-remove_duplicates(data_normalized,disease) 
-
-dataNorm_clustering<-cbind(dataNorm_nodup_control,dataNorm_nodup_disease)
-
-
-#------------------- HIERARCHICAL CLUSTERING ----------------------
-#CLUSTERING GENES 
-D<-dist(dataNorm_clustering) #D is an object of class "dist". To get a matrix one needs to use "as.matrix(D)"
+fisher_analysis_BP_sorted<-FDR_fisher(pval_fisherBP_sorted,terms_BP)
+fisher_analysis_CC_sorted<-FDR_fisher(pval_fisherCC_sorted,terms_CC)
+fisher_analysis_MF_sorted<-FDR_fisher(pval_fisherMF_sorted,terms_MF)
 
 
-# USIAMO WARD PERCHè SFRUTTA DISTANZA EUCLIDEA E CPSì LO COMPARIAMO BENE CON KMEANS CHE USA SEMPRE LA EUCLIDEA
-cl_hclust_ward<-hclust(d=D,method="ward.D2")
-plot(cl_hclust_ward, hang=-1) 
+annotation_terms_BP_sorted<-as.data.frame(annotation_terms(vals, fisher_analysis_BP_sorted[[2]]))
+colnames(annotation_terms_BP_sorted)<-"terms"
+annotation_terms_CC_sorted<-as.data.frame(annotation_terms(vals, fisher_analysis_CC_sorted[[2]]))
+colnames(annotation_terms_CC_sorted)<-"terms"
+annotation_terms_MF_sorted<-as.data.frame(annotation_terms(vals, fisher_analysis_MF_sorted[[2]]))
+colnames(annotation_terms_MF_sorted)<-"terms"
 
-sk <- NULL
-K<-seq(1,10,by=1)
+# Fourth part
+
+d <- getGeneLengthAndGCContent(ID_genes_selected, "hsa")
+
+# remove the first column of data (gene names), extract the selected genes and normalize them
+data_normalized <- samples
+data_normalized <- data_normalized[index_genes_selected,]
+data_normalized <- t(t(data_normalized)/d[[1]])
+
+# remove the duplicates and bind them
+dataNorm_nodup_control <- remove_duplicates(data_normalized,control) 
+dataNorm_nodup_disease <- remove_duplicates(data_normalized,disease) 
+dataNorm_clustering <- cbind(dataNorm_nodup_control,dataNorm_nodup_disease)
+
+K <- seq(1,10)
+
+WITHIN_SS_gene_kmeans <- NULL
+clus_km <- NULL
+s_genes_kmeans <- NULL
+
+for(i in K){
+  k <- K[i]
+  cl_kmeans_genes <- kmeans(x=dataNorm_clustering,centers=k,iter.max=100,nstart=3)
+  clus_km <- c(clus_km,cl_kmeans_genes)
+  WITHIN_SS_gene_kmeans <- rbind(WITHIN_SS_gene_kmeans, cl_kmeans_genes$tot.withinss)
+  s_genes_kmeans <- rbind(s_genes_kmeans, silhouette(dataNorm_clustering,cl_kmeans_genes[[1]], k))
+}
+
+D <- dist(dataNorm_clustering) 
+cl_hclust_ward <- hclust(d=D, method="ward.D2")
+
+s_genes_hierar <- NULL
+
 for (i in (1:length(K))){
   k <- K[i]
-  clusters_hclust_ward<-cutree(cl_hclust_ward, k=k)
-  sk <- c(sk,silhouette(dataNorm_clustering,clusters_hclust_ward,k))
-  #print("i: ",i," - sk: ",sk)
+  clusters_hclust_ward <- cutree(cl_hclust_ward, k=k)
+  s_genes_hierar <- c(s_genes_hierar, silhouette(dataNorm_clustering,clusters_hclust_ward,k))
 }
-cat("Hierarchial clusters over genes!\n")
-print(sk)
-cat(max(sk), " - optimal number of clusters is :", K[which(sk == max(sk))])
 
-#CLUSTERING SAMPLES
-D<-dist(t(dataNorm_clustering))  #D is an object of class "dist". To get a matrix one needs to use "as.matrix(D)"
+WITHIN_SS_sample <- NULL
+clus_km_sample <- NULL
+s_samples_kmeans <- NULL
 
+for(i in K) {
+  k<-K[i]
+  cl_kmeans_samples<-kmeans(x=t(dataNorm_clustering),centers=k,iter.max=100,nstart=100)
+  clus_km_sample<-c(clus_km_sample,cl_kmeans_samples)
+  WITHIN_SS_sample<-rbind(WITHIN_SS_sample, cl_kmeans_samples$tot.withinss)
+  s_samples_kmeans <- rbind(s_samples_kmeans, silhouette(t(dataNorm_clustering),cl_kmeans_samples[[1]], k))
+}
+
+D<-dist(t(dataNorm_clustering)) 
 cl_hclust_ward_S<-hclust(d=D,method="ward.D2")
-plot(cl_hclust_ward_S, hang=-1) 
 
-sk <- NULL
-K<-seq(1,10,by=1)
+s_samples_hierar <- NULL
+
 for (i in (1:length(K))){
   k <- K[i]
   clusters_hclust_ward_S<-cutree(cl_hclust_ward_S, k=k)
-  sk <- c(sk,silhouette(t(dataNorm_clustering),clusters_hclust_ward_S,k))
+  s_samples_hierar <- c(s_samples_hierar, silhouette(t(dataNorm_clustering),clusters_hclust_ward_S,k))
 }
-cat("Hierarchial clusters over samples!\n")
-print(sk)
-cat(max(sk), " - optimal number of clusters is :", K[which(sk == max(sk))])
 
-#------------------- k MEANS ----------------------
-#CLUSTERING GENES 
-
-K<-seq(1,3,by=1)
-WITHIN_SS<-NULL
-clus_km<-NULL
-sk <- NULL
-for(i in (1:length(K)))
-{
-  k_i<-K[i]
-  cl_kmeans_genes<-kmeans(x=dataNorm_clustering,centers=k_i,iter.max=100,nstart=1)
-  clus_km<-c(clus_km,cl_kmeans_genes)
-  WITHIN_SS<-rbind(WITHIN_SS, cl_kmeans_genes$tot.withinss)
-  sk <- rbind(sk, silhouette(dataNorm_clustering,cl_kmeans_genes[[1]], k_i))
-}
-print(sk)
-cat("K-Means over samples!\n")
-print(sk)
-cat(max(sk), " - optimal number of clusters is :", K[which(sk == max(sk))])
-plot(K, WITHIN_SS)
-
-#CLUSTERING SAMPLES
-K<-seq(1,10,by=1)
-WITHIN_SS_sample<-NULL
-clus_km_sample<-NULL
-sk <- NULL
-for(i in (1:length(K))) {
-  k_i<-K[i]
-  cl_kmeans_samples<-kmeans(x=t(dataNorm_clustering),centers=k_i,iter.max=100,nstart=100)
-  clus_km_sample<-c(clus_km_sample,cl_kmeans_samples)
-  WITHIN_SS_sample<-rbind(WITHIN_SS_sample, cl_kmeans_samples$tot.withinss)
-  sk <- rbind(sk, silhouette(t(dataNorm_clustering),cl_kmeans_samples[[1]], k_i))
-}
-cat("K-Means over samples!\n")
-print(sk)
-cat(max(sk), " - optimal number of cluster is :", K[which(sk == max(sk))])
-plot(K, WITHIN_SS_sample)
-
-
-#GAP STATISTIC 
-library(cluster)
-
+# results for the gap statistic
+#functions for the subsequent analysis
 test_hclust <- function(x, k) list(cluster=cutree(hclust(dist(x), method = "average"),k=k))
-
-#SAMPLES
-prova<-clusGap(t(dataNorm_clustering), test_hclust, length(K), B=100)
-
-for (i in (2:(nrow(prova[[1]])-1))){
-  if (prova[[1]][i,3]>prova[[1]][i+1,3]+prova[[1]][i+1,4])
-    break;
-}
-cat("Numero ottimo per hierachical clustering dei samples secondo Gap Statistics: ",i)
-
-#GENES
-prova<-clusGap(dataNorm_clustering, test_hclust, length(K), B=100)
-
-for (i in (1:(nrow(prova[[2]])-1))){
-  if (prova[[1]][i,3]>prova[[1]][i+1,3]+prova[[1]][i+1,4])
-    break;
-}
-cat("Numero ottimo per hierachical clustering dei geni secondo Gap Statistics: ",i)
-
-# ---------------
-
-#SAMPLES
-
 test_kmeans <- function(x, k) (kmeans(x=x,centers=k,iter.max=100,nstart=100))
 
-prova<-clusGap(t(dataNorm_clustering), test_kmeans, length(K), B=100)
+# K-Means - genes
 
-for (i in (2:(nrow(prova[[1]])-1))){
-  if ((prova[[1]][i,3])>(prova[[1]][i+1,3]+prova[[1]][i+1,4]))
+gap_res<-clusGap(dataNorm_clustering, test_kmeans, length(K), B=20)
+
+for (i in (2:(nrow(gap_res$Tab)-1))){
+  if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
     break;
 }
-cat("Numero ottimo per kmeans dei samples secondo Gap Statistics: ",i)
+kopt_g_kmeans_gap <- i
 
-#GENES
+# K-Means - samples
 
-prova<-clusGap(dataNorm_clustering, test_kmeans, length(K), B=2)
+gap_res<-clusGap(t(dataNorm_clustering), test_kmeans, length(K), B=20)
 
-for (i in (2:(nrow(prova[[1]])-1))){
-  if ((prova[[1]][i,3])>(prova[[1]][i+1,3]+prova[[1]][i+1,4]))
+for (i in (2:(nrow(gap_res$Tab)-1))){
+  if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
     break;
 }
-cat("Numero ottimo per kmeans dei geni secondo Gap Statistics: ",i)
+kopt_s_kmeans_gap <- i
+
+# Hierarchical - genes
+
+gap_res<-clusGap(dataNorm_clustering, test_hclust, length(K), B=20)
+
+for (i in (2:(nrow(gap_res$Tab)-1))){
+  if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
+    break;
+}
+kopt_g_hier_gap <- i
+
+# Hierarchical - samples
+
+gap_res <-clusGap(t(dataNorm_clustering), test_hclust, length(K), B=20)
+
+for (i in (2:(nrow(gap_res$Tab)-1))){
+  if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
+    break;
+}
+kopt_s_hier_gap <- i
 
 
+# Fifth Part
+
+set.seed(3738)
+
+# extract data, remove duplicates and zeros
+data_nodup_control <- remove_duplicates(samples[index_genes_selected,], control) 
+data_nodup_disease <- remove_duplicates(samples[index_genes_selected,], disease)
+groups_nozero <- remove_zeros(data_nodup_control, data_nodup_disease)
+data_nodup_control <- groups_nozero$control
+data_nodup_disease <- groups_nozero$disease
+data_SVM <- cbind(data_nodup_control, data_nodup_disease)
+# assign its ID to each gene
+rownames(data_SVM) <- ID_genes_selected[-(groups_nozero$removedindexes)]
+# construct the vector for control and disease 
+namegroup <- c(rep("control", ncol(data_nodup_control)),rep("disease", ncol(data_nodup_disease)))
+
+# separate in train and test, both data and labels
+trainIndex <- createDataPartition((1:ncol(data_SVM)), p=0.7, list=FALSE, times=1)
+data_train <- data_SVM[,trainIndex]
+data_test <- data_SVM[,-trainIndex]
+
+label_train <- namegroup[trainIndex]
+label_test <- namegroup[-trainIndex]
+
+# we can still have genes in data_train and data_test for which all values are 0: we remove these genes (if in one group it generates this problem, we have to remove that gene also from the other group).
+train_removed <- remove_zeros_onegroup(data_train)
+data_train <- train_removed$group
+data_test <- data_test[-train_removed$removedindexes,]
+
+# finally, take the transpose to have samples on the rows
+data_test<-t(data_test)
+
+dataNorm_train <- scale(data_train)
+
+mean_train <- apply(data_train,2,mean)
+sd_train <- apply(data_train,2,sd)
+dataNorm_test <- scale(data_test, center = mean_train, scale = sd_train)
+
+# create data.frames in which in the first element we have the factor element
+dataNorm_train<-as.data.frame(dataNorm_train)
+dataNorm_train<-cbind('Group'=factor(label_train),dataNorm_train)
+
+dataNorm_test<-as.data.frame(dataNorm_test)
+dataNorm_test<-cbind('Group'=factor(label_test),dataNorm_test)
+data_train<-t(data_train)
+
+rfe <- recursiveFeatureExtractionCV(dataNorm_train, label_train, 500, 10)
+
+best_genes <- (rfe$bestmodel)$names
+best_model <- (rfe$bestmodel)$svm
+matrix_train <- dataNorm_train[,best_genes]
+matrix_train <- cbind('Group'=factor(label_train),matrix_train)
+
+# Performances on the test set 
+pred_prova <- predict(best_model, newdata=dataNorm_test, decision.values = FALSE)
+res_prova <- confusionMatrix(pred_prova, factor(label_test))  
+print(res_prova)
+
+# Check the performances
+svmfit_prova <- svm(Group ~ ., data = matrix_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+pred_prova <- predict(svmfit_prova, newdata=matrix_train, decision.values = FALSE)
+res_prova <- confusionMatrix(pred_prova, factor(label_train))  
+
+accuracy_test <- NULL
+par <- NULL
+for (i in (1:100)){
+  svmfit_prova <- rfe$bests[[i]]
+  pred_prova <- predict(svmfit_prova, newdata=dataNorm_test, decision.values = FALSE)
+  res_prova <- confusionMatrix(pred_prova, factor(label_test)) 
+  accuracy_test <- c(accuracy_test,res_prova[["overall"]][["Accuracy"]])
+  par <- c(par,rfe$number_features[i])
+}
+
+w <- t(best_model$coefs) %*% best_model$SV
+w<-abs(w)
+names_sorted <- best_genes[order(w, decreasing=TRUE)]
+print(names_sorted)
+x <- dataNorm_train[,best_genes]
 
 
-
-
-
-
-
-## PLOTS-----------------------------------------------------------------
-#kmeans
-#genes
-library(factoextra)
-cl_genes<-kmeans(x=dataNorm_clustering, centers = 2, iter.max = 100, nstart = 100)
-fviz_cluster(cl_genes, data = dataNorm_clustering,
-             palette = c("#2E9FDF", "#00AFBB"), 
-             geom = "point",
-             ellipse.type = "convex", 
-             ggtheme = theme_bw()
-)
-
-#samples
-cl_samples<-kmeans(x=t(dataNorm_clustering), centers = 3, iter.max = 100, nstart = 100)
-fviz_cluster(cl_samples, data = t(dataNorm_clustering),
-             palette = c("#2E9FDF", "#00AFBB", "#E7B800"), 
-             geom = "point",
-             ellipse.type = "convex", 
-             ggtheme = theme_bw()
-)
-
-#hierarchical
-#samples
-fviz_dend(cl_hclust_ward_S, rect = TRUE)
-#----oppure------
-nodePar <- list(lab.cex = 0.6, pch = c(NA, 19), 
-                cex = 0.7, col = "blue")
-
-hcd_S <- as.dendrogram(cl_hclust_ward_S)
-plot(hcd_S, type = "rectangle", horiz = FALSE, xlab = "Height", nodePar = nodePar, leaflab = "none")
-
-#genes
-fviz_dend(cl_hclust_ward, rect = TRUE)
-#----oppure------
-nodePar <- list(lab.cex = 0.6, pch = c(NA, 19), 
-                cex = 0.1, col = "blue")
-
-hcd_G <- as.dendrogram(cl_hclust_ward)
-plot(hcd_G, type = "rectangle", horiz = FALSE, ylab = "Height", nodePar = nodePar, leaflab = "none")
-
-
-
-
+save(file = "workspace.Rdata")
