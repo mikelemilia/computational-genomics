@@ -1036,7 +1036,7 @@ p2<-fviz_cluster(cl_samples, data = t(dataNorm_clustering_plot),
              main="Kmeans clustering of samples"
 )
 
-grid.arrange(p1, p2, p3, p4, ncol = 2)
+grid.arrange(p1, p2, nrow = 2)
 ```
 
 # Fifth Part
