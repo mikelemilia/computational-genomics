@@ -1024,7 +1024,7 @@ p1<-fviz_cluster(cl_genes, data = dataNorm_clustering,
              main="Kmeans clustering of genes"
 )
 
-#SAMPLES, KMEANS
+#SUBJECTS, KMEANS
 dataNorm_clustering_plot<-dataNorm_clustering
 colnames(dataNorm_clustering_plot)<-NULL
 cl_samples<-kmeans(x=t(dataNorm_clustering_plot), centers = kopt_s_kmeans_gap, iter.max = 100, nstart = 100)
@@ -1033,7 +1033,7 @@ p2<-fviz_cluster(cl_samples, data = t(dataNorm_clustering_plot),
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
-             main="Kmeans clustering of samples"
+             main="Kmeans clustering of subjects"
 )
 
 grid.arrange(p1, p2, nrow = 2)
