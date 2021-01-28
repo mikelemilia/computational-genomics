@@ -1,41 +1,12 @@
 MA <- function(x, y){
   
+  A <- matrix(0, nrow = length(x), ncol = 0)
+  M <- matrix(0, nrow = length(x), ncol = 0)
+  
   M <- log2(x) - log2(y)
   A <- (log2(x) + log2(y))/2
   
   return(list('M' = M, 'A' = A))
-}
-
-computePCA <- function(x) {
-  
-  n = nrow(x) # number of samples
-  m = ncol(x) # number of variables (genes)
-  
-  # gene_means = apply(X,2,mean)
-  # gene_sd = apply(X,2,sd)
-  # 
-  # Zt = (t(X)-gene_means)/gene_sd
-  
-  z = scale(x)
-
-  if(n > m) {
-    SVD = svd(z)  # Singular Value Decomposition
-    PCs = SVD$v   # PCs
-  } else {
-    SVD = svd(t(z))
-    PCs = t(z) %*% SVD$v
-  }
-  
-  d = SVD$d #diagonal of D
-  
-  L = length(d)
-  
-  var=d^2
-  var_cum = rep(0,L)
-  
-  for(i in 1:length(d)) var_cum[i] <- sum(var[1:i])/var
-  
-  return(list('z'= z, var=var,var_cum=var_cum, 'PC' = PCs))
 }
 
 produceMvA <- function(x, index, interval, folder, graph_title){
@@ -152,15 +123,17 @@ remove_duplicates <- function (data, group){
   d <- as.numeric(group$individual)
   dim <- dim(group)
   group_nodup <- matrix(0, nrow(data), dim[1]) # ncol(group) == dim[1]
+  names <- rep(0, dim[1])
   count <- 0
   
   for (i in 1:length(duplicate_group)) {
     #find samples of duplicated subjects and get the SRR code
     indexes <- which(d %in% duplicate_group[i])
     seq_sample <- group[indexes,]$seq.sample
-
+    
     #mean of duplicated samples
     group_nodup[,i] <- apply(data[, seq_sample], 1, mean)
+    names[i] <- unique(group[indexes, ]$individual)
     count <- count+1;
   }
   
@@ -173,10 +146,16 @@ remove_duplicates <- function (data, group){
     seq_sample <- group[ind[i],]$seq.sample
     #mean of duplicated samples
     group_nodup[,length(duplicate_group)+i] <- data[,seq_sample]
+    names[length(duplicate_group)+i] <- unique(group[ind[i], ]$individual)
     count <- count+1;
   }
   
   group_nodup<-group_nodup[,1:count]
+  
+  names <- names[1:count]
+  
+  colnames(group_nodup) <- names
+  
   return(group_nodup)
 }
 
@@ -386,6 +365,22 @@ silhouette <- function(points, cluster, k){
   # the output is the sum of the silhouettes for all the points in the dataset
   return(sum(s)/nrow(points))
   
+}
+
+generateDendogram <- function(x, k_opt, title){
+  
+  dend <-  as.dendrogram(x)
+  
+  fviz_dend(x,
+            k = k_opt, 
+            cex = 0.5, 
+            k_colors = c( "#E7B800", "#FC4E07"), #"#2E9FDF", "#00AFBB",
+            color_labels_by_k = T, 
+            rect = T, 
+            rect_fill = T, 
+            show_labels = T)  
+  
+
 }
 
 recursiveFeatureExtraction <- function(X_train, Y_train, X_test, Y_test, K = 500){

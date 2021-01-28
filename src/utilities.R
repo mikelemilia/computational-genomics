@@ -66,16 +66,6 @@ getPlotPath <- function(filename, folder = ""){
   return(path)
 }
 
-showProgress <- function(tot){
-  library(progress)
-  
-  pb <- progress_bar$new(total = tot)
-  for (i in 1:tot) {
-    pb$tick()
-    Sys.sleep(1 / 100)
-  }
-}
-
 renameColumns <- function(x, value){
 
   names <- rep("", ncol(x))
