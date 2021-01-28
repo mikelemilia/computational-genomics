@@ -1198,9 +1198,8 @@ print(names_sorted)
 # plot(best_model, dataNorm_train, ENSG00000277559~ENSG00000165507, svSymbol = "v")
 ```
 
-
 <div style="text-align: justify">
-The models obtained from the second while cycle are now tested on the test set to see their performances on it and to evaluate if the best model is the best one also in terms of accuracy over the test set.
+The genes selected as the ones that lead to the best model are now analyze in terms of Gene Ontology, in order to find if they are associated with some important terms related with the colon tumor.
 </div>
 
 ```{r GO annotations}
