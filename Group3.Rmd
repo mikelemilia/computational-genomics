@@ -1160,16 +1160,6 @@ A recursive feature elimination algorithm is implemented in the function below. 
 The function returns the numbers of features used in each iteration and the correspondent accuracy, the best model (higher accuracy and lower number of features) with the correspondent accuracy and genes ID used. It returns also all the model obtained in the second while cycle (with corresponding genes ID).
 </div>
 
-### RFE without k-fold cross validation
-
-```{r implemented rfe function}
-recursiveFeatureExtraction
-```
-
-```{r fun}
-rfe <- recursiveFeatureExtraction(dataNorm_train, label_train, dataNorm_test, label_test, 500)
-```
-
 ### RFE with k-fold cross validation
 
 ```{r implemented rfe function CV}
