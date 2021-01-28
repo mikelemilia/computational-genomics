@@ -290,7 +290,6 @@ annotation_terms<-function(vals, terms){
   for(i in(1:length(terms))){
     t<-terms[i]
     p<-c(p,which(vals$GOID==t))
-    
   }
   ann<-vals$TERM[p]
   
@@ -795,7 +794,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
     # select the worst feature
     idx <- which(deltas == min(deltas))
     if (length(idx)!=1){
-      w <- model.svm$finalModel@coef[[1]] %*% model.svm$finalModel@xmatrix[[1]]
+      w <- t(model.svm$coefs) %*% model.svm$SV
       w <- w[idx] 
       idx <- which(w == min(w))
     }
@@ -829,7 +828,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
     bestsnames <- c(list(names), bestsnames)
   }
   
-  plot (x = features_retained, y = accuracy)
+  plot (x = features_retained, y = accuracy, xlab = "Features retained", ylab = "Accuracy")
   
   return(list("number_features" = features_retained, 
               "accuracy" = accuracy, 

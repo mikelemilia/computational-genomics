@@ -246,7 +246,7 @@ p1 <- fviz_pca_ind(g_pca, col.ind = 'cos2', geom = 'point', title = 'PCA (Genes)
 p2 <- fviz_pca_ind(tmm_g_pca, col.ind = 'cos2', geom = 'point', title = 'PCA (Genes after TMM)')
 p3 <- fviz_pca_ind(quantile_g_pca, col.ind = 'cos2', geom = 'point', title = 'PCA (Genes after Quantile)')
 
-grid.arrange(p1,p2, p3)
+grid.arrange(p1, p2, p3)
 ```
 
 # Second Part
@@ -676,7 +676,7 @@ matrixes<-matrixes[order(rownames(matrixes)),]
 ## Fisher test
 
 <div style="text-align: justify">
-These functions were implemeted to perform the fisher exact test.
+These functions were implemented to perform the fisher exact test.
 "fisher_test_matrixes" computes the actual test, returning the p-values of each test.
 "FDR_fisher" calculates the estimated alpha given a FDR equal to 0.05 in order to account for multiple testing in the selection of meaningful p-values (and subsequently meaningful annotations).
 "annotation_terms" return the annotated terms for the GOterms selected as meaningful; to do so it uses the GO.db databases. 
@@ -748,8 +748,6 @@ dt <- cbind(to_viewBP[1:minimum],to_viewMF[1:minimum], to_viewCC[1:minimum] )
 colnames(dt)<-c('BP','MF', 'CC')
 kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
-
-
 
 
 ```{r fisher - most important terms (by lowest pval)}
@@ -927,7 +925,7 @@ To implement the gap statistic, we used the clusGap function of the cluster libr
 # results for the gap statistic
 #functions for the subsequent analysis
 test_hclust <- function(x, k) list(cluster=cutree(hclust(dist(x), method = "average"),k=k))
-test_kmeans <- function(x, k) (kmeans(x=x,centers=k,iter.max=100,nstart=100))
+test_kmeans <- function(x, k) (kmeans(x=x, centers=k, iter.max=100, nstart=100))
 
 # K-Means - genes
 
@@ -1160,19 +1158,17 @@ A recursive feature elimination algorithm is implemented in the function below. 
 The function returns the numbers of features used in each iteration and the correspondent accuracy, the best model (higher accuracy and lower number of features) with the correspondent accuracy and genes ID used. It returns also all the model obtained in the second while cycle (with corresponding genes ID).
 </div>
 
-### RFE with k-fold cross validation
-
 ```{r implemented rfe function CV}
 recursiveFeatureExtractionCV
 ```
 
 ```{r funCV}
 rfe <- recursiveFeatureExtractionCV(dataNorm_train, label_train, 500, 10)
-plot(rfe$number_features, rfe$accuracy, xlab = "Features retained", ylab = "Accuracy")
+plot (x = rfe$features_retained, y = rfe$accuracy, xlab = "Features retained", ylab = "Accuracy")
 ```
 
 <div style="text-align: justify">
-With the best model returned by recursiveFeatureExtractionCV, we now evaluate its performances with the test set.
+With the best model returned by recursiveFeatureExtractionCV, we now evaluate its performances with the test set. In the first chunk, the best model is evaluated in terms of prediction on the test set (and a check on its performances on the entire training set). In the second chunk, the SVM and the training set are plotted in terms of the two best features (the two with highest weight in the model). 
 </div>
 
 ```{r tests of rfe}
@@ -1190,7 +1186,38 @@ print(res_prova)
 svmfit_prova <- svm(Group ~ ., data = matrix_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
 pred_prova <- predict(svmfit_prova, newdata=matrix_train, decision.values = FALSE)
 res_prova <- confusionMatrix(pred_prova, factor(label_train))  
+```
 
+```{r svm graph}
+w <- t(best_model$coefs) %*% best_model$SV
+w <- abs(w)
+names_sorted <- best_genes[order(w, decreasing=TRUE)]
+print(names_sorted)
+
+# insert the two genes ID printed at the previous line and execute the following line to see the plot
+# plot(best_model, dataNorm_train, ENSG00000277559~ENSG00000165507, svSymbol = "v")
+```
+
+
+<div style="text-align: justify">
+The models obtained from the second while cycle are now tested on the test set to see their performances on it and to evaluate if the best model is the best one also in terms of accuracy over the test set.
+</div>
+
+```{r GO annotations}
+alldata <- select(org.Hs.eg.db, best_genes, columns = c("SYMBOL","ENTREZID", 
+                  "ENSEMBL","GOALL"), keytype="ENSEMBL")
+
+terms <- unique(alldata[,4])
+terms <- terms[!is.na(terms)]
+
+annotation_featuresRFE <- as.data.frame(annotation_terms(vals, terms))
+```
+
+<div style="text-align: justify">
+The models obtained from the second while cycle are now tested on the test set to see their performances on it and to evaluate if the best model is the best one also in terms of accuracy over the test set.
+</div>
+
+```{r accuracies of best models on test set}
 accuracy_test <- NULL
 par <- NULL
 for (i in (1:100)){
@@ -1203,15 +1230,5 @@ for (i in (1:100)){
 plot(par,accuracy_test, xlab = "Number of parameters", ylab = "Accuracy over test set")
 ```
 
-```{r svm graph}
-w <- t(best_model$coefs) %*% best_model$SV
-w<-abs(w)
-names_sorted <- best_genes[order(w, decreasing=TRUE)]
-print(names_sorted)
-x <- dataNorm_train[,best_genes]
 
-# come geni mettere i primi due tornati dalla riga precedente 
-#dat = dataNorm_train[,"ENSG00000112212"],dataNorm_train[,"ENSG00000162006"])
-plot(best_model, dataNorm_train, ENSG00000277559~ENSG00000165507, svSymbol = "v")
-```
 
