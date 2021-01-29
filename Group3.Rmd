@@ -1,10 +1,10 @@
 ---
 title: "GROUP3"
 output:
-  html_document:
-    df_print: paged
   html_notebook:
     number_section: yes
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=TRUE, echo=FALSE}
@@ -222,7 +222,7 @@ produceMvA(quantile_normed$samples, extracted_index, interval,  folder = "MvA - 
 
 ```
 
-### CHECK SUL COMMENTO
+
 <div style="text-align: justify">
 As we said in the comment of the chunck above, quantile normalization seems to be more robust because produces a series of sample with the same distribution. This fact it's also evident if you see the following plots, in fact after the application of the TMM normalization, there wasn't any effect on the PCs while using the quantile normalization you can clearly see the change in distribution of both samples and genes and the consequent reduction of the variance inside the data.
 </div>

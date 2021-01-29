@@ -334,7 +334,7 @@ silhouette <- function(points, cluster, k){
     
     if(length(distances[clusters[[cl]]]) == 1) {
       # if it is a singleton cluster, the silhouette is 1
-      s <- c(s,1)
+      s <- c(s,0)
     } 
     
     else {
