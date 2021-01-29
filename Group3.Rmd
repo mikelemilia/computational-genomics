@@ -1,10 +1,10 @@
 ---
 title: "GROUP3"
 output:
-  html_notebook:
-    number_section: yes
   html_document:
     df_print: paged
+  html_notebook:
+    number_section: yes
 ---
 
 ```{r setup, include=TRUE, echo=FALSE}
@@ -44,7 +44,7 @@ source(paste(getwd(), '/src/functions.R', sep = ""))
 
 # First Part
 
-## Load the data in R
+## Load the data
 
 ```{r load data, results='hold', collapse=TRUE}
 {# HIDE
@@ -1051,7 +1051,7 @@ remove_zeros_onegroup
 ```
 
 ```{r data splitting}
-set.seed(3738)
+set.seed(1000)
 
 # extract data, remove duplicates and zeros
 data_nodup_control <- remove_duplicates(samples[index_genes_selected,], control) 
@@ -1142,12 +1142,6 @@ cat("Prediction for the test set:\n")
 test_pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
 res <- confusionMatrix(test_pred, factor(label_test))
 print(res)
-
-w <- t(svmfit$coefs) %*% svmfit$SV
-w <- abs(w)
-names_sorted <- colnames(dataNorm_test)[order(w, decreasing=TRUE)]
-# print(names_sorted)
-plot(svmfit, dataNorm_train, ENSG00000101680 ~ ENSG00000255836, fill=TRUE, svSymbol = "v",grid=20)
 }# HIDE
 ```
 
@@ -1164,7 +1158,7 @@ recursiveFeatureExtractionCV
 
 ```{r funCV}
 rfe <- recursiveFeatureExtractionCV(dataNorm_train, label_train, 500, 10)
-plot (x = rfe$features_retained, y = rfe$accuracy, xlab = "Features retained", ylab = "Accuracy")
+#plot (x = rfe$number_features, y = rfe$accuracy, xlab = "Features retained", ylab = "Accuracy")
 ```
 
 <div style="text-align: justify">
@@ -1195,7 +1189,7 @@ names_sorted <- best_genes[order(w, decreasing=TRUE)]
 print(names_sorted)
 
 # insert the two genes ID printed at the previous line and execute the following line to see the plot
-# plot(best_model, dataNorm_train, ENSG00000277559~ENSG00000165507, svSymbol = "v")
+plot(best_model, dataNorm_train, ENSG00000245750~ENSG00000261437, svSymbol = "v")
 ```
 
 <div style="text-align: justify">

@@ -706,7 +706,7 @@ recursiveFeatureExtractionCV <- function(X, Y, K = 500, c = 5){
   cat("Accuracy obtained:", accuracy, "\n")
   
   per_rem <- 0.15
-  eps <- 0.05
+  eps <- 5
   
   bestSVM <- model.svm
   bestNames <- as.vector(colnames(X[,-1]))
