@@ -76,6 +76,7 @@ renameColumns <- function(x, value){
   colnames(x) <- names
   
   return(x)
+  
 }
 
 last <- function(x) {

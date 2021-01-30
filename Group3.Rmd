@@ -7,7 +7,7 @@ output:
     df_print: paged
 ---
 
-```{r setup, include=TRUE, echo=FALSE}
+```{r setup, include=TRUE, echo = FALSE}
 knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 knitr::knit_hooks$set(document = function(x) {
     paste(rapply(strsplit(x, '\n'), function(y) Filter(function(z) !grepl('# HIDE',z),y)), collapse ='\n')
@@ -46,7 +46,7 @@ source(paste(getwd(), '/src/functions.R', sep = ""))
 
 ## Load the data
 
-```{r load data, results='hold', collapse=TRUE}
+```{r load data}
 {# HIDE
 DATA   <- read.table(getRawPath("E-GEOD-76987-raw-counts.tsv"), sep = "\t", row.names = 1, header = TRUE)
 LABELS <- read.delim(getRawPath("labels.txt"), sep = "\t", header = TRUE)
@@ -55,7 +55,7 @@ LABELS <- read.delim(getRawPath("labels.txt"), sep = "\t", header = TRUE)
 
 ## Calculate the sequencing depth of each sample
 
-```{r calculate depth, results='hold', collapse=TRUE}
+```{r calculate depth}
 # extract information about data
 genes <- DATA[,1]                
 samples <- DATA[,2:ncol(DATA)]
@@ -65,14 +65,14 @@ samples_number <- length(samples)
 # Computing the sequencing depth of each sample
 
 depth <- apply(samples, 2, sum)     # 2 means that we're appling the sum by columns
+```
 
+```{r calculate depth output, echo=FALSE}
 {# HIDE
 cat("Our dataset is composed by:\n\n")
 cat(genes_number, " genes\n")           
-cat(samples_number, "samples\n\n")
-
-cat("The sequencing depth of each sample is:\n", depth)
-
+cat(samples_number, "samples\n")
+# cat("The sequencing depth of each sample is:\n", depth)
 cat("\nThe average depth is:", mean(depth))
 }# HIDE
 ```
@@ -162,24 +162,25 @@ quantile_normed <- quantile_normalization(temp_samples)
 ```
 
 ```{r Normalization Plots, fig.width=12, fig.height=5}
+{# HIDE
 par(mfrow=c(1,3)) 
-
-
+  
+# Scatter plot
 plot(samples[,1], samples[,12], pch=20, cex=2,  col="#3185FC",xlab="Sample 1", ylab="Sample 12", main = "Samples")
 abline(0, 1, col = "red")
 
+# Scatter plot (TMM)
 extracted <- tmm_normed$samples[,1]
 selected  <- tmm_normed$samples[,12]
-
-
 plot(extracted, selected, pch=20, cex=2,  col="#3185FC", xlab="Sample 1", ylab="Sample 12", main = "Samples (TMM)")
 abline(0, 1, col = "red")
 
-
+# Scatter plot (Quantile)
 extracted <- quantile_normed$samples[,1]
 selected  <- quantile_normed$samples[,12]
 plot(extracted, selected, pch=20, cex=2,  col="#3185FC",xlab="Sample 1", ylab="Sample 12", main = "Samples (Quantile)")
 abline(0,1, col = "red")
+}# HIDE
 ```
 
 <div style="text-align: justify">
@@ -188,6 +189,7 @@ It is to be noted that neither the quantile nor the TMM normalization get rid of
 </div>
 
 ```{r MvA plot of reference sample (sample 1) VS sample 12 with TMM and quantile normalization, fig.width=12, fig.height=5}
+{# HIDE
 par(mfrow=c(1,3)) 
 
 # Data extraction and plot 
@@ -196,7 +198,7 @@ selected  <- samples[,12]
 
 computed  <- MA(extracted, selected)
 
-plot(computed$A, computed$M, pch=20, cex=1,  col="#3185FC",xlab="A", ylab="M", main = "MvA (TMM) ", sub = paste("Sample", 1, "vs.", 12, sep = " "))
+plot(computed$A, computed$M, pch=20, cex=1,  col="#3185FC",xlab="A", ylab="M", main = "MvA", sub = paste("Sample", 1, "vs.", 12, sep = " "))
 abline(0,0, col = "red")
 
 # TMM normalization: data extraction and plot 
@@ -205,7 +207,7 @@ selected  <- tmm_normed$samples[,12]
 
 computed  <- MA(extracted, selected)
 
-plot(computed$A, computed$M, pch=20, cex=1,  col="#3185FC",xlab="A", ylab="M", main = "MvA (TMM) ", sub = paste("Sample", 1, "vs.", 12, sep = " "))
+plot(computed$A, computed$M, pch=20, cex=1,  col="#3185FC",xlab="A", ylab="M", main = "MvA (TMM)", sub = paste("Sample", 1, "vs.", 12, sep = " "))
 abline(0,0, col = "red")
 
 # Quantile normalization: data extraction and plot 
@@ -216,12 +218,13 @@ computed  <- MA(extracted, selected)
 
 plot(computed$A, computed$M, pch=20, cex=1,  col="#3185FC",xlab="A", ylab="M", main = "MvA (Quantile)", sub = paste("Sample", 1, "vs.", 12, sep = " "))
 abline(0,0, col = "red")
+}# HIDE
 ```
 
 ## Produce the MvA plots of each sample vs. sample 1 using normalized data to evaluate if the normalization step was correctly performed or if there are outlier samples
 
 <div style="text-align: justify">
-You can see MvA plots inside output/plots folder and in particular you can notice that in some of them it's clear what was explained above with reference sample vs. sample 12. For example in reference sample vs. sample 47 plot the same comments can be made: MvA plots clearly show a deviance from M=0 in TMM normalization while this deviance is not present in the analysis with the quantile normalization. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
+You can see MvA plots by inside output/plots folder and in particular you can notice that in some of them it's clear what was explained above with reference sample vs. sample 12. For example in reference sample vs. sample 47 plot the same comments can be made: MvA plots clearly show a deviance from M=0 in TMM normalization while this deviance is not present in the analysis with the quantile normalization. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
 </div>
 
 ```{r Produce Normalized MvA Plots, eval = FALSE}
@@ -302,14 +305,14 @@ control_nodup <- remove_duplicates(quantile_normed$samples, control)
 disease_nodup <- remove_duplicates(quantile_normed$samples, disease) 
 ```
 
-```{r remove_duplicates outputs}
+```{r remove_duplicates outputs, echo = FALSE}
 {# HIDE
 # some outputs
 cat("The number of control samples is:",nrow(control))
-cat("\nThe number of diseased samples is:",nrow(disease))
+cat("\nThe number of disease samples is:",nrow(disease), "\n")
 
 cat("\nThe number of control samples after duplicates removal is:",ncol(control_nodup))
-cat("\nThe number of diseased samples after duplicates removal is:",ncol(disease_nodup))
+cat("\nThe number of disease samples after duplicates removal is:",ncol(disease_nodup), "\n")
 
 ratio <- 1-(ncol(control_nodup)/nrow(control))
 cat("\nThe compression ratio for control has been of:", ratio)
@@ -334,11 +337,11 @@ control_nodup_nozero<-groups_nozero$control
 disease_nodup_nozero<-groups_nozero$disease
 ```
 
-```{r remove_zeros outputs}
+```{r remove_zeros outputs, echo=FALSE}
 {# HIDE
 # some outputs
-cat("The number of initial genes is:",nrow(control_nodup))
-cat("\nThe number of genes after zeros removal for control is:",nrow(control_nodup_nozero))
+cat("The number of initial genes is:",nrow(control_nodup), "\n")
+cat("\nThe number of genes after zeros removal for control is:",nrow(control_nodup_nozero), "\n")
 
 ratio <- 1-(nrow(control_nodup_nozero)/nrow(control_nodup))
 cat("\nThe compression ratio is:", ratio)
@@ -462,9 +465,10 @@ num_sel_wilcox <- length(selected_wilcox)
 
 #selected values for edgeR
 num_sel_edgeR <- length(which(out$PValue<alpha)) #i selected
+```
 
+```{r selection for alpha 0.05 output, echo=FALSE}
 {# HIDE
-cat("Results")
 cat("\nNumber of selected genes with t-test:",num_sel_ttest)
 cat("\nNumber of selected genes with Wilcoxon-test:",num_sel_wilcox)
 cat("\nNumber of selected genes with edgeR:",num_sel_edgeR)
@@ -618,11 +622,13 @@ ID_genes_selected <- rownames(DATA[index_genes_selected,])
 number_genes_selected <- length(ID_genes_selected)
 ID_genes_notselected <- setdiff(rownames(DATA),ID_genes_selected)
 number_genes_notselected <- length(ID_genes_notselected)
+```
 
+```{r extraction output, echo=FALSE}
 {# HIDE
 # print results
-cat("Number of selected genes: ", number_genes_selected, "\n")
-cat("Number of not selected genes: ", number_genes_notselected)
+cat("Number of selected genes:    ", number_genes_selected, "\n")
+cat("Number of not selected genes:", number_genes_notselected)
 }# HIDE
 
 ```
@@ -689,7 +695,9 @@ These functions were implemented to perform the fisher exact test.
 
 ```{r fisher functions}
 fisher_test_matrixes
+
 FDR_fisher
+
 annotation_terms
 ```
 
@@ -800,12 +808,11 @@ We correct our data for the length of genes to perform a better clustering analy
 
 ```{r init clustering, results='hide'}
 d <- getGeneLengthAndGCContent(ID_genes_selected, "hsa")
-#d[[1]] has the length of all genes selected
 
 # remove the first column of data (gene names), extract the selected genes and normalize them
 data_normalized <- samples
 data_normalized <- data_normalized[index_genes_selected,]
-data_normalized <- t(t(data_normalized)/d[[1]])
+data_normalized <- t(t(data_normalized)/d[[1]]) # d[[1]] has the length of all genes selected
 
 # remove the duplicates and bind them
 dataNorm_nodup_control <- remove_duplicates(data_normalized,control) 
@@ -899,7 +906,7 @@ for (i in (1:length(K))){
 silhouette
 ```
 
-```{r results of the sihouette}
+```{r results of the sihouette, echo=FALSE}
 # results for silhouette
 {# HIDE
 cat("K-Means over genes!\n")
@@ -973,7 +980,7 @@ for (i in (2:(nrow(gap_res$Tab)-1))){
 kopt_s_hier_gap <- i
 ```
 
-```{r results of the gap statistic}
+```{r results of the gap statistic, echo=FALSE}
 {# HIDE
 # results for gap statistic
 cat("K-Means over genes!\n")
@@ -994,44 +1001,39 @@ cat("The optimal number of clusters is:", kopt_s_hier_gap)
 Plots of the clusterings are shown, for both kmeans and hieararchical clustering. 
 </div>
 
-```{r plots of part4, HIERARCHICAL}
+```{r plots of part4 HIERARCHICAL, fig.width=12, fig.height=7, results='hide'}
 #GENES, HIERARCHICAL CLUSTERING
 hcd_G <- as.dendrogram(cl_hclust_ward)
-fviz_dend(cut(hcd_G, h=400)$lower[[1]], k = kopt_g_hier_gap, cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"),
-             color_labels_by_k = T, rect = F, show_labels = T, horiz = T, main="Hierarchical (Genes) - Upper")  
+#fviz_dend(cut(hcd_G, h=400)$lower[[1]], k = kopt_g_hier_gap, cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"), color_labels_by_k = T, rect = F, show_labels = T, horiz = T, main="Hierarchical (Genes) - Upper")  
 fviz_dend(cut(hcd_G, h=400)$lower[[2]], k = kopt_g_hier_gap , cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"),
              color_labels_by_k = T, rect = T, show_labels = F, horiz = T, main="Hierarchical (Genes) - Lower")  
-
 # SAMPLES, HIERARCHICAL CLUSTERING
 hcd_S <- as.dendrogram(cl_hclust_ward_S)
 fviz_dend(hcd_S, k = kopt_s_hier_gap, cex = 0.5, k_colors = c( "#E7B800",  "#00AFBB"), 
-          color_labels_by_k = T, rect = T, rect_fill = T, show_labels = T, main="Hierarchical (Samples) - Upper")
+          color_labels_by_k = T, rect = T, rect_fill = F, show_labels = T, main="Hierarchical (Samples)")
 ```
 
-```{r plot of part 4, kmeans, fig.width=7, fig.height=7}
+```{r plot of part 4 kmeans, fig.width=12, fig.height=7}
 #GENES, KMEANS
 cl_genes<-kmeans(x=dataNorm_clustering, centers = kopt_g_kmeans_gap, iter.max = 100, nstart = 100)
-p1<-fviz_cluster(cl_genes, data = dataNorm_clustering,
+fviz_cluster(cl_genes, data = dataNorm_clustering,
              palette = c("#2E9FDF", "#00AFBB"), 
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
              main="K-means (Genes)"
 )
-
 #SUBJECTS, KMEANS
 dataNorm_clustering_plot<-dataNorm_clustering
 colnames(dataNorm_clustering_plot)<-NULL
 cl_samples<-kmeans(x=t(dataNorm_clustering_plot), centers = kopt_s_kmeans_gap, iter.max = 100, nstart = 100)
-p2<-fviz_cluster(cl_samples, data = t(dataNorm_clustering_plot),
+fviz_cluster(cl_samples, data = t(dataNorm_clustering_plot),
              palette = c("#2E9FDF", "#00AFBB", "#E7B800"), 
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
              main="K-means (Subjects)"
 )
-
-grid.arrange(p1, p2, nrow = 2)
 ```
 
 # Fifth Part
@@ -1080,7 +1082,7 @@ data_test<-t(data_test)
 data_train<-t(data_train)
 ```
 
-```{r final sets}
+```{r final sets, echo=FALSE}
 {# HIDE
 cat("The training set contains",nrow(data_train),"samples, each one with",ncol(data_train),"genes. It contains",length(which(label_train=="control")),"samples of the control group and", length(which(label_train=="disease")), "samples of the disease group.")
 cat("\nThe test set contains",nrow(data_test),"samples, each one with",ncol(data_test),"genes. It contains",length(which(label_test=="control")),"samples of the control group and", length(which(label_test=="disease")), "samples of the disease group.")
@@ -1119,23 +1121,34 @@ We implemented the SVM procedure with both Caret and e1071 packages and we print
 # train the model
 model <- train(Group~., data=dataNorm_train, method = "svmLinear", scale = FALSE, na.action=na.fail, metric = "Accuracy", maximize = TRUE, trControl = trainControl(method = "repeatedcv", number =10, repeats = 3))
 summary(model)
+```
 
-# only some stupid results
-cat("Prediction for the training set:\n")
+```{r caret output train}
+{# HIDE
+# some results
+cat("Prediction for the training set (caret):\n")
 train_pred <- predict(model,dataNorm_train)
 confusionMatrix(train_pred, factor(label_train))
+}# HIDE
+```
 
+```{r caret output test}
+{# HIDE
 # test the model on the test set
-cat("Prediction for the test set:\n")
+cat("Prediction for the test set (caret):\n")
 test_pred <- predict(model,dataNorm_test)
 confusionMatrix(test_pred, factor(label_test))
+}# HIDE
 ```
 
 ```{r e1071}
 svmfit <- svm(Group~., data = dataNorm_train, kernel = "linear", type = 'C-classification', scale = FALSE, cross = 10)
 print(svmfit)
+```
+
+```{r e1071 output}
 {# HIDE
-cat("Prediction for the test set:\n")
+cat("Prediction for the test set (e1071):\n")
 test_pred <- predict(svmfit, newdata=dataNorm_test, decision.values = FALSE)
 res <- confusionMatrix(test_pred, factor(label_test))
 print(res)
@@ -1153,9 +1166,12 @@ The function returns the numbers of features used in each iteration and the corr
 recursiveFeatureExtractionCV
 ```
 
-```{r funCV}
+```{r funCV, results='hide'}
 rfe <- recursiveFeatureExtractionCV(dataNorm_train, label_train, 500, 10)
-#plot (x = rfe$number_features, y = rfe$accuracy, xlab = "Features retained", ylab = "Accuracy")
+```
+
+```{r funCV plot, results='hide'}
+plot (x = rfe$number_features, y = rfe$accuracy, xlab = "Features retained", ylab = "Accuracy")
 ```
 
 <div style="text-align: justify">
@@ -1177,13 +1193,14 @@ print(res_prova)
 svmfit_prova <- svm(Group ~ ., data = matrix_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
 pred_prova <- predict(svmfit_prova, newdata=matrix_train, decision.values = FALSE)
 res_prova <- confusionMatrix(pred_prova, factor(label_train))  
+print(res_prova)
 ```
 
 ```{r svm graph}
 w <- t(best_model$coefs) %*% best_model$SV
 w <- abs(w)
 names_sorted <- best_genes[order(w, decreasing=TRUE)]
-print(names_sorted)
+#print(names_sorted)
 
 # insert the two genes ID printed at the previous line and execute the following line to see the plot
 plot(best_model, dataNorm_train, ENSG00000245750~ENSG00000261437, svSymbol = "v")
@@ -1193,14 +1210,18 @@ plot(best_model, dataNorm_train, ENSG00000245750~ENSG00000261437, svSymbol = "v"
 The genes selected as the ones that lead to the best model are now analyze in terms of Gene Ontology, in order to find if they are associated with some important terms related with the colon tumor.
 </div>
 
-```{r GO annotations}
+```{r GO annotations, results='hide'}
 alldata <- select(org.Hs.eg.db, best_genes, columns = c("SYMBOL","ENTREZID", 
                   "ENSEMBL","GOALL"), keytype="ENSEMBL")
 
+```
+
+```{r GO annotations output}
 terms <- unique(alldata[,4])
 terms <- terms[!is.na(terms)]
 
 annotation_featuresRFE <- as.data.frame(annotation_terms(vals, terms))
+annotation_featuresRFE[1:10,]
 ```
 
 <div style="text-align: justify">
@@ -1219,6 +1240,3 @@ for (i in (1:100)){
 }
 plot(par,accuracy_test, xlab = "Number of parameters", ylab = "Accuracy over test set")
 ```
-
-
-

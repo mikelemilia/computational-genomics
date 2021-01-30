@@ -7,6 +7,7 @@ MA <- function(x, y){
   A <- (log2(x) + log2(y))/2
   
   return(list('M' = M, 'A' = A))
+  
 }
 
 produceMvA <- function(x, index, interval, folder, graph_title){
@@ -28,6 +29,7 @@ produceMvA <- function(x, index, interval, folder, graph_title){
     
     dev.off()
   }
+  
 }
 
 producePlots <- function(x, index, interval, folder, graph_title = ""){
@@ -54,6 +56,7 @@ producePlots <- function(x, index, interval, folder, graph_title = ""){
     
     dev.off()
   }
+  
 }
 
 tmm_normalization <- function(x, index, interval){
@@ -157,6 +160,7 @@ remove_duplicates <- function (data, group){
   colnames(group_nodup) <- names
   
   return(group_nodup)
+  
 }
 
 remove_zeros <- function(group1,group2){
@@ -297,13 +301,13 @@ annotation_terms<-function(vals, terms){
 }
 
 
-extract_tumor_terms<-function(list_terms)
-{sent<-list_terms$terms
-ind<-grepl(" tumor ", sent)
-ind<-which(ind==TRUE)
+extract_tumor_terms<-function(list_terms) {
+  sent<-list_terms$terms
+  ind<-grepl(" tumor ", sent)
+  ind<-which(ind==TRUE)
 
-to_view<-list_terms[ind,]
-return(to_view)
+  to_view<-list_terms[ind,]
+  return(to_view)
 }
 
 
