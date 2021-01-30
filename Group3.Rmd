@@ -157,28 +157,29 @@ quantile_normalization
 tmm_normed <- tmm_normalization(temp_samples, extracted_index, interval)
 ```
 
-```{r TMM plot}
-par(mfrow=c(1,2)) 
-extracted <- tmm_normed$samples[,1]
-selected  <- tmm_normed$samples[,12]
-
-plot(samples[,1], samples[,12], pch=20, cex=1,  col="#3185FC",xlab="Sample 1", ylab="Sample 12", main = "Samples plot")
-
-plot(extracted, selected, pch=20, cex=1,  col="#3185FC", xlab="Sample 1", ylab="Sample 12", main = "Samples plot - Normalized")
-```
-
 ```{r Quantile normalization}
 quantile_normed <- quantile_normalization(temp_samples)
 ```
 
-```{r Quantile plots}
-par(mfrow=c(1,2)) 
+```{r Normalization Plots, fig.width=12, fig.height=5}
+par(mfrow=c(1,3)) 
+
+
+plot(samples[,1], samples[,12], pch=20, cex=2,  col="#3185FC",xlab="Sample 1", ylab="Sample 12", main = "Samples")
+abline(0, 1, col = "red")
+
+extracted <- tmm_normed$samples[,1]
+selected  <- tmm_normed$samples[,12]
+
+
+plot(extracted, selected, pch=20, cex=2,  col="#3185FC", xlab="Sample 1", ylab="Sample 12", main = "Samples (TMM)")
+abline(0, 1, col = "red")
+
+
 extracted <- quantile_normed$samples[,1]
 selected  <- quantile_normed$samples[,12]
-
-plot(samples[,1], samples[,12], pch=20, cex=1,  col="#3185FC",xlab="Sample 1", ylab="Sample 12", main = "Samples plot")
-
-plot(extracted, selected, pch=20, cex=1,  col="#3185FC",xlab="Sample 1", ylab="Sample 12", main = "Samples plot - Normalized")
+plot(extracted, selected, pch=20, cex=2,  col="#3185FC",xlab="Sample 1", ylab="Sample 12", main = "Samples (Quantile)")
+abline(0,1, col = "red")
 ```
 
 <div style="text-align: justify">
@@ -186,16 +187,26 @@ With the results obtained, we decided to use for the subsequent analysis the <st
 It is to be noted that neither the quantile nor the TMM normalization get rid of the "V-shaped" outliers near low values of A (average). The code below shows what was said here. 
 </div>
 
-```{r MvA plot of reference sample (sample 1) VS sample 12 with TMM and quantile normalization}
-par(mfrow=c(1,2)) 
+```{r MvA plot of reference sample (sample 1) VS sample 12 with TMM and quantile normalization, fig.width=12, fig.height=5}
+par(mfrow=c(1,3)) 
+
+# Data extraction and plot 
+extracted <- samples[,1]
+selected  <- samples[,12]
+
+computed  <- MA(extracted, selected)
+
+plot(computed$A, computed$M, pch=20, cex=1,  col="#3185FC",xlab="A", ylab="M", main = "MvA (TMM) ", sub = paste("Sample", 1, "vs.", 12, sep = " "))
+abline(0,0, col = "red")
+
 # TMM normalization: data extraction and plot 
 extracted <- tmm_normed$samples[,1]
 selected  <- tmm_normed$samples[,12]
 
 computed  <- MA(extracted, selected)
 
-plot(computed$A, computed$M, pch=20, cex=1,  col="#3185FC",xlab="A", ylab="M", main = "MvA plot - TMM ", sub = paste("Sample", 1, "vs.", 12, sep = " "))
-abline(0,0)
+plot(computed$A, computed$M, pch=20, cex=1,  col="#3185FC",xlab="A", ylab="M", main = "MvA (TMM) ", sub = paste("Sample", 1, "vs.", 12, sep = " "))
+abline(0,0, col = "red")
 
 # Quantile normalization: data extraction and plot 
 extracted <- quantile_normed$samples[,1]
@@ -203,8 +214,8 @@ selected  <- quantile_normed$samples[,12]
 
 computed  <- MA(extracted, selected)
 
-plot(computed$A, computed$M, pch=20, cex=1,  col="#3185FC",xlab="A", ylab="M", main = "MvA plot - Quantile", sub = paste("Sample", 1, "vs.", 12, sep = " "))
-abline(0,0)
+plot(computed$A, computed$M, pch=20, cex=1,  col="#3185FC",xlab="A", ylab="M", main = "MvA (Quantile)", sub = paste("Sample", 1, "vs.", 12, sep = " "))
+abline(0,0, col = "red")
 ```
 
 ## Produce the MvA plots of each sample vs. sample 1 using normalized data to evaluate if the normalization step was correctly performed or if there are outlier samples
@@ -545,18 +556,12 @@ accuracy <- c(((expected_ttest_est$TN+expected_ttest_est$TP)/(expected_ttest_est
               ((expected_edgeR_est$TN+expected_edgeR_est$TP)/(expected_edgeR_est$TP+expected_edgeR_est$TN+expected_edgeR_est$FP+expected_edgeR_est$FN)))
 ```
 
-<div style="text-align: justify">
-The table of results.
-</div>
-
 ```{r results, echo=FALSE}
 dt <- rbind(expected_ttest_est,expected_wilcoxontest_est,expected_edgeR_est)
 dt <- cbind(c(G0_est_ttest,G0_est_wilcoxontest,G0_est_edger),dt,sensitivity,specificity,accuracy)
 rownames(dt)<-c('t-test', 'Wilcoxon-test', 'edgeR')
 colnames(dt)<-c('G0 estimated','TP', 'FP', 'TN', 'FN','Sensitivity','Specificity', 'Accuracy')
 kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
-
-#knitr::kable(dt, align = "lccccrrr", table.attr = "style='width:30%;'")
 ```
 
 ## Choose the “best” test among t-test, Wilcoxon test and edgeR motivating your choice
@@ -931,8 +936,6 @@ test_kmeans <- function(x, k) (kmeans(x=x, centers=k, iter.max=100, nstart=100))
 
 gap_res<-clusGap(dataNorm_clustering, test_kmeans, length(K), B=20)
 
-p1 <- fviz_gap_stat(gap_res)
-
 for (i in (2:(nrow(gap_res$Tab)-1))){
   if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
     break;
@@ -942,8 +945,6 @@ kopt_g_kmeans_gap <- i
 # K-Means - samples
 
 gap_res<-clusGap(t(dataNorm_clustering), test_kmeans, length(K), B=20)
-
-p2 <- fviz_gap_stat(gap_res)
 
 for (i in (2:(nrow(gap_res$Tab)-1))){
   if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
@@ -955,8 +956,6 @@ kopt_s_kmeans_gap <- i
 
 gap_res<-clusGap(dataNorm_clustering, test_hclust, length(K), B=20)
 
-p3 <- fviz_gap_stat(gap_res)
-
 for (i in (2:(nrow(gap_res$Tab)-1))){
   if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
     break;
@@ -967,15 +966,11 @@ kopt_g_hier_gap <- i
 
 gap_res <-clusGap(t(dataNorm_clustering), test_hclust, length(K), B=20)
 
-p4 <- fviz_gap_stat(gap_res)
-
 for (i in (2:(nrow(gap_res$Tab)-1))){
   if ((gap_res$Tab[i,3])>(gap_res$Tab[i+1,3]+gap_res$Tab[i+1,4]))
     break;
 }
 kopt_s_hier_gap <- i
-
-grid.arrange(p1, p2, p3, p4, ncol = 2)
 ```
 
 ```{r results of the gap statistic}
@@ -1000,15 +995,17 @@ Plots of the clusterings are shown, for both kmeans and hieararchical clustering
 </div>
 
 ```{r plots of part4, HIERARCHICAL}
+#GENES, HIERARCHICAL CLUSTERING
 hcd_G <- as.dendrogram(cl_hclust_ward)
 fviz_dend(cut(hcd_G, h=400)$lower[[1]], k = kopt_g_hier_gap, cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"),
-             color_labels_by_k = T, rect = F, show_labels = T, horiz = T)  
+             color_labels_by_k = T, rect = F, show_labels = T, horiz = T, main="Hierarchical (Genes) - Upper")  
 fviz_dend(cut(hcd_G, h=400)$lower[[2]], k = kopt_g_hier_gap , cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"),
-             color_labels_by_k = T, rect = T, show_labels = F, horiz = T)  
+             color_labels_by_k = T, rect = T, show_labels = F, horiz = T, main="Hierarchical (Genes) - Lower")  
+
 # SAMPLES, HIERARCHICAL CLUSTERING
 hcd_S <- as.dendrogram(cl_hclust_ward_S)
 fviz_dend(hcd_S, k = kopt_s_hier_gap, cex = 0.5, k_colors = c( "#E7B800",  "#00AFBB"), 
-          color_labels_by_k = T, rect = T, rect_fill = T, show_labels = T)  
+          color_labels_by_k = T, rect = T, rect_fill = T, show_labels = T, main="Hierarchical (Samples) - Upper")
 ```
 
 ```{r plot of part 4, kmeans, fig.width=7, fig.height=7}
@@ -1019,7 +1016,7 @@ p1<-fviz_cluster(cl_genes, data = dataNorm_clustering,
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
-             main="Kmeans clustering of genes"
+             main="K-means (Genes)"
 )
 
 #SUBJECTS, KMEANS
@@ -1031,7 +1028,7 @@ p2<-fviz_cluster(cl_samples, data = t(dataNorm_clustering_plot),
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
-             main="Kmeans clustering of subjects"
+             main="K-means (Subjects)"
 )
 
 grid.arrange(p1, p2, nrow = 2)
