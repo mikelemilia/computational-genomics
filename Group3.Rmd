@@ -1,10 +1,12 @@
 ---
 title: "GROUP3"
 output:
+  html_document: default
   html_notebook: 
     number_section: yes
     toc: no
-  html_document: default
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=TRUE, echo = FALSE}
