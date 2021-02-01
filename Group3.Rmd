@@ -65,7 +65,7 @@ samples_number <- length(samples)
 
 # Computing the sequencing depth of each sample
 
-depth <- apply(samples, 2, sum)     # 2 means that we're appling the sum by columns
+depth <- apply(samples, 2, sum)     # 2 means that we're applying the sum by columns
 ```
 
 ```{r calculate depth output, echo=FALSE}
@@ -109,11 +109,9 @@ produceMvA(temp_samples, extracted_index, interval,  folder = "MvA", graph_title
 producePlots(temp_samples, extracted_index, interval, folder = "Other")
 ```
 
-
 <div style="text-align: justify">
 In the following chunks, thanks to the PCA function we extract the first 10 PCs from the data with respect to samples and genes; the "cos2" coloration  is used to highlight the importance of a certain observation on the calculation of the given PC. We can also see thanks to the Scree plot that the maximum variation in the data is captured within the first component, as we expected.
 </div>
-
 
 ```{r compute PCA samples, results='hide',fig.width=7, fig.height=7}
 # PCA for samples
@@ -144,7 +142,7 @@ tmm_normalization
 ```
 
 <div style="text-align: justify">
-The following function implements the Quantile Normalization. It receives in input the matrix x with samples in columns and genes in rows for which it computes the quantile normalization as defined in theory lessons. The setup matrixes for indexes, sorted values and for normed values are created; then, for each subject, the gene raw counts of that subject are sorted and given a rank usign the average method to deal with ties. Ranks will be used as indexes. Then, the mean by row is calculated on the matrix with sorted columns. At last,column by column,  the normalized matrix is built using the indexes from the ranking function to choose which mean values should be put in which positions. 
+The following function implements the Quantile Normalization. It receives in input the matrix x with samples in columns and genes in rows for which it computes the quantile normalization as defined in theory lessons. The setup matrixes for indexes, sorted values and normed values are created; then, for each subject, the gene raw counts of that subject are sorted and given a rank using the average method to deal with ties. Ranks will be used as indexes. Then, the mean by row is calculated on the matrix with sorted columns. At last,column by column, the normalized matrix is built using the indexes from the ranking function to choose which mean values should be put in which positions. 
 The quantile normalization return a matrix whose columns have all the same distribution. 
 </div>
 
@@ -225,7 +223,7 @@ abline(0,0, col = "red")
 ## Produce the MvA plots of each sample vs. sample 1 using normalized data to evaluate if the normalization step was correctly performed or if there are outlier samples
 
 <div style="text-align: justify">
-You can see MvA plots by inside output/plots folder and in particular you can notice that in some of them it's clear what was explained above with reference sample vs. sample 12. For example in reference sample vs. sample 47 plot the same comments can be made: MvA plots clearly show a deviance from M=0 in TMM normalization while this deviance is not present in the analysis with the quantile normalization. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
+You can see MvA plots inside output/plots folder and in particular you can notice that in some of them it's clear what was explained above with reference sample vs. sample 12. For example in reference sample vs. sample 47 plot the same comments can be made: MvA plots clearly show a deviance from M=0 in TMM normalization while this deviance is not present in the analysis with the quantile normalization. This gives credit to the idea that quantile normalization is more robust because it produces a series of sample with the same distribution, while TMM normalization just takes care of the most evident outliers, because it uses a trimmed mean approach.
 </div>
 
 ```{r Produce Normalized MvA Plots, eval = FALSE}
@@ -234,15 +232,13 @@ produceMvA(tmm_normed$samples, extracted_index, interval,  folder = "MvA - TMM N
 
 # Quantile Normalization
 produceMvA(quantile_normed$samples, extracted_index, interval,  folder = "MvA - Quantile Normalization", graph_title = "MvA (Quantile Normalization)")
-
 ```
 
-
 <div style="text-align: justify">
-As we said in the comment of the chunck above, quantile normalization seems to be more robust because produces a series of sample with the same distribution. This fact it's also evident if you see the following plots, in fact after the application of the TMM normalization, there wasn't any effect on the PCs while using the quantile normalization you can clearly see the change in distribution of both samples and genes and the consequent reduction of the variance inside the data.
+As we said in the comment of the chunck above, quantile normalization seems to be more robust because produces a series of sample with the same distribution. This fact is also evident if you see the following plots, in fact after the application of the TMM normalization, there wasn't any effect on the PCs while using the quantile normalization you can clearly see the change in distribution of both samples and genes and the consequent reduction of the variance inside the data.
 </div>
 
-```{r Compute normalized PCA, results='hide', fig.width=7, fig.height=10}
+```{r Compute normalized PCA samples, results='hide', fig.width=7, fig.height=10}
 # PCA for samples
 tmm_s_pca <- PCA(t(tmm_normed$samples), scale.unit = FALSE, ncp = 10, graph = FALSE)
 quantile_s_pca <- PCA(t(quantile_normed$samples), scale.unit = FALSE, ncp = 10, graph = FALSE)
@@ -250,12 +246,13 @@ quantile_s_pca <- PCA(t(quantile_normed$samples), scale.unit = FALSE, ncp = 10, 
 p1 <- fviz_pca_ind(s_pca, col.ind = 'cos2', geom = 'point', title = 'PCA (Samples)')
 p2 <- fviz_pca_ind(tmm_s_pca, col.ind = 'cos2', geom = 'point', title = 'PCA (Samples after TMM)')
 p3 <- fviz_pca_ind(quantile_s_pca, col.ind = 'cos2', geom = 'point', title = 'PCA (Samples after Quantile)')
-
 grid.arrange(p1,p2, p3)
+```
+
+```{r Compute normalized PCA genes, results='hide', fig.width=7, fig.height=10}
 # PCA for genes
 tmm_g_pca <- PCA(tmm_normed$samples, scale.unit = FALSE, ncp = 10, graph = FALSE)
 quantile_g_pca <- PCA(quantile_normed$samples, scale.unit = FALSE, ncp = 10, graph = FALSE)
-
 
 p1 <- fviz_pca_ind(g_pca, col.ind = 'cos2', geom = 'point', title = 'PCA (Genes)')
 p2 <- fviz_pca_ind(tmm_g_pca, col.ind = 'cos2', geom = 'point', title = 'PCA (Genes after TMM)')
@@ -272,15 +269,15 @@ grid.arrange(p1, p2, p3)
 We decided to take care of this issue by simply using a mean approach: the samples coming from the same subject and present in the same group (for instance subject 1 is measured two times as a control subject) are mediated. To do this task we decided to implement the remove_duplicates function. 
 The function:
 <ul>
-<li>first of all, we find all subjects duplicated in the group (in our case the group can be "control" or "disease"). To do so, we use the column of the group "individuals"; this column has the identifier for the subjects. If a sample comes from the same subject (i.e, the subject has benn sampled twice or more, so it is a duplicate), the identifier will be the same.</li>
+<li>first of all, we find all subjects duplicated in the group (in our case the group can be "control" or "disease"). To do so, we use the column of the group "individuals"; this column has the identifier for the subjects. If a sample comes from the same subject (i.e, the subject has been sampled twice or more, so it is a duplicate), the identifier will be the same.</li>
 <li>We save all these dupes in a temporary matrix called "duplicate_group"</li>
-<li>we initialize a new matrix which will contain all subjects without any of them being duplicated (i.e., sampled twice)</li>
-<li>for each identifier in "duplicate_group", we find the indexes of this duplicate individual and get their SRR code (the code with which samples are identified in the matrix of raw data). NB: in the matrix of raw data, all samples are identified with different SRR codes, but SRR codes can point to the same subject.</li>
-<li>get all the the samples coming from this particular subject that we know is duplicated</li>
-<li>apply the mean by row to all samples identified in the previous step and save this new "mediated-samples subject" in the matrix initialized above</li>
-<li>then, find all subjects in the group that are not duplicated (i.e., there's a 1 to 1 correspondance of subject to sample for these individuals)</li>
-<li>put all these subjects not duplicated into the matrix initialized above</li>
-<li>remove from the matrix any columns not used (we initialized the matrix having the same columns as the group but obviously in the end it will have less columns because some samples will not be present anymore)</li>
+<li>We initialize a new matrix which will contain all subjects without any of them being duplicated (i.e., sampled twice)</li>
+<li>For each identifier in "duplicate_group", we find the indexes of this duplicate individual and get their SRR code (the code with which samples are identified in the matrix of raw data). NB: in the matrix of raw data, all samples are identified with different SRR codes, but SRR codes can point to the same subject.</li>
+<li>Get all the samples coming from this particular subject that we know is duplicated</li>
+<li>Apply the mean by row to all samples identified in the previous step and save this new "mediated-samples subject" in the matrix initialized above</li>
+<li>Then, find all subjects in the group that are not duplicated (i.e., there's a 1 to 1 correspondence of subject to sample for these individuals)</li>
+<li>Put all these subjects not duplicated into the matrix initialized above</li>
+<li>Remove from the matrix any columns not used (we initialized the matrix having the same columns as the group but obviously in the end it will have less columns because some samples will not be present anymore)</li>
 end.
 </ul>
 </div>
@@ -342,7 +339,7 @@ disease_nodup_nozero<-groups_nozero$disease
 {# HIDE
 # some outputs
 cat("The number of initial genes is:",nrow(control_nodup), "\n")
-cat("\nThe number of genes after zeros removal for control is:",nrow(control_nodup_nozero), "\n")
+cat("\nThe number of genes after zeros removal is:",nrow(control_nodup_nozero), "\n")
 
 ratio <- 1-(nrow(control_nodup_nozero)/nrow(control_nodup))
 cat("\nThe compression ratio is:", ratio)
@@ -352,7 +349,7 @@ cat("\nThe compression ratio is:", ratio)
 ## Calculate p-values of DE analysis (not corrected for multiple testing) between the two groups using t-test, Wilcoxon test and edgeR
 
 <div style="text-align: justify">
-For the t-test and the Wilcoxon tests, we use functions of the Stats library.
+For the t-test and the Wilcoxon test, we use functions of the Stats library.
 </div>
 
 ```{r p-values}
@@ -440,13 +437,13 @@ boxplot(c_ttest_pvalue, c_wilcoxon_pvalue, out$PValue, names = c('t-test','Wilco
 ## Calculate the expected number of false positives (FP) and false negatives (FN) in correspondence to the choice of alpha = 0.05 and consider G0 = N with N being the number of genes
 
 <div style="text-align: justify">
-For each test, we extracted the genes that have p-value lower than a fixed alpha. These are the selcted genes.
+For each test, we extracted the genes that have p-value lower than a fixed alpha. These are the selected genes.
 With the following function "expected_values" we calculate the expected values of true positives, false positives, true negatives and false negatives implementing their definition. In order of calculation:
 <ul>
 <li>False positives are calculated as the minimum between G0*alpha and the number of selected genes,</li>
 <li>True positives are calculated as the maximum between zero and the number of selected genes minus the number of expected positives,</li>
 <li>True negatives as G0 minus the number of expected false positives,</li>
-<li>and lastly, False negatives as the maximum between zero and the total number of genes minus the selected ones and minus the number of expected true negatives; in this case, the maximum is applied as not to have deviant values for FN, meaning negative values.</li>
+<li>And lastly, False negatives as the maximum between zero and the total number of genes minus the selected ones and minus the number of expected true negatives; in this case, the maximum is applied as not to have deviant values for FN, meaning negative values.</li>
 </ul>
 We then applied the function considering G0 (number of selected genes) being equal to G, the total number of genes.
 </div>
@@ -543,7 +540,7 @@ expected_edgeR_est <- expected_values(G, G0_est_edger, alpha, num_sel_edgeR)
 ```
 
 <div style="text-align: justify">
-In the table below, we provide the results of the three tests in terms of FP, FN, TP, TN rates; moreover, we address sensitivity, specificity and accuracy of these tests. For better understanding, this ananlysis is done ultimately only for the results obtained by estimating G0.
+In the table below, we provide the results of the three tests in terms of FP, FN, TP, TN rates; moreover, we address sensitivity, specificity and accuracy of these tests. For better understanding, this analysis is done ultimately only for the results obtained by estimating G0.
 From the table we can see that although having slightly different FP, FN, TP, TN rates, the three tests have the same specificity, defined as TN/(TN+FP). This is not true for sensitivity: edgeR is the best test in terms of sensitivity defined as TP/(TP+FN). The same can be said about accuracy, calculated as (TP+TN)/(TP+TN+FP+FN); edgeR is still the best performing test.
 </div>
 
@@ -603,7 +600,7 @@ for (i in (1:length(lambda))) {
 
 plot(lambda, FDR_values, main = 'FDR values for different alpha', xlab="alpha", ylab= "FDR")
 
-# choose the values that are in [0.05-epsilon;0.05 + espilon]
+# choose the values that are in [0.05-epsilon;0.05+epsilon]
 epsilon <- 0.0001
 alpha_idx_lower <- which(FDR_values >= FDR - epsilon)
 alpha_idx_upper <- which(FDR_values <= FDR + epsilon)
@@ -631,7 +628,6 @@ number_genes_notselected <- length(ID_genes_notselected)
 cat("Number of selected genes:    ", number_genes_selected, "\n")
 cat("Number of not selected genes:", number_genes_notselected)
 }# HIDE
-
 ```
 
 # Third Part
@@ -693,7 +689,7 @@ matrixes<-matrixes[order(rownames(matrixes)),]
 These functions were implemented to perform the fisher exact test.
 "fisher_test_matrixes" computes the actual test, returning the p-values of each test.
 "FDR_fisher" calculates the estimated alpha given a FDR equal to 0.05 in order to account for multiple testing in the selection of meaningful p-values (and subsequently meaningful annotations).
-"annotation_terms" return the annotated terms for the GOterms selected as meaningful; to do so it uses the GO.db databases. 
+The function "annotation_terms" returns the annotated terms for the GOterms selected as meaningful; to do so it uses the GO.db databases.
 </div>
 
 ```{r fisher_test_matrixes functions}
@@ -711,42 +707,42 @@ annotation_terms
 ```{r fisher test}
 # creation of three sub-matrices in function of the GOterm's type  
 matrixesCC <- matrixes[which(matrixes[,1]=="CC"),]
-indexCC<-which(matrixes[,1]=="CC")
-terms_CC<-terms[indexCC]
-colnames(matrixesCC)<-c("type","a","b","c","d")
+indexCC <- (matrixes[,1]=="CC")
+terms_CC <- terms[indexCC]
+colnames(matrixesCC) <- c("type","a","b","c","d")
 matrixesBP <- matrixes[which(matrixes[,1]=="BP"),]
-indexBP<-which(matrixes[,1]=="BP")
-terms_BP<-terms[indexBP]
-colnames(matrixesBP)<-c("type","a","b","c","d")
+indexBP <- which(matrixes[,1]=="BP")
+terms_BP <- terms[indexBP]
+colnames(matrixesBP) <- c("type","a","b","c","d")
 matrixesMF <- matrixes[which(matrixes[,1]=="MF"),]
-indexMF<-which(matrixes[,1]=="MF")
-terms_MF<-terms[indexMF]
-colnames(matrixesMF)<-c("type","a","b","c","d")
+indexMF <- which(matrixes[,1]=="MF")
+terms_MF <- terms[indexMF]
+colnames(matrixesMF) <- c("type","a","b","c","d")
 
-pval_fisherCC<-fisher_test_matrixes(matrixesCC)
-pval_fisherBP<-fisher_test_matrixes(matrixesBP)
-pval_fisherMF<-fisher_test_matrixes(matrixesMF)
+pval_fisherCC <- fisher_test_matrixes(matrixesCC)
+pval_fisherBP <- fisher_test_matrixes(matrixesBP)
+pval_fisherMF <- fisher_test_matrixes(matrixesMF)
 
 # correction for multiple testing in fisher
 
-fisher_analysis_BP<-FDR_fisher(pval_fisherBP,terms_BP)
-number_terms_annotatedBP<-length(fisher_analysis_BP[[1]])
+fisher_analysis_BP <- FDR_fisher(pval_fisherBP,terms_BP)
+number_terms_annotatedBP <- length(fisher_analysis_BP[[1]])
 
-fisher_analysis_CC<-FDR_fisher(pval_fisherCC,terms_CC)
-number_terms_annotatedCC<-length(fisher_analysis_CC[[1]])
+fisher_analysis_CC <- FDR_fisher(pval_fisherCC,terms_CC)
+number_terms_annotatedCC <- length(fisher_analysis_CC[[1]])
 
-fisher_analysis_MF<-FDR_fisher(pval_fisherMF,terms_MF)
-number_terms_annotatedMF<-length(fisher_analysis_MF[[1]])
+fisher_analysis_MF <- FDR_fisher(pval_fisherMF,terms_MF)
+number_terms_annotatedMF <- length(fisher_analysis_MF[[1]])
 
 # NO DPLYR IN LIBRARY
 vals = select(GO.db, keys(GO.db, "GOID"), c("TERM", "ONTOLOGY"))
 
-annotation_terms_BP<-as.data.frame(annotation_terms(vals, fisher_analysis_BP[[2]]))
-colnames(annotation_terms_BP)<-"terms"
+annotation_terms_BP <- as.data.frame(annotation_terms(vals, fisher_analysis_BP[[2]]))
+colnames(annotation_terms_BP) <- "terms"
 annotation_terms_CC<-as.data.frame(annotation_terms(vals, fisher_analysis_CC[[2]]))
-colnames(annotation_terms_CC)<-"terms"
+colnames(annotation_terms_CC) <- "terms"
 annotation_terms_MF<-as.data.frame(annotation_terms(vals, fisher_analysis_MF[[2]]))
-colnames(annotation_terms_MF)<-"terms"
+colnames(annotation_terms_MF) <- "terms"
 ```
 
 <div style="text-align: justify">
@@ -764,10 +760,10 @@ to_viewMF<-extract_tumor_terms(annotation_terms_MF)
 minimum<-min(length(to_viewBP), length(to_viewCC), length(to_viewMF))
 
 dt <- cbind(to_viewBP[1:minimum],to_viewMF[1:minimum], to_viewCC[1:minimum] )
-#rownames(dt)<-c('BP', 'MF', 'CC')
 colnames(dt)<-c('BP','MF', 'CC')
 kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
+
 <div style="text-align: justify">
 To select the most important annotation terms we order the p-values produced by the Fisher Test from the lowest to the highest, taking into account only those with the lowest value.
 </div>
@@ -784,7 +780,6 @@ pval_fisherMF_sorted<-sort(fisher_test_matrixes(matrixesMF))
 fisher_analysis_BP_sorted<-FDR_fisher(pval_fisherBP_sorted,terms_BP)
 fisher_analysis_CC_sorted<-FDR_fisher(pval_fisherCC_sorted,terms_CC)
 fisher_analysis_MF_sorted<-FDR_fisher(pval_fisherMF_sorted,terms_MF)
-
 
 annotation_terms_BP_sorted<-as.data.frame(annotation_terms(vals, fisher_analysis_BP_sorted[[2]]))
 colnames(annotation_terms_BP_sorted)<-"terms"
@@ -812,7 +807,7 @@ kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed",
 ## [Note] Correcting for length of genes before clustering
 
 <div style="text-align: justify">
-We correct our data for the length of genes to perform a better clustering analysis and to not have a bias in the results do to the lengths. To do it we extracted the gene lengths with the 'getGeneLengthAndGCContent' function and then divide each value for its length. We also decided to consider as one sample all those samples taken from the same subject in the same group, as we did for testing the DE genes.
+We correct our data for the length of genes to perform a better clustering analysis and to not have a bias in the results due to the lengths. To do it we extracted the gene lengths with the 'getGeneLengthAndGCContent' function and then divide each value for its length. We also decided to consider as one sample all those samples taken from the same subject in the same group, as we did for testing the DE genes.
 </div>
 
 ```{r init clustering, results='hide'}
@@ -832,7 +827,7 @@ dataNorm_clustering <- cbind(dataNorm_nodup_control,dataNorm_nodup_disease)
 ## Cluster the genes you have selected in exercise 2 using k-means and hierarchical clustering and compare the results you obtain
 
 <div style="text-align: justify">
-We defined a grid of possible values for the number of clusters and for each of them we implement the clustering, with the kmeans function of R. For THIS function, we used as parameters iter.max=100 to avoid a too long computation or an overfitting of the data and nstart=100 to have multiple startings that lead to better results trying to avoid local minimum of the cost function. 
+We defined a grid of possible values for the number of clusters and for each of them we implement the clustering, with the kmeans function of R. For this function, we used as parameters iter.max=100 to avoid a too long computation or an overfitting of the data and nstart=100 to have multiple startings that lead to better results trying to avoid local minimum of the cost function. 
 For the hierarchical cluster, we used the hclust function of R, with as parameter method="ward.D2": we chose ward.D2 as a method of clustering because it uses the euclidean distance and in this way we can perform a better comparison with k-means, which also uses euclidean distance. Once the entire hierarchical tree is build, we cut the tree in order to obtain different numbers of clusters (inside the for cycle).
 In each iteration on possible values of k = number of clusters, we calculate also the Silhouette value.
 </div>
@@ -944,7 +939,8 @@ To implement the gap statistic, we used the clusGap() function of the library "c
 
 ```{r gap, fig.width=7, fig.height=7}
 # results for the gap statistic
-#functions for the subsequent analysis
+
+# functions for the subsequent analysis
 test_hclust <- function(x, k) list(cluster=cutree(hclust(dist(x), method = "average"),k=k))
 test_kmeans <- function(x, k) (kmeans(x=x, centers=k, iter.max=100, nstart=100))
 
@@ -996,10 +992,10 @@ cat("K-Means over genes!\n")
 cat("The optimal number of clusters is:", kopt_g_kmeans_gap)
 
 cat("\n\nHierarchical clustering over genes!\n")
-cat("The optimal number of clusters is:", kopt_s_kmeans_gap)
+cat("The optimal number of clusters is:", kopt_g_hier_gap)
 
 cat("\n\nK-Means over samples!\n")
-cat("The optimal number of clusters is:", kopt_g_hier_gap)
+cat("The optimal number of clusters is:", kopt_s_kmeans_gap)
 
 cat("\n\nHierarchical clustering over samples!\n")
 cat("The optimal number of clusters is:", kopt_s_hier_gap)
@@ -1010,19 +1006,23 @@ cat("The optimal number of clusters is:", kopt_s_hier_gap)
 After seeing results from both Gap and Silhouette Statistics, since both of them estimated the optimal number of clusters for genes at 2, we choose to use the Gap Statistic because it seems more robust to outliers present in the subjects group, considering that its task is to minimize the within cluster dispersion.
 </div>
 
-```{r plots of part4 HIERARCHICAL, fig.width=12, fig.height=7, results='hide'}
+```{r plots of part4 hierarchical genes, fig.width=12, fig.height=7, results='hide'}
 #GENES, HIERARCHICAL CLUSTERING
 hcd_G <- as.dendrogram(cl_hclust_ward)
-#fviz_dend(cut(hcd_G, h=400)$lower[[1]], k = kopt_g_hier_gap, cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"), color_labels_by_k = T, rect = F, show_labels = T, horiz = T, main="Hierarchical (Genes) - Upper")  
+fviz_dend(cut(hcd_G, h=400)$lower[[1]], k = kopt_g_hier_gap, cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"), 
+          color_labels_by_k = T, rect = F, show_labels = T, horiz = T, main="Hierarchical (Genes) - Upper")
 fviz_dend(cut(hcd_G, h=400)$lower[[2]], k = kopt_g_hier_gap , cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"),
              color_labels_by_k = T, rect = T, show_labels = F, horiz = T, main="Hierarchical (Genes) - Lower")  
+```
+
+```{r plots of part4 hierarchical subjects, fig.width=12, fig.height=7, results='hide'}
 # SAMPLES, HIERARCHICAL CLUSTERING
 hcd_S <- as.dendrogram(cl_hclust_ward_S)
 fviz_dend(hcd_S, k = kopt_s_hier_gap, cex = 0.5, k_colors = c( "#E7B800",  "#00AFBB"), 
           color_labels_by_k = T, rect = T, rect_fill = F, show_labels = T, main="Hierarchical (Samples)")
 ```
 
-```{r plot of part 4 kmeans, fig.width=12, fig.height=7}
+```{r plot of part 4 kmeans genes, fig.width=12, fig.height=7}
 #GENES, KMEANS
 cl_genes<-kmeans(x=dataNorm_clustering, centers = kopt_g_kmeans_gap, iter.max = 100, nstart = 100)
 fviz_cluster(cl_genes, data = dataNorm_clustering,
@@ -1032,6 +1032,9 @@ fviz_cluster(cl_genes, data = dataNorm_clustering,
              ggtheme = theme_bw(),
              main="K-means (Genes)"
 )
+```
+
+```{r plot of part 4 kmeans subjects, fig.width=12, fig.height=7}
 #SUBJECTS, KMEANS
 dataNorm_clustering_plot<-dataNorm_clustering
 colnames(dataNorm_clustering_plot)<-NULL
@@ -1101,7 +1104,7 @@ cat("\nThe test set contains",nrow(data_test),"samples, each one with",ncol(data
 ## Standardize each feature in your dataset 
 
 <div style="text-align: justify">
-The dataset contains all data of the control and disease groups only for the genes selected with the differential expression analysis. To standardize each features in the dataset (so to have mean=0 and sd=1), we used the scale function. Z-scoring is implemented: to z-score the data set, mean and standard deviation of the training set is used. We can perform the standardization of both of sets with the values of the training set. This is done because in the reality, when a single new vector from a subject needs to be classified, it is not possible to use its mean and standard deviation (for each gene, we would have only one value) and it is so scaled with the already known information. 
+The dataset contains all data of the control and disease groups only for the genes selected with the differential expression analysis. To standardize each feature in the dataset (so to have mean=0 and sd=1), we used the scale function. Z-scoring is implemented: to z-score the data set, mean and standard deviation of the training set is used. We can perform the standardization of both sets with the values of the training set. This is done because in the reality, when a single new vector from a subject needs to be classified, it is not possible to use its mean and standard deviation (for each gene, we would have only one value) and it is so scaled with the already known information. 
 In the second part, we add at the top of the dataframes containing the training set and the test set the label of each sample, inserting them as a factor variable.
 </div>
 
@@ -1167,12 +1170,12 @@ print(res)
 ## Feature selection
 
 <div style="text-align: justify">
-A recursive feature elimination algorithm is implemented in the function below. First of all, the SVM model is built for the entire dataset passed in input using a c-fold cross validation (with c in input, or by default c = 5 - it will be used also in all the SVM computations inside the function). Then, recursively, a certain percentage (at the beginning of 15%) of features are removed: in the first while cycle, are removed the features with lower weight in the previous model. The model according to the new dataset is built and if we obtain a worst result in terms of accuracy, the current iteration is aborted and restarting from the previous model and dataset, a lower percentage of features is removed. If the model is instead with the same or greater accuracy, it is saved as the best model found until that iteration (because of the less number of features needed and the higher accuracy). This cycle continues until one single feature should be removed, until it remains with less then K (passed in input, 500 by default) or until a too low accuracy (0.9*the initial one) is obtained. In the subsequent while cycle, one feature at iteration is removed: it chooses the one that less affects the model accuracy. The whole cycle continues until a single feature remains. 
-The function returns the numbers of features used in each iteration and the correspondent accuracy, the best model (higher accuracy and lower number of features) with the correspondent accuracy and genes ID used. It returns also all the model obtained in the second while cycle (with corresponding genes ID).
+A recursive feature elimination algorithm is implemented in the function below. First of all, the SVM model is built for the entire dataset passed in input using a c-fold cross validation (with c in input, or by default c = 5 - it will be used also in all the SVM computations inside the function). Then, recursively, a certain percentage (at the beginning of 15%) of features are removed: in the first while cycle, the features with lower weight in the previous model are removed. The model according to the new dataset is built and if we obtain a worst result in terms of accuracy, the current iteration is aborted and restarting from the previous model and dataset, a lower percentage of features is removed. If the model is instead with the same or greater accuracy, it is saved as the best model found until that iteration (because of the less number of features needed and the higher accuracy). This cycle continues until one single feature should be removed, until it remains with less then K (passed in input, 500 by default) or until a too low accuracy (0.9*the initial one) is obtained. In the subsequent while cycle, one feature at iteration is removed: it chooses the one that less affects the model accuracy. The whole cycle continues until a single feature remains. 
+The function returns the numbers of features used in each iteration and the correspondent accuracy, the best model (higher accuracy and lower number of features) with the correspondent accuracy and genes IDs used. It returns also all the model obtained in the second while cycle (with corresponding genes IDs).
 </div>
 
 <div style="text-align: justify">
-The function has been implemented also without cross validation but it does not returned good results: the samples passed are too few to obtain a robust model. For this purpose, cross validation has been applied. It is possible to convert the functions to the implementation with caret only changing the svm call with the code implemented some chunks above. Note that the accuracies returned by the function are expressed in percentage and not between 0 and 1.
+The function has been implemented also without cross validation but it did not returned good results: the samples passed are too few to obtain a robust model. For this purpose, cross validation has been applied. It is possible to convert the functions to the implementation with caret only changing the svm call with the code implemented some chunks above. Note that the accuracies returned by the function are expressed in percentage and not between 0 and 1.
 </div>
 
 ```{r implemented rfe function CV}
@@ -1203,33 +1206,33 @@ res_prova <- confusionMatrix(pred_prova, factor(label_test))
 print(res_prova)
 
 # Check the performances
-svmfit_prova <- svm(Group ~ ., data = matrix_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
-pred_prova <- predict(svmfit_prova, newdata=matrix_train, decision.values = FALSE)
-res_prova <- confusionMatrix(pred_prova, factor(label_train))  
-print(res_prova)
+svmfit_2 <- svm(Group ~ ., data = matrix_train, kernel = "linear", type = 'C-classification', scale = FALSE, na.action = na.omit)
+pred_2 <- predict(svmfit_2, newdata=matrix_train, decision.values = FALSE)
+res_2 <- confusionMatrix(pred_2, factor(label_train))  
+print(res_2)
 ```
+
 <div style="text-align: justify">
-It is possible to print the hyper plane generated by the best SVM model to separate the points of the training set. Since it can be visualised only in two dimensions, we considered as axis the two genes with higher weight in the model, so the most important ones. The hyper plane generated is not perfectly separating the two classes while in the four dimensional space it is a perfect linear separator for the training set: this is due to the projection that reduces the information reported in the plot.
+It is possible to print the hyper plane generated by the best SVM model to separate the points of the training set. Since it can be visualized only in two dimensions, we considered as axis the two genes with higher weight in the model, so the most important ones. The hyper plane generated is not perfectly separating the two classes while in the four dimensional space it is a perfect linear separator for the training set: this is due to the projection that reduces the information reported in the plot.
 </div>
 
 ```{r svm graph}
 w <- t(best_model$coefs) %*% best_model$SV
 w <- abs(w)
 names_sorted <- best_genes[order(w, decreasing=TRUE)]
-#print(names_sorted)
+print(names_sorted)
 
 # insert the two genes ID printed at the previous line and execute the following line to see the plot
 plot(best_model, dataNorm_train, ENSG00000283504~ENSG00000175497, svSymbol = "v")
 ```
 
 <div style="text-align: justify">
-The genes selected as the ones that lead to the best model are now analyze in terms of Gene Ontology, in order to find if they are associated with some important terms related with the colon tumor.
+The genes selected as the ones that lead to the best model are now analyzed in terms of Gene Ontology, in order to find if they are associated with some important terms related with the colon tumor.
 </div>
 
 ```{r GO annotations, results='hide'}
 alldata <- select(org.Hs.eg.db, best_genes, columns = c("SYMBOL","ENTREZID", 
                   "ENSEMBL","GOALL"), keytype="ENSEMBL")
-
 ```
 
 ```{r GO annotations output}
@@ -1243,7 +1246,7 @@ annotation_featuresRFE[1:10,]
 <div style="text-align: justify">
 The models obtained from the second while cycle are now tested on the test set to see their performances on it and to evaluate if the best model is the best one also in terms of accuracy over the test set.
 
-The models obtained have in general a good accuracy over the test set: some of them have accuracy equal to one. These have an higher number of parameters with respect to the ones found as best model for the training set; they have not however a perfect accuracy over the training set and we imagine that they are able however to generalise in a good way the data. In addition, we can notice that many models have an high accuracy even if not perfect. We can conclude that data are well linearly separable and in presence of more subjects on which training the model, we could obtained a good and generalised model for the classification.
+The models obtained have in general a good accuracy over the test set: some of them have accuracy equal to one. These have an higher number of parameters with respect to the ones found as best model for the training set; they have not however a perfect accuracy over the training set and we imagine that they are able however to generalize in a good way the data. In addition, we can notice that many models have an high accuracy even if not perfect. We can conclude that data are well linearly separable and in presence of more subjects on which training the model, we could obtain a good and generalized model for the classification.
 </div>
 
 ```{r accuracies of best models on test set}
