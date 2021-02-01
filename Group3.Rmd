@@ -1,12 +1,10 @@
 ---
 title: "GROUP3"
 output:
-  html_document: default
   html_notebook: 
     number_section: yes
     toc: no
-editor_options: 
-  chunk_output_type: console
+  html_document: default
 ---
 
 ```{r setup, include=TRUE, echo = FALSE}
@@ -420,12 +418,13 @@ RES <- glmLRT(fit,contrast=Confr[,"Treatment"])
 
 # some outputs to give an idea of the test's results
 RES$table[1:5,]
+```
 
+```{r edgeR output}
 # final values
 out <- topTags(RES, n = "Inf")$table
 out[1:5,]
 ```
-
 <div style="text-align: justify">
 Boxplots of the p-values obtained by the three tests are shown.
 P-values from Wilcoxon test and p-values obtained by edgeR are very similar in their distributions, while the distribution of p-values obtained by t-test differ the most from the other two.
@@ -811,7 +810,7 @@ kbl(dt) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed",
 We correct our data for the length of genes to perform a better clustering analysis and to not have a bias in the results due to the lengths. To do it we extracted the gene lengths with the 'getGeneLengthAndGCContent' function and then divide each value for its length. We also decided to consider as one sample all those samples taken from the same subject in the same group, as we did for testing the DE genes.
 </div>
 
-```{r init clustering, results='hide'}
+```{r clustering, results='hide'}
 d <- getGeneLengthAndGCContent(ID_genes_selected, "hsa")
 
 # remove the first column of data (gene names), extract the selected genes and normalize them
@@ -1007,11 +1006,14 @@ cat("The optimal number of clusters is:", kopt_s_hier_gap)
 After seeing results from both Gap and Silhouette Statistics, since both of them estimated the optimal number of clusters for genes at 2, we choose to use the Gap Statistic because it seems more robust to outliers present in the subjects group, considering that its task is to minimize the within cluster dispersion.
 </div>
 
-```{r plots of part4 hierarchical genes, fig.width=12, fig.height=7, results='hide'}
+```{r plots of part4 hierarchical genes upper, fig.width=12, fig.height=7, results='hide'}
 #GENES, HIERARCHICAL CLUSTERING
 hcd_G <- as.dendrogram(cl_hclust_ward)
 fviz_dend(cut(hcd_G, h=400)$lower[[1]], k = kopt_g_hier_gap, cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"), 
           color_labels_by_k = T, rect = F, show_labels = T, horiz = T, main="Hierarchical (Genes) - Upper")
+```
+
+```{r plots of part4 hierarchical genes lower, fig.width=12, fig.height=7, results='hide'}
 fviz_dend(cut(hcd_G, h=400)$lower[[2]], k = kopt_g_hier_gap , cex = 0.5, k_colors = c("#2E9FDF",  "#FC4E07"),
              color_labels_by_k = T, rect = T, show_labels = F, horiz = T, main="Hierarchical (Genes) - Lower")  
 ```
@@ -1192,7 +1194,7 @@ plot (x = rfe$number_features, y = rfe$accuracy, xlab = "Features retained", yla
 ```
 
 <div style="text-align: justify">
-With the best model returned by recursiveFeatureExtractionCV, we now evaluate its performances with the test set. In the first chunk, the best model is evaluated in terms of prediction on the test set (and a check on its performances on the entire training set). In the second chunk, the SVM and the training set are plotted in terms of the two best features (the two with highest weight in the model). 
+With the best model returned by recursiveFeatureExtractionCV, we now evaluate its performances with the test set. In the first chunk, the best model is evaluated in terms of prediction on the test set (and a check on its performances on the entire training set). 
 </div>
 
 ```{r tests of rfe}

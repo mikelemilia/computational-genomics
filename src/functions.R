@@ -14,6 +14,9 @@ MA <- function(x, y){
 produceMvA <- function(x, index, interval, folder, graph_title){
   # function that generates the MvA plots of a matrix with respect to the element of index 'index'
   
+  A <- matrix(0, nrow = length(x), ncol = 0)
+  M <- matrix(0, nrow = length(x), ncol = 0)
+  
   extracted <- x[,index] # extract the sample i
   
   for(i in interval){
@@ -27,8 +30,8 @@ produceMvA <- function(x, index, interval, folder, graph_title){
     A <- cbind(A, computed$A) 
     
     # generates the plots
-    plot(computed$A, computed$M, xlab="A", ylab="M", main = graph_title, sub = paste("Sample", index, "vs.", i, sep = " "))
-    abline(0,0)
+    plot(computed$A, computed$M, pch=20, cex=1,  col="#3185FC", xlab="A", ylab="M", main = graph_title, sub = paste("Sample", index, "vs.", i, sep = " "))
+    abline(0,0, col="red")
     
     dev.off()
   }
@@ -36,6 +39,9 @@ produceMvA <- function(x, index, interval, folder, graph_title){
 
 producePlots <- function(x, index, interval, folder, graph_title = ""){
   # function that produces histograms and boxplot of M and A for a matrix with respect to the element of index 'index'
+  A <- matrix(0, nrow = length(x), ncol = 0)
+  M <- matrix(0, nrow = length(x), ncol = 0)
+  
   extracted <- x[,index] # extract the sample i
   
   for(i in interval){
