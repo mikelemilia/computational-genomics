@@ -4,8 +4,7 @@ output:
   html_notebook: 
     number_section: yes
     toc: no
-  html_document:
-    df_print: paged
+  html_document: default
 ---
 
 ```{r setup, include=TRUE, echo = FALSE}
